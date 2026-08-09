@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { pb } from '@/lib/pocketbase';
-import { uploadApkToR2 } from './actions';
+import { uploadFileToR2, R2Config } from '@/lib/r2-upload';
 import {
   Package,
   Trash2,
@@ -128,14 +128,18 @@ export default function ReleasesPage() {
     setUploadProgress(20);
     
     try {
-      const formData = new FormData();
-      formData.append('apk', file);
+      const savedConfig = localStorage.getItem('vakrahara_r2_config');
+      if (!savedConfig) throw new Error("R2 Configuration not found. Please set it in Curriculum CMS > Settings first.");
+      const r2Config: R2Config = JSON.parse(savedConfig);
+
+      const fileBuffer = await file.arrayBuffer();
+      const fileName = `apk/amritam-${Date.now()}.apk`;
       
-      const uploadRes = await uploadApkToR2(formData);
+      const uploadRes = await uploadFileToR2(fileName, fileBuffer, 'application/vnd.android.package-archive', r2Config);
       setUploadProgress(60);
       
-      if (!uploadRes.success || !uploadRes.url) {
-        throw new Error(uploadRes.error || 'Upload failed');
+      if (!uploadRes.url) {
+        throw new Error('Upload failed');
       }
 
       setUploadProgress(80);
@@ -146,7 +150,7 @@ export default function ReleasesPage() {
         release_notes: releaseNotes,
         apk_url: uploadRes.url,
         sha256_hash: uploadRes.sha256 || fileHash,
-        file_size_bytes: uploadRes.sizeBytes || file.size,
+        file_size_bytes: file.size,
         is_force_update: isForceUpdate,
         min_supported_version: parseInt(minSupported),
       }, { requestKey: null });

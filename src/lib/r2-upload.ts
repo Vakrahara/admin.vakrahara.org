@@ -25,6 +25,12 @@ async function sha256Hex(str: string): Promise<string> {
   return bufToHex(hashBuf);
 }
 
+// SHA256 hex hash of an ArrayBuffer
+async function sha256Buf(buf: ArrayBuffer): Promise<string> {
+  const hashBuf = await window.crypto.subtle.digest("SHA-256", buf);
+  return bufToHex(hashBuf);
+}
+
 // Compute HMAC-SHA256
 async function hmac(key: any, data: any): Promise<ArrayBuffer> {
   let cryptoKey: CryptoKey;
@@ -43,12 +49,39 @@ async function hmac(key: any, data: any): Promise<ArrayBuffer> {
 }
 
 /**
- * Uploads data directly to Cloudflare R2 using AWS Signature V4 signed requests from browser.
+ * Uploads string data directly to Cloudflare R2
  */
 export async function uploadToR2(
   key: string,
   content: string,
   contentType: string,
+  config: R2Config
+): Promise<void> {
+  const payloadHash = await sha256Hex(content);
+  return _performAwsSigV4Upload(key, content, contentType, payloadHash, config);
+}
+
+/**
+ * Uploads a file (ArrayBuffer) directly to Cloudflare R2
+ */
+export async function uploadFileToR2(
+  key: string,
+  fileBuffer: ArrayBuffer,
+  contentType: string,
+  config: R2Config
+): Promise<{ url: string; sha256: string }> {
+  const payloadHash = await sha256Buf(fileBuffer);
+  await _performAwsSigV4Upload(key, fileBuffer, contentType, payloadHash, config);
+  const domain = config.customDomain || `${config.accountId}.r2.cloudflarestorage.com/${config.bucketName}`;
+  const url = domain.startsWith('http') ? `${domain}/${key}` : `https://${domain}/${key}`;
+  return { url, sha256: payloadHash };
+}
+
+async function _performAwsSigV4Upload(
+  key: string,
+  bodyData: any,
+  contentType: string,
+  payloadHash: string,
   config: R2Config
 ): Promise<void> {
   const { accountId, bucketName, accessKeyId, secretAccessKey, region } = config;
@@ -67,9 +100,6 @@ export async function uploadToR2(
   const method = "PUT";
   const canonicalUri = `/${bucketName}/${key}`;
   const canonicalQuery = "";
-
-  // Content SHA256
-  const payloadHash = await sha256Hex(content);
 
   // Headers to sign
   const headersToSign: Record<string, string> = {
@@ -131,7 +161,7 @@ export async function uploadToR2(
       "x-amz-content-sha256": payloadHash,
       "content-type": contentType,
     },
-    body: content,
+    body: bodyData,
   });
 
   if (!response.ok) {
