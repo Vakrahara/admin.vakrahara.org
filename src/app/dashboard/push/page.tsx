@@ -23,7 +23,7 @@ export default function PushNotificationsPage() {
     const target = targetType === 'specific' ? specificUid : targetType;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_POCKETBASE_URL}/api/amritam/admin/send-push`, {
+      const response = await fetch(`${pb.baseUrl}/api/amritam/admin/send-push`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
