@@ -1,0 +1,17 @@
+DirectorySlash On
+RewriteEngine On
+RewriteBase /
+
+# 1. Redirect requests without trailing slashes to trailing slash version (except files)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !/$
+RewriteCond %{REQUEST_URI} !\.
+RewriteRule ^(.*)$ /$1/ [R=301,L]
+
+# 2. Rewrite clean subfolders (like /dashboard/) to their respective index.html files
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([^/]+)/$ /$1/index.html [L]
+
+# 3. Fallback to 404 index if file not found
+ErrorDocument 404 /_not-found/index.html
