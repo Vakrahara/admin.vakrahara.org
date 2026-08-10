@@ -5,7 +5,7 @@ import { pb } from '@/lib/pocketbase';
 import { 
   Bell, Send, Smartphone, ShieldAlert, Loader2, 
   History, Activity, Image as ImageIcon, Clock, Zap, 
-  Users, CheckCircle, XCircle, RefreshCw, AlertTriangle, Trash2, ChevronDown, ChevronUp
+  Users, CheckCircle, XCircle, RefreshCw, AlertTriangle, Trash2, ChevronDown, ChevronUp, Filter, Target, Plus
 } from 'lucide-react';
 import React from 'react';
 
@@ -29,11 +29,14 @@ function timeAgo(dateString: string) {
 }
 
 export default function PushNotificationsPage() {
-  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'templates' | 'health' | 'automation'>('compose');
+  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'templates' | 'segments' | 'health'>('compose');
 
   // --- COMPOSE STATE ---
+  const [audienceMode, setAudienceMode] = useState<'quick' | 'saved' | 'custom'>('quick');
   const [targetType, setTargetType] = useState('all');
   const [specificUid, setSpecificUid] = useState('');
+  const [targetFilter, setTargetFilter] = useState("fcm_token != ''");
+  
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [deepLink, setDeepLink] = useState('');
@@ -45,6 +48,15 @@ export default function PushNotificationsPage() {
   const [statusMsg, setStatusMsg] = useState<{type: 'error'|'success', msg: string} | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [estimatedReach, setEstimatedReach] = useState<number | null>(null);
+
+  // --- SEGMENTS STATE ---
+  const [savedSegments, setSavedSegments] = useState<any[]>([]);
+  const [isSegmentsLoading, setIsSegmentsLoading] = useState(false);
+  const [selectedSegmentId, setSelectedSegmentId] = useState('');
+  const [customRules, setCustomRules] = useState<any[]>([]);
+  const [newSegmentName, setNewSegmentName] = useState('');
+  const [newSegmentDesc, setNewSegmentDesc] = useState('');
+  const [showSaveSegmentForm, setShowSaveSegmentForm] = useState(false);
 
   // --- HISTORY STATE ---
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -64,45 +76,66 @@ export default function PushNotificationsPage() {
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [showSaveTemplateForm, setShowSaveTemplateForm] = useState(false);
 
-  // --- AUTOMATION STATE ---
-  const [rules, setRules] = useState<any[]>([]);
-  const [isRulesLoading, setIsRulesLoading] = useState(false);
-  const [showRuleModal, setShowRuleModal] = useState(false);
-  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
-  const [ruleName, setRuleName] = useState('');
-  const [triggerType, setTriggerType] = useState('inactive_days');
-  const [triggerValue, setTriggerValue] = useState(3);
-  const [customFilter, setCustomFilter] = useState('');
-  const [ruleTitle, setRuleTitle] = useState('');
-  const [ruleBody, setRuleBody] = useState('');
-  const [ruleType, setRuleType] = useState('announcement');
-  const [runInterval, setRunInterval] = useState(24);
-  const [ruleActive, setRuleActive] = useState(false);
-  const [isSavingRule, setIsSavingRule] = useState(false);
-
-  // Fetch Estimated Reach
+  // Re-generate filter string whenever customRules change
   useEffect(() => {
-    let isMounted = true;
-    const fetchReach = async () => {
-      try {
-        if (targetType === 'specific') {
-          if (isMounted) setEstimatedReach(1);
-          return;
+    if (audienceMode === 'custom') {
+      const parts = ["fcm_token != ''"];
+      customRules.forEach(r => {
+        if (r.type === 'is_premium') parts.push("is_premium = true");
+        if (r.type === 'is_free') parts.push("is_premium = false");
+        if (r.type === 'streak') parts.push(`current_streak >= ${r.value}`);
+        if (r.type === 'inactive') {
+          const d = new Date();
+          d.setDate(d.getDate() - parseInt(r.value));
+          parts.push(`last_active < '${d.toISOString().split('T')[0]}'`);
         }
-        let filter = "fcm_token != ''";
-        if (targetType === 'premium') {
-          filter = "subscription_plan != 'free' && fcm_token != ''";
-        }
-        const res = await pb.collection('users').getList(1, 1, { filter });
-        if (isMounted) setEstimatedReach(res.totalItems);
-      } catch (err) {
-        console.error("Failed to fetch reach", err);
-        if (isMounted) setEstimatedReach(0);
-      }
-    };
-    fetchReach();
-    return () => { isMounted = false; };
-  }, [targetType]);
+      });
+      setTargetFilter(parts.join(' && '));
+    }
+  }, [customRules, audienceMode]);
+
+  const updateReachForFilter = async (filterString: string) => {
+    try {
+      if (!filterString) return;
+      const res = await pb.collection('users').getList(1, 1, { filter: filterString });
+      setEstimatedReach(res.totalItems);
+    } catch (err) {
+      console.error("Failed to fetch reach", err);
+      setEstimatedReach(null);
+    }
+  };
+
+  useEffect(() => {
+    let filter = "fcm_token != ''";
+    if (audienceMode === 'quick') {
+      if (targetType === 'premium') filter = "fcm_token != '' && is_premium = true";
+      if (targetType === 'free') filter = "fcm_token != '' && is_premium = false";
+      if (targetType === 'specific') filter = ""; // No estimate for specific
+      setTargetFilter(filter);
+    }
+    
+    if (audienceMode === 'quick' && targetType === 'specific') {
+      setEstimatedReach(1);
+    } else {
+      updateReachForFilter(targetFilter);
+    }
+  }, [targetType, audienceMode, targetFilter]);
+
+  const fetchSegments = async () => {
+    setIsSegmentsLoading(true);
+    try {
+      const res = await pb.collection('notification_segments').getList(1, 50, { sort: 'name' });
+      setSavedSegments(res.items);
+    } catch (err) {
+      console.error("Failed to fetch segments", err);
+    } finally {
+      setIsSegmentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSegments();
+  }, []);
 
   // Fetch History
   const fetchHistory = async () => {
@@ -159,24 +192,11 @@ export default function PushNotificationsPage() {
     }
   };
 
-  // Fetch Rules
-  const fetchRules = async () => {
-    setIsRulesLoading(true);
-    try {
-      const res = await pb.collection('notification_rules').getList(1, 50, { sort: '-created' });
-      setRules(res.items);
-    } catch (err) {
-      console.error("Failed to fetch rules", err);
-    } finally {
-      setIsRulesLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (activeTab === 'history') fetchHistory();
     if (activeTab === 'health') fetchHealth();
     if (activeTab === 'templates') fetchTemplates();
-    if (activeTab === 'automation') fetchRules();
+    if (activeTab === 'segments') fetchSegments();
   }, [activeTab]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -187,11 +207,13 @@ export default function PushNotificationsPage() {
     setIsSending(true);
     setStatusMsg(null);
 
-    const target = targetType === 'specific' ? specificUid : targetType;
+    const target = (audienceMode === 'quick' && targetType === 'specific') ? `user:${specificUid}` : 'segment';
+    const finalFilter = (audienceMode === 'quick' && targetType === 'specific') ? '' : targetFilter;
 
     try {
       const payload = {
-        target,
+        target: target,
+        target_filter: finalFilter,
         title,
         body,
         deep_link: deepLink,
@@ -211,10 +233,10 @@ export default function PushNotificationsPage() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send notification');
+      if (!response.ok) throw new Error(data.message || data.error || 'Failed to send notification');
 
-      const sentCount = data.sentCount || 0;
-      const errorCount = data.errorCount || 0;
+      const sentCount = data.sentCount || data.sent || 0;
+      const errorCount = data.errorCount || data.errors || 0;
 
       setStatusMsg({ type: 'success', msg: scheduleForLater 
         ? `Notification scheduled successfully.` 
@@ -228,6 +250,13 @@ export default function PushNotificationsPage() {
       setScheduleForLater(false);
       setScheduledAt('');
       if (targetType === 'specific') setSpecificUid('');
+
+      // if saved segment used, increment count
+      if (audienceMode === 'saved' && selectedSegmentId) {
+         pb.collection('notification_segments').update(selectedSegmentId, {
+            'use_count+': 1
+         }).catch(()=>null);
+      }
       
     } catch (err: any) {
       setStatusMsg({ type: 'error', msg: err.message || 'Network error' });
@@ -246,9 +275,9 @@ export default function PushNotificationsPage() {
         
         <form onSubmit={handleSend} className="space-y-5 relative z-10">
           
-          {/* Target Audience */}
+          {/* Target Audience Builder */}
           <div>
-            <div className="flex justify-between mb-2">
+            <div className="flex justify-between items-end mb-3">
               <label className="text-sm font-medium text-gray-400">Target Audience</label>
               {estimatedReach !== null && (
                 <span className="text-xs text-[#d4af37] flex items-center gap-1 bg-[#d4af37]/10 px-2 py-0.5 rounded-full border border-[#d4af37]/20">
@@ -256,30 +285,171 @@ export default function PushNotificationsPage() {
                 </span>
               )}
             </div>
-            <div className="flex gap-2">
-              {['all', 'premium', 'specific'].map((t) => (
+            
+            {/* Mode Switcher */}
+            <div className="flex border-b border-white/10 mb-4">
+              {[
+                { id: 'quick', label: 'Quick Select' },
+                { id: 'saved', label: 'Saved Segments' },
+                { id: 'custom', label: 'Custom Rules' }
+              ].map(mode => (
                 <button
-                  key={t}
+                  key={mode.id}
                   type="button"
-                  onClick={() => setTargetType(t)}
-                  className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${targetType === t ? 'bg-[#d4af37]/10 border-[#d4af37]/50 text-[#d4af37]' : 'bg-[#050508] border-white/10 text-gray-400 hover:text-white'}`}
+                  onClick={() => setAudienceMode(mode.id as any)}
+                  className={`flex-1 pb-2 text-sm font-medium transition-all relative ${
+                    audienceMode === mode.id ? 'text-[#d4af37]' : 'text-gray-500 hover:text-gray-300'
+                  }`}
                 >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {mode.label}
+                  {audienceMode === mode.id && (
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#d4af37]" />
+                  )}
                 </button>
               ))}
             </div>
-          </div>
 
-          {targetType === 'specific' && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-              <label className="block text-sm font-medium text-gray-400 mb-1">User ID</label>
-              <input 
-                type="text" required value={specificUid} onChange={e => setSpecificUid(e.target.value)}
-                className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all"
-                placeholder="e.g. user_abc123"
-              />
-            </div>
-          )}
+            {/* QUICK MODE */}
+            {audienceMode === 'quick' && (
+              <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                {['all', 'premium', 'free', 'specific'].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setTargetType(t)}
+                    className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${targetType === t ? 'bg-[#d4af37]/10 border-[#d4af37]/50 text-[#d4af37]' : 'bg-[#050508] border-white/10 text-gray-400 hover:text-white'}`}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* SAVED SEGMENTS MODE */}
+            {audienceMode === 'saved' && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <select 
+                  value={selectedSegmentId} 
+                  onChange={(e) => {
+                    setSelectedSegmentId(e.target.value);
+                    const seg = savedSegments.find(s => s.id === e.target.value);
+                    if (seg) setTargetFilter(seg.filter_string);
+                  }}
+                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                >
+                  <option value="" disabled>Select a segment...</option>
+                  {savedSegments.map(seg => (
+                    <option key={seg.id} value={seg.id}>{seg.name} - {seg.description}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* CUSTOM RULES MODE */}
+            {audienceMode === 'custom' && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300 bg-[#050508] border border-white/10 rounded-lg p-3 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-800 text-gray-400 border border-gray-700">Has FCM Token</span>
+                  
+                  {/* Premium Rules */}
+                  {!customRules.find(r => r.type === 'is_premium' || r.type === 'is_free') && (
+                    <>
+                      <button type="button" onClick={() => setCustomRules([...customRules, {type: 'is_premium'}])} className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 flex items-center gap-1"><Plus className="w-3 h-3"/> Is Premium</button>
+                      <button type="button" onClick={() => setCustomRules([...customRules, {type: 'is_free'}])} className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-500/10 text-gray-300 border border-gray-500/20 hover:bg-gray-500/20 flex items-center gap-1"><Plus className="w-3 h-3"/> Is Free</button>
+                    </>
+                  )}
+                  {customRules.find(r => r.type === 'is_premium') && (
+                    <button type="button" onClick={() => setCustomRules(customRules.filter(r => r.type !== 'is_premium'))} className="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-500 text-white flex items-center gap-1">Is Premium <XCircle className="w-3 h-3"/></button>
+                  )}
+                  {customRules.find(r => r.type === 'is_free') && (
+                    <button type="button" onClick={() => setCustomRules(customRules.filter(r => r.type !== 'is_free'))} className="px-2.5 py-1 text-xs font-medium rounded-full bg-gray-600 text-white flex items-center gap-1">Is Free <XCircle className="w-3 h-3"/></button>
+                  )}
+
+                  {/* Streak Rule */}
+                  {!customRules.find(r => r.type === 'streak') ? (
+                     <button type="button" onClick={() => setCustomRules([...customRules, {type: 'streak', value: 3}])} className="px-2.5 py-1 text-xs font-medium rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 flex items-center gap-1"><Plus className="w-3 h-3"/> Streak ≥ N</button>
+                  ) : (
+                     <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                        <span className="text-xs">Streak ≥</span>
+                        <input type="number" value={customRules.find(r => r.type === 'streak').value} onChange={(e) => {
+                           const newRules = [...customRules];
+                           newRules.find(r => r.type === 'streak').value = e.target.value;
+                           setCustomRules(newRules);
+                        }} className="w-10 bg-transparent outline-none text-xs text-white border-b border-orange-500/50 text-center" />
+                        <button type="button" onClick={() => setCustomRules(customRules.filter(r => r.type !== 'streak'))}><XCircle className="w-3 h-3 text-orange-400 hover:text-orange-300"/></button>
+                     </div>
+                  )}
+
+                  {/* Inactive Rule */}
+                  {!customRules.find(r => r.type === 'inactive') ? (
+                     <button type="button" onClick={() => setCustomRules([...customRules, {type: 'inactive', value: 7}])} className="px-2.5 py-1 text-xs font-medium rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 flex items-center gap-1"><Plus className="w-3 h-3"/> Inactive &gt; N days</button>
+                  ) : (
+                     <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                        <span className="text-xs">Inactive &gt;</span>
+                        <input type="number" value={customRules.find(r => r.type === 'inactive').value} onChange={(e) => {
+                           const newRules = [...customRules];
+                           newRules.find(r => r.type === 'inactive').value = e.target.value;
+                           setCustomRules(newRules);
+                        }} className="w-10 bg-transparent outline-none text-xs text-white border-b border-purple-500/50 text-center" />
+                        <span className="text-xs">days</span>
+                        <button type="button" onClick={() => setCustomRules(customRules.filter(r => r.type !== 'inactive'))}><XCircle className="w-3 h-3 text-purple-400 hover:text-purple-300"/></button>
+                     </div>
+                  )}
+                </div>
+
+                <div className="bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-gray-500 overflow-x-auto whitespace-nowrap">
+                   {targetFilter}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                   <button type="button" onClick={() => updateReachForFilter(targetFilter)} className="text-xs flex items-center gap-1 px-3 py-1.5 bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20 hover:bg-[#d4af37]/20 rounded transition-colors">
+                      <RefreshCw className="w-3 h-3" /> Estimate Reach
+                   </button>
+                   <button type="button" onClick={() => setShowSaveSegmentForm(!showSaveSegmentForm)} className="text-xs flex items-center gap-1 px-3 py-1.5 bg-gray-800 text-gray-300 hover:bg-gray-700 rounded transition-colors">
+                      Save as Segment
+                   </button>
+                </div>
+
+                {showSaveSegmentForm && (
+                   <div className="pt-2 border-t border-white/10 mt-2 space-y-2">
+                      <input type="text" placeholder="Segment Name" value={newSegmentName} onChange={e=>setNewSegmentName(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-xs text-white outline-none focus:border-[#d4af37]/50" />
+                      <input type="text" placeholder="Description" value={newSegmentDesc} onChange={e=>setNewSegmentDesc(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded px-3 py-1.5 text-xs text-white outline-none focus:border-[#d4af37]/50" />
+                      <div className="flex justify-end gap-2">
+                         <button type="button" onClick={() => setShowSaveSegmentForm(false)} className="text-xs text-gray-500 hover:text-gray-300">Cancel</button>
+                         <button type="button" onClick={async () => {
+                            if (!newSegmentName) return;
+                            try {
+                               await pb.collection('notification_segments').create({
+                                  name: newSegmentName,
+                                  description: newSegmentDesc,
+                                  filter_string: targetFilter,
+                                  estimated_reach: estimatedReach,
+                                  rules_json: customRules,
+                                  use_count: 0
+                               });
+                               alert("Segment saved");
+                               setShowSaveSegmentForm(false);
+                               setNewSegmentName('');
+                               setNewSegmentDesc('');
+                               fetchSegments();
+                            } catch(e) { alert("Failed to save segment"); }
+                         }} className="text-xs px-3 py-1 bg-[#d4af37] text-black rounded font-medium hover:bg-[#b8860b]">Save Segment</button>
+                      </div>
+                   </div>
+                )}
+              </div>
+            )}
+
+            {audienceMode === 'quick' && targetType === 'specific' && (
+              <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <input 
+                  type="text" required value={specificUid} onChange={e => setSpecificUid(e.target.value)}
+                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all text-sm"
+                  placeholder="e.g. user_abc123"
+                />
+              </div>
+            )}
+          </div>
 
           {/* Type & Priority Row */}
           <div className="grid grid-cols-2 gap-4">
@@ -409,7 +579,7 @@ export default function PushNotificationsPage() {
                             setIsSavingTemplate(true);
                             try {
                                 await pb.collection('notification_templates').create({
-                                    name: saveTemplateName, title, body, image_url: imageUrl, deep_link: deepLink, notification_type: notificationType, target_segment: targetType === 'all' || targetType === 'premium' ? targetType : 'all'
+                                    name: saveTemplateName, title, body, image_url: imageUrl, deep_link: deepLink, notification_type: notificationType, target_segment: 'custom'
                                 });
                                 setStatusMsg({ type: 'success', msg: "Template saved!" });
                                 setShowSaveTemplateForm(false);
@@ -546,7 +716,7 @@ export default function PushNotificationsPage() {
                       <div className="font-bold text-gray-200 line-clamp-1">{camp.title}</div>
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-400 capitalize">
-                      {camp.target}
+                      {camp.target_segment || camp.target || 'all'}
                     </td>
                     <td className="py-4 px-4 text-center font-mono text-sm text-green-400">
                       {sent}
@@ -668,7 +838,6 @@ export default function PushNotificationsPage() {
                     setImageUrl(t.image_url || '');
                     setDeepLink(t.deep_link || '');
                     setNotificationType(t.notification_type || 'announcement');
-                    if (t.target_segment === 'all' || t.target_segment === 'premium') setTargetType(t.target_segment);
                     setActiveTab('compose');
                     // increment use_count asynchronously
                     pb.collection('notification_templates').update(t.id, { use_count: (t.use_count || 0) + 1 }).catch(() => {});
@@ -682,6 +851,94 @@ export default function PushNotificationsPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+
+  const renderTabSegments = () => (
+    <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <Filter className="w-5 h-5 text-[#d4af37]" /> Audience Segments
+        </h2>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={fetchSegments}
+            disabled={isSegmentsLoading}
+            className="p-2 text-gray-400 hover:text-white bg-[#050508] border border-white/10 rounded-lg transition-all"
+          >
+            <RefreshCw className={`w-4 h-4 ${isSegmentsLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b border-white/10 text-sm font-medium text-gray-500 uppercase tracking-wider">
+              <th className="pb-3 pr-4">Name</th>
+              <th className="pb-3 px-4">Description</th>
+              <th className="pb-3 px-4">Filter</th>
+              <th className="pb-3 px-4 text-center">Est. Reach</th>
+              <th className="pb-3 px-4 text-center">Uses</th>
+              <th className="pb-3 pl-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {savedSegments.map((seg) => (
+              <tr key={seg.id} className="hover:bg-white/[0.02] transition-colors">
+                <td className="py-4 pr-4 whitespace-nowrap text-sm">
+                  <div className="font-bold text-gray-200">{seg.name}</div>
+                </td>
+                <td className="py-4 px-4 text-sm text-gray-400">
+                  {seg.description}
+                </td>
+                <td className="py-4 px-4">
+                  <div className="font-mono text-[10px] text-gray-500 bg-black/50 p-2 rounded border border-white/5 max-w-xs overflow-hidden text-ellipsis">
+                    {seg.filter_string}
+                  </div>
+                </td>
+                <td className="py-4 px-4 text-center font-mono text-sm text-[#d4af37]">
+                  {seg.estimated_reach !== null && seg.estimated_reach !== undefined ? seg.estimated_reach.toLocaleString() : '-'}
+                </td>
+                <td className="py-4 px-4 text-center text-sm text-gray-400">
+                  {seg.use_count || 0}
+                </td>
+                <td className="py-4 pl-4 whitespace-nowrap text-right">
+                  <button onClick={async () => {
+                     try {
+                        const r = await pb.collection('users').getList(1, 1, { filter: seg.filter_string });
+                        await pb.collection('notification_segments').update(seg.id, { estimated_reach: r.totalItems });
+                        fetchSegments();
+                     } catch(e) {}
+                  }} className="text-gray-400 hover:text-[#d4af37] mr-3" title="Refresh Reach"><RefreshCw className="w-4 h-4 inline"/></button>
+                  
+                  <button onClick={() => {
+                     setAudienceMode('saved');
+                     setSelectedSegmentId(seg.id);
+                     setTargetFilter(seg.filter_string);
+                     setActiveTab('compose');
+                  }} className="text-gray-400 hover:text-white mr-3" title="Use Segment"><Target className="w-4 h-4 inline"/></button>
+                  
+                  <button onClick={async () => {
+                     if (confirm("Delete segment?")) {
+                        await pb.collection('notification_segments').delete(seg.id);
+                        fetchSegments();
+                     }
+                  }} className="text-gray-500 hover:text-red-400" title="Delete"><Trash2 className="w-4 h-4 inline"/></button>
+                </td>
+              </tr>
+            ))}
+            {isSegmentsLoading && savedSegments.length === 0 && (
+               <tr>
+                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                     Loading segments...
+                  </td>
+               </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
@@ -746,249 +1003,6 @@ export default function PushNotificationsPage() {
     </div>
   );
 
-  const renderTabAutomation = () => {
-    const totalActive = rules.filter(r => r.is_active).length;
-    const totalAutomatedSends = rules.reduce((acc, r) => acc + (r.total_sent || 0), 0);
-
-    return (
-      <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Zap className="w-5 h-5 text-[#d4af37]" /> Automation Rules
-            </h2>
-            <p className="text-sm text-gray-400 mt-1">Set-and-forget rules that automatically notify matching users.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={fetchRules} disabled={isRulesLoading} className="p-2 text-gray-400 hover:text-white bg-[#050508] border border-white/10 rounded-lg transition-all">
-              <RefreshCw className={`w-4 h-4 ${isRulesLoading ? 'animate-spin' : ''}`} />
-            </button>
-            <button 
-              onClick={() => {
-                setEditingRuleId(null);
-                setRuleName('');
-                setTriggerType('inactive_days');
-                setTriggerValue(3);
-                setCustomFilter('');
-                setRuleTitle('');
-                setRuleBody('');
-                setRuleType('announcement');
-                setRunInterval(24);
-                setRuleActive(false);
-                setShowRuleModal(true);
-              }}
-              className="px-4 py-2 bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/50 rounded-lg text-sm font-bold hover:bg-[#d4af37]/20 transition-all flex items-center gap-2"
-            >
-              + New Rule
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-[#050508] border border-white/5 rounded-xl p-4 flex flex-col items-center">
-            <span className="text-gray-400 text-sm">Total Active Rules</span>
-            <span className="text-2xl font-bold text-white">{totalActive}</span>
-          </div>
-          <div className="bg-[#050508] border border-white/5 rounded-xl p-4 flex flex-col items-center">
-            <span className="text-gray-400 text-sm">Total Automated Sends</span>
-            <span className="text-2xl font-bold text-[#d4af37]">{totalAutomatedSends.toLocaleString()}</span>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-white/10 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                <th className="pb-3 pr-4">Rule Name</th>
-                <th className="pb-3 px-4">Trigger</th>
-                <th className="pb-3 px-4 text-center">Status</th>
-                <th className="pb-3 px-4 text-center">Last Run</th>
-                <th className="pb-3 px-4 text-center">Total Sent</th>
-                <th className="pb-3 px-4 text-center">Runs</th>
-                <th className="pb-3 pl-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {rules.map(rule => (
-                <tr key={rule.id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="py-4 pr-4">
-                    <div className="font-bold text-gray-200">{rule.name}</div>
-                  </td>
-                  <td className="py-4 px-4 text-sm text-gray-400">
-                    <span className="bg-white/5 px-2 py-1 rounded text-xs">{rule.trigger_type.replace('_', ' ')}</span>
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    <button 
-                      onClick={async () => {
-                        try {
-                          await pb.collection('notification_rules').update(rule.id, { is_active: !rule.is_active });
-                          fetchRules();
-                        } catch(e) {}
-                      }}
-                      className={`w-12 h-6 rounded-full transition-colors relative inline-block ${rule.is_active ? 'bg-[#d4af37]' : 'bg-gray-700'}`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${rule.is_active ? 'translate-x-7' : 'translate-x-1'}`} />
-                    </button>
-                  </td>
-                  <td className="py-4 px-4 text-center text-sm text-gray-400">
-                    {rule.last_run_at ? new Date(rule.last_run_at).toLocaleDateString() : 'Never'}
-                  </td>
-                  <td className="py-4 px-4 text-center font-mono text-sm text-green-400">
-                    {rule.total_sent || 0}
-                  </td>
-                  <td className="py-4 px-4 text-center font-mono text-sm text-blue-400">
-                    {rule.total_runs || 0}
-                  </td>
-                  <td className="py-4 pl-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => {
-                          setEditingRuleId(rule.id);
-                          setRuleName(rule.name);
-                          setTriggerType(rule.trigger_type);
-                          setTriggerValue(rule.trigger_value || 0);
-                          setCustomFilter(rule.custom_filter || '');
-                          setRuleTitle(rule.notification_title);
-                          setRuleBody(rule.notification_body);
-                          setRuleType(rule.notification_type || 'announcement');
-                          setRunInterval(rule.run_interval_hours || 24);
-                          setRuleActive(rule.is_active);
-                          setShowRuleModal(true);
-                        }}
-                        className="p-1.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded"
-                      >
-                        <span className="text-sm">✎</span>
-                      </button>
-                      <button 
-                        onClick={async () => {
-                          if (confirm('Delete rule?')) {
-                            await pb.collection('notification_rules').delete(rule.id);
-                            fetchRules();
-                          }
-                        }}
-                        className="p-1.5 text-gray-400 hover:text-red-400 bg-white/5 hover:bg-white/10 rounded"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {rules.length === 0 && !isRulesLoading && (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-500">
-                    No automation rules defined.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Modal */}
-        {showRuleModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-            <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-bold text-white mb-4">{editingRuleId ? 'Edit Rule' : 'New Rule'}</h3>
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                setIsSavingRule(true);
-                try {
-                  const payload = {
-                    name: ruleName,
-                    trigger_type: triggerType,
-                    trigger_value: triggerValue,
-                    custom_filter: customFilter,
-                    notification_title: ruleTitle,
-                    notification_body: ruleBody,
-                    notification_type: ruleType,
-                    run_interval_hours: runInterval,
-                    is_active: ruleActive
-                  };
-                  if (editingRuleId) {
-                    await pb.collection('notification_rules').update(editingRuleId, payload);
-                  } else {
-                    await pb.collection('notification_rules').create(payload);
-                  }
-                  setShowRuleModal(false);
-                  fetchRules();
-                } catch(e) {
-                  alert('Error saving rule');
-                } finally {
-                  setIsSavingRule(false);
-                }
-              }} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Rule Name</label>
-                  <input type="text" required value={ruleName} onChange={e => setRuleName(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">Trigger Type</label>
-                    <select value={triggerType} onChange={e => setTriggerType(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white">
-                      <option value="inactive_days">Inactive Days</option>
-                      <option value="streak_broken">Streak Broken</option>
-                      <option value="new_user">New User</option>
-                      <option value="premium_expired">Premium Expiring</option>
-                      <option value="custom_filter">Custom Filter</option>
-                    </select>
-                  </div>
-                  {(triggerType === 'inactive_days' || triggerType === 'premium_expired' || triggerType === 'new_user') && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-1">Trigger Value (Days)</label>
-                      <input type="number" min="0" value={triggerValue} onChange={e => setTriggerValue(parseInt(e.target.value))} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white" />
-                    </div>
-                  )}
-                </div>
-                {triggerType === 'custom_filter' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-1">Custom PocketBase Filter</label>
-                    <input type="text" value={customFilter} onChange={e => setCustomFilter(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-sm" placeholder="e.g. current_streak > 10" />
-                  </div>
-                )}
-                <div className="border-t border-white/5 pt-4">
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Notification Title</label>
-                  <input type="text" required value={ruleTitle} onChange={e => setRuleTitle(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white mb-4" />
-                  
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Notification Body</label>
-                  <textarea rows={3} required value={ruleBody} onChange={e => setRuleBody(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white mb-4 resize-none"></textarea>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
-                      <select value={ruleType} onChange={e => setRuleType(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white">
-                        <option value="announcement">Announcement</option>
-                        <option value="feature">Feature</option>
-                        <option value="promotion">Promotion</option>
-                        <option value="system">System</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-1">Interval (Hours)</label>
-                      <input type="number" min="1" required value={runInterval} onChange={e => setRunInterval(parseInt(e.target.value))} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 pt-2">
-                  <input type="checkbox" id="ruleActive" checked={ruleActive} onChange={e => setRuleActive(e.target.checked)} className="w-4 h-4 rounded bg-[#050508] border-white/10 text-[#d4af37]" />
-                  <label htmlFor="ruleActive" className="text-sm font-medium text-white">Active (Run automatically)</label>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
-                  <button type="button" onClick={() => setShowRuleModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-                  <button type="submit" disabled={isSavingRule} className="px-4 py-2 bg-[#d4af37] text-black font-bold rounded-lg hover:bg-yellow-500 disabled:opacity-50">
-                    {isSavingRule ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Rule'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
       {/* Header & Tabs */}
@@ -997,7 +1011,7 @@ export default function PushNotificationsPage() {
           <Bell className="w-8 h-8 text-[#d4af37]" /> Notification Command Center
         </h1>
         
-        <div className="flex bg-[#0d0d15] border border-white/10 rounded-xl p-1 w-full max-w-md shadow-lg">
+        <div className="flex bg-[#0d0d15] border border-white/10 rounded-xl p-1 w-full shadow-lg">
           <button
             onClick={() => setActiveTab('compose')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'compose' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
@@ -1017,10 +1031,10 @@ export default function PushNotificationsPage() {
             <span className="text-lg leading-none">📋</span> Templates
           </button>
           <button
-            onClick={() => setActiveTab('automation')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'automation' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => setActiveTab('segments')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'segments' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
           >
-            <Zap className="w-4 h-4" /> Automation
+            <Filter className="w-4 h-4" /> Segments
           </button>
           <button
             onClick={() => setActiveTab('health')}
@@ -1036,7 +1050,7 @@ export default function PushNotificationsPage() {
         {activeTab === 'compose' && renderTabCompose()}
         {activeTab === 'history' && renderTabHistory()}
         {activeTab === 'templates' && renderTabTemplates()}
-        {activeTab === 'automation' && renderTabAutomation()}
+        {activeTab === 'segments' && renderTabSegments()}
         {activeTab === 'health' && renderTabHealth()}
       </div>
     </div>
