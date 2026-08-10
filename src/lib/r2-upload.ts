@@ -72,8 +72,23 @@ export async function uploadFileToR2(
 ): Promise<{ url: string; sha256: string }> {
   const payloadHash = await sha256Buf(fileBuffer);
   await _performAwsSigV4Upload(key, fileBuffer, contentType, payloadHash, config);
-  const domain = config.customDomain || `${config.accountId}.r2.cloudflarestorage.com/${config.bucketName}`;
-  const url = domain.startsWith('http') ? `${domain}/${key}` : `https://${domain}/${key}`;
+  
+  let url = "";
+  if (config.customDomain) {
+    // If customDomain is https://cdn.vakrahara.org/v1, and key is v1/apk/..., we don't want /v1/v1/
+    try {
+      const urlObj = new URL(config.customDomain.startsWith('http') ? config.customDomain : `https://${config.customDomain}`);
+      // Find where the key should be appended without duplicating folder names
+      // For simplicity, let's just use the hostname if we are uploading absolute paths
+      url = `${urlObj.origin}/${key}`;
+    } catch (e) {
+      const domain = config.customDomain;
+      url = domain.startsWith('http') ? `${domain}/${key}` : `https://${domain}/${key}`;
+    }
+  } else {
+    url = `https://${config.accountId}.r2.cloudflarestorage.com/${config.bucketName}/${key}`;
+  }
+  
   return { url, sha256: payloadHash };
 }
 

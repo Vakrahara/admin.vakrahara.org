@@ -28,8 +28,8 @@ interface AppVersionRecord {
   version_name: string;
   release_notes: string;
   apk_url: string;
-  sha256_hash: string;
-  file_size_bytes: number;
+  apk_sha256: string;
+  apk_size_bytes: number;
   is_force_update: boolean;
   min_supported_version: number;
   created: string;
@@ -56,9 +56,8 @@ function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes';
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  // Display MB primarily
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
@@ -133,7 +132,7 @@ export default function ReleasesPage() {
       const r2Config: R2Config = JSON.parse(savedConfig);
 
       const fileBuffer = await file.arrayBuffer();
-      const fileName = `apk/amritam-${Date.now()}.apk`;
+      const fileName = `v1/apk/amritam-${Date.now()}.apk`;
       
       const uploadRes = await uploadFileToR2(fileName, fileBuffer, 'application/vnd.android.package-archive', r2Config);
       setUploadProgress(60);
@@ -149,8 +148,8 @@ export default function ReleasesPage() {
         version_name: versionName,
         release_notes: releaseNotes,
         apk_url: uploadRes.url,
-        sha256_hash: uploadRes.sha256 || fileHash,
-        file_size_bytes: file.size,
+        apk_sha256: uploadRes.sha256 || fileHash,
+        apk_size_bytes: file.size,
         is_force_update: isForceUpdate,
         min_supported_version: parseInt(minSupported),
       }, { requestKey: null });
@@ -485,7 +484,7 @@ export default function ReleasesPage() {
                       {timeAgo(release.created)}
                     </td>
                     <td className="px-6 py-4 text-gray-400">
-                      {formatBytes(release.file_size_bytes)}
+                      {formatBytes(release.apk_size_bytes)}
                     </td>
                     <td className="px-6 py-4">
                       {release.is_force_update ? (

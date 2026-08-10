@@ -1,21 +1,120 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
-import { Bell, Send, Smartphone, ShieldAlert, Loader2 } from 'lucide-react';
+import { 
+  Bell, Send, Smartphone, ShieldAlert, Loader2, 
+  History, Activity, Image as ImageIcon, Clock, Zap, 
+  Users, CheckCircle, XCircle, RefreshCw, AlertTriangle, Trash2 
+} from 'lucide-react';
+
+function timeAgo(dateString: string) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  let interval = seconds / 31536000;
+  if (interval > 1) return Math.floor(interval) + " years ago";
+  interval = seconds / 2592000;
+  if (interval > 1) return Math.floor(interval) + " months ago";
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + " days ago";
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + " hours ago";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + " minutes ago";
+  if (seconds < 10) return "just now";
+  return Math.floor(seconds) + " seconds ago";
+}
 
 export default function PushNotificationsPage() {
+  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'health'>('compose');
+
+  // --- COMPOSE STATE ---
   const [targetType, setTargetType] = useState('all');
   const [specificUid, setSpecificUid] = useState('');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [deepLink, setDeepLink] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [notificationType, setNotificationType] = useState('announcement');
+  const [priority, setPriority] = useState(true);
+  const [scheduleForLater, setScheduleForLater] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState('');
   const [statusMsg, setStatusMsg] = useState<{type: 'error'|'success', msg: string} | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [estimatedReach, setEstimatedReach] = useState<number | null>(null);
+
+  // --- HISTORY STATE ---
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  // --- HEALTH STATE ---
+  const [totalTokens, setTotalTokens] = useState<number>(0);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [isHealthLoading, setIsHealthLoading] = useState(false);
+
+  // Fetch Estimated Reach
+  useEffect(() => {
+    let isMounted = true;
+    const fetchReach = async () => {
+      try {
+        if (targetType === 'specific') {
+          if (isMounted) setEstimatedReach(1);
+          return;
+        }
+        let filter = "fcm_token != ''";
+        if (targetType === 'premium') {
+          filter = "subscription_plan != 'free' && fcm_token != ''";
+        }
+        const res = await pb.collection('users').getList(1, 1, { filter });
+        if (isMounted) setEstimatedReach(res.totalItems);
+      } catch (err) {
+        console.error("Failed to fetch reach", err);
+        if (isMounted) setEstimatedReach(0);
+      }
+    };
+    fetchReach();
+    return () => { isMounted = false; };
+  }, [targetType]);
+
+  // Fetch History
+  const fetchHistory = async () => {
+    setIsHistoryLoading(true);
+    try {
+      const res = await pb.collection('notification_campaigns').getList(1, 50, { sort: '-created' });
+      setCampaigns(res.items);
+    } catch (err) {
+      console.error("Failed to fetch campaigns", err);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
+  // Fetch Health
+  const fetchHealth = async () => {
+    setIsHealthLoading(true);
+    try {
+      const tokensReq = await pb.collection('users').getList(1, 1, { filter: "fcm_token != ''" });
+      const usersReq = await pb.collection('users').getList(1, 1);
+      setTotalTokens(tokensReq.totalItems);
+      setTotalUsers(usersReq.totalItems);
+    } catch (err) {
+      console.error("Failed to fetch token health", err);
+    } finally {
+      setIsHealthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'history') fetchHistory();
+    if (activeTab === 'health') fetchHealth();
+  }, [activeTab]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !body) return alert("Title and body are required");
+    if (scheduleForLater && !scheduledAt) return alert("Please select a date and time for scheduling");
 
     setIsSending(true);
     setStatusMsg(null);
@@ -23,29 +122,43 @@ export default function PushNotificationsPage() {
     const target = targetType === 'specific' ? specificUid : targetType;
 
     try {
+      const payload = {
+        target,
+        title,
+        body,
+        deep_link: deepLink,
+        image_url: imageUrl,
+        notification_type: notificationType,
+        priority: priority ? 'high' : 'normal',
+        scheduled_at: scheduleForLater ? new Date(scheduledAt).toISOString() : null
+      };
+
       const response = await fetch(`${pb.baseUrl}/api/amritam/admin/send-push`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${pb.authStore.token}`
         },
-        body: JSON.stringify({
-          target,
-          title,
-          body,
-          deep_link: deepLink
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to send notification');
 
-      setStatusMsg({ type: 'success', msg: `Notification successfully dispatched.` });
+      const sentCount = data.sentCount || 0;
+      const errorCount = data.errorCount || 0;
+
+      setStatusMsg({ type: 'success', msg: scheduleForLater 
+        ? `Notification scheduled successfully.` 
+        : `Dispatched successfully. Sent: ${sentCount}, Errors: ${errorCount}` });
       
       // Reset form
       setTitle('');
       setBody('');
       setDeepLink('');
+      setImageUrl('');
+      setScheduleForLater(false);
+      setScheduledAt('');
       if (targetType === 'specific') setSpecificUid('');
       
     } catch (err: any) {
@@ -55,134 +168,396 @@ export default function PushNotificationsPage() {
     }
   };
 
-  return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-          <Bell className="w-8 h-8 text-[#d4af37]" /> Push Notifications
-        </h1>
-        <p className="text-gray-400 mt-2">Send instant alerts to user devices via Firebase Cloud Messaging</p>
-      </div>
+  const tokenRate = totalUsers > 0 ? ((totalTokens / totalUsers) * 100).toFixed(1) : '0.0';
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+  const renderTabCompose = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Form Editor */}
+      <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-xl relative">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
         
-        {/* Form Editor */}
-        <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-xl relative">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+        <form onSubmit={handleSend} className="space-y-5 relative z-10">
           
-          <form onSubmit={handleSend} className="space-y-6 relative z-10">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Target Audience</label>
-              <div className="flex gap-2">
-                {['all', 'premium', 'specific'].map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTargetType(t)}
-                    className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${targetType === t ? 'bg-[#d4af37]/10 border-[#d4af37]/50 text-[#d4af37]' : 'bg-[#050508] border-white/10 text-gray-400 hover:text-white'}`}
-                  >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </button>
-                ))}
-              </div>
+          {/* Target Audience */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-medium text-gray-400">Target Audience</label>
+              {estimatedReach !== null && (
+                <span className="text-xs text-[#d4af37] flex items-center gap-1 bg-[#d4af37]/10 px-2 py-0.5 rounded-full border border-[#d4af37]/20">
+                  <Users className="w-3 h-3" /> ~{estimatedReach.toLocaleString()} users
+                </span>
+              )}
             </div>
+            <div className="flex gap-2">
+              {['all', 'premium', 'specific'].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTargetType(t)}
+                  className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${targetType === t ? 'bg-[#d4af37]/10 border-[#d4af37]/50 text-[#d4af37]' : 'bg-[#050508] border-white/10 text-gray-400 hover:text-white'}`}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            {targetType === 'specific' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">User ID</label>
-                <input 
-                  type="text" required value={specificUid} onChange={e => setSpecificUid(e.target.value)}
-                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all"
-                  placeholder="e.g. user_abc123"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Notification Title</label>
+          {targetType === 'specific' && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <label className="block text-sm font-medium text-gray-400 mb-1">User ID</label>
               <input 
-                type="text" required value={title} onChange={e => setTitle(e.target.value)} maxLength={65}
+                type="text" required value={specificUid} onChange={e => setSpecificUid(e.target.value)}
                 className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all"
-                placeholder="New Content Available!"
+                placeholder="e.g. user_abc123"
               />
             </div>
+          )}
 
+          {/* Type & Priority Row */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Notification Body</label>
-              <textarea 
-                rows={3} required value={body} onChange={e => setBody(e.target.value)} maxLength={240}
-                className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all"
-                placeholder="Tap here to explore the latest chapter..."
-              ></textarea>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
+              <select 
+                value={notificationType} onChange={(e) => setNotificationType(e.target.value)}
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all appearance-none"
+              >
+                <option value="announcement">Announcement</option>
+                <option value="feature">Feature Update</option>
+                <option value="system">System Alert</option>
+                <option value="promotion">Promotion</option>
+              </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
+              <button
+                type="button"
+                onClick={() => setPriority(!priority)}
+                className={`w-full py-2.5 px-4 text-sm font-medium rounded-lg border transition-all flex items-center justify-center gap-2 ${priority ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#050508] border-white/10 text-gray-400 hover:text-white'}`}
+              >
+                <Zap className={`w-4 h-4 ${priority ? 'fill-red-400' : ''}`} />
+                {priority ? 'High' : 'Normal'}
+              </button>
+            </div>
+          </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Title</label>
+            <input 
+              type="text" required value={title} onChange={e => setTitle(e.target.value)} maxLength={65}
+              className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all"
+              placeholder="New Content Available!"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Body</label>
+            <textarea 
+              rows={3} required value={body} onChange={e => setBody(e.target.value)} maxLength={240}
+              className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all resize-none"
+              placeholder="Tap here to explore the latest chapter..."
+            ></textarea>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">Deep Link (Optional)</label>
               <input 
                 type="text" value={deepLink} onChange={e => setDeepLink(e.target.value)}
-                className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all font-mono text-sm"
-                placeholder="e.g. arena, chat, curriculum/light"
+                className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all font-mono text-sm"
+                placeholder="e.g. arena, chat"
               />
             </div>
-
-            {statusMsg && (
-              <div className={`p-4 rounded-lg flex gap-3 text-sm font-medium ${statusMsg.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
-                {statusMsg.type === 'error' ? <ShieldAlert className="w-5 h-5 flex-shrink-0" /> : <Bell className="w-5 h-5 flex-shrink-0" />}
-                {statusMsg.msg}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Image URL (Optional)</label>
+              <div className="relative">
+                <input 
+                  type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)}
+                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2 pl-9 text-white focus:outline-none focus:border-[#d4af37]/50 focus:ring-1 focus:ring-[#d4af37]/50 transition-all text-sm"
+                  placeholder="https://..."
+                />
+                <ImageIcon className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
               </div>
-            )}
-
-            <button 
-              type="submit" disabled={isSending}
-              className="w-full py-3.5 bg-gradient-to-r from-[#b8860b] to-[#d4af37] text-[#050508] font-bold rounded-lg shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-              {isSending ? 'Dispatching...' : 'Dispatch Notification'}
-            </button>
-          </form>
-        </div>
-
-        {/* Live Preview */}
-        <div className="space-y-6">
-          <div className="text-sm font-bold text-gray-500 uppercase tracking-widest px-2">Android Device Preview</div>
-          
-          <div className="w-[320px] h-[600px] mx-auto bg-black rounded-[40px] border-[8px] border-zinc-800 p-4 relative shadow-2xl flex flex-col justify-start">
-            {/* Phone Notch */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-800 rounded-b-2xl"></div>
-            
-            {/* Time / Status bar mock */}
-            <div className="flex justify-between items-center text-[10px] text-gray-400 px-2 pt-2 mb-8 font-medium">
-              <span>9:41</span>
-              <div className="flex gap-1.5">
-                <span>📶</span>
-                <span>🔋</span>
-              </div>
-            </div>
-
-            {/* Notification Bubble */}
-            <div className={`w-full bg-[#1a1a24] border border-white/5 rounded-2xl p-4 shadow-xl transition-all duration-500 transform ${title || body ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-4 opacity-0 scale-95'}`}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-5 h-5 rounded bg-gradient-to-br from-[#b8860b] to-[#d4af37] flex items-center justify-center">
-                  <ShieldAlert className="w-3 h-3 text-[#050508]" />
-                </div>
-                <span className="text-[11px] font-medium text-gray-400">Amritam • now</span>
-              </div>
-              <div className="text-sm font-bold text-white leading-tight mb-1">
-                {title || 'Notification Title'}
-              </div>
-              <div className="text-xs text-gray-300 leading-snug line-clamp-2">
-                {body || 'Notification body text will appear here. Keep it concise and engaging.'}
-              </div>
-            </div>
-            
-            {/* Ambient aesthetic */}
-            <div className="mt-auto pb-8 text-center text-gray-800 flex flex-col items-center gap-4">
-              <Smartphone className="w-12 h-12 text-zinc-800/50" />
-              <div className="w-20 h-1 rounded-full bg-zinc-800/50"></div>
             </div>
           </div>
+
+          {/* Schedule */}
+          <div className="pt-2 border-t border-white/5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-400" /> Schedule for later
+              </label>
+              <button
+                type="button"
+                onClick={() => setScheduleForLater(!scheduleForLater)}
+                className={`w-12 h-6 rounded-full transition-colors relative ${scheduleForLater ? 'bg-[#d4af37]' : 'bg-gray-700'}`}
+              >
+                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${scheduleForLater ? 'translate-x-7' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            {scheduleForLater && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <input 
+                  type="datetime-local" 
+                  value={scheduledAt} 
+                  onChange={e => setScheduledAt(e.target.value)}
+                  className="w-full bg-[#050508] border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#d4af37]/50 transition-all"
+                />
+              </div>
+            )}
+          </div>
+
+          {statusMsg && (
+            <div className={`p-4 rounded-lg flex gap-3 text-sm font-medium ${statusMsg.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+              {statusMsg.type === 'error' ? <ShieldAlert className="w-5 h-5 flex-shrink-0" /> : <CheckCircle className="w-5 h-5 flex-shrink-0" />}
+              {statusMsg.msg}
+            </div>
+          )}
+
+          <button 
+            type="submit" disabled={isSending}
+            className="w-full py-3.5 bg-gradient-to-r from-[#b8860b] to-[#d4af37] text-[#050508] font-bold rounded-lg shadow-[0_0_20px_rgba(212,175,55,0.3)] hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+          >
+            {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : (scheduleForLater ? <Clock className="w-5 h-5" /> : <Send className="w-5 h-5" />)}
+            {isSending ? 'Processing...' : (scheduleForLater ? 'Schedule Notification' : 'Dispatch Notification')}
+          </button>
+        </form>
+      </div>
+
+      {/* Live Preview */}
+      <div className="space-y-6">
+        <div className="text-sm font-bold text-gray-500 uppercase tracking-widest px-2 text-center lg:text-left">Android Device Preview</div>
+        
+        <div className="w-[320px] h-[650px] mx-auto bg-black rounded-[40px] border-[8px] border-zinc-800 p-4 relative shadow-2xl flex flex-col justify-start">
+          {/* Phone Notch */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-800 rounded-b-2xl z-20"></div>
+          
+          {/* Time / Status bar mock */}
+          <div className="flex justify-between items-center text-[10px] text-gray-400 px-2 pt-2 mb-8 font-medium relative z-20">
+            <span>9:41</span>
+            <div className="flex gap-1.5">
+              <span>📶</span>
+              <span>🔋</span>
+            </div>
+          </div>
+
+          {/* Wallpaper background mock */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d15] to-[#050508] rounded-[32px] overflow-hidden pointer-events-none opacity-50">
+             <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-[#d4af37]/20 blur-3xl rounded-full"></div>
+          </div>
+
+          {/* Notification Bubble */}
+          <div className={`relative z-10 w-full bg-[#1a1a24] border border-white/5 rounded-2xl p-4 shadow-2xl transition-all duration-500 transform ${title || body || imageUrl ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-4 opacity-0 scale-95'}`}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded bg-gradient-to-br from-[#b8860b] to-[#d4af37] flex items-center justify-center shadow-lg">
+                <Bell className="w-3 h-3 text-[#050508]" />
+              </div>
+              <span className="text-[11px] font-medium text-gray-300 tracking-wide uppercase">Amritam • now</span>
+              {priority && <Zap className="w-3 h-3 text-red-400 ml-auto" />}
+            </div>
+            
+            <div className="text-[15px] font-bold text-white leading-tight mb-1.5">
+              {title || 'Notification Title'}
+            </div>
+            
+            <div className="text-[13px] text-gray-300 leading-snug line-clamp-3 mb-3">
+              {body || 'Notification body text will appear here. Keep it concise and engaging.'}
+            </div>
+
+            {imageUrl && (
+              <div className="w-full h-32 bg-gray-800 rounded-lg overflow-hidden border border-white/5 mt-2">
+                <img src={imageUrl} alt="Push attachment" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+              </div>
+            )}
+            
+            {notificationType !== 'announcement' && (
+              <div className="mt-3 inline-flex bg-white/5 px-2 py-0.5 rounded text-[10px] text-gray-400 font-medium uppercase tracking-wider border border-white/5">
+                {notificationType}
+              </div>
+            )}
+          </div>
+          
+          {/* Ambient aesthetic */}
+          <div className="mt-auto pb-8 text-center text-gray-800 flex flex-col items-center gap-4 relative z-10">
+            <Smartphone className="w-12 h-12 text-zinc-800/50" />
+            <div className="w-20 h-1 rounded-full bg-zinc-800/50"></div>
+          </div>
         </div>
+      </div>
+    </div>
+  );
+
+  const renderTabHistory = () => (
+    <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <History className="w-5 h-5 text-[#d4af37]" /> Campaign History
+        </h2>
+        <button 
+          onClick={fetchHistory}
+          disabled={isHistoryLoading}
+          className="p-2 text-gray-400 hover:text-white bg-[#050508] border border-white/10 rounded-lg transition-all"
+        >
+          <RefreshCw className={`w-4 h-4 ${isHistoryLoading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {campaigns.length === 0 && !isHistoryLoading ? (
+        <div className="text-center py-16 bg-[#050508]/50 rounded-xl border border-white/5 border-dashed">
+          <History className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-400">No campaigns yet. Send your first notification above.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/10 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                <th className="pb-3 pr-4">Date</th>
+                <th className="pb-3 px-4">Title</th>
+                <th className="pb-3 px-4">Target</th>
+                <th className="pb-3 px-4 text-center">Sent</th>
+                <th className="pb-3 px-4 text-center">Errors</th>
+                <th className="pb-3 pl-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {campaigns.map((camp) => (
+                <tr key={camp.id} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="py-4 pr-4 whitespace-nowrap text-sm text-gray-400">
+                    <div className="font-medium text-gray-300">{timeAgo(camp.created)}</div>
+                    <div className="text-xs">{new Date(camp.created).toLocaleDateString()}</div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="font-bold text-gray-200 line-clamp-1">{camp.title}</div>
+                  </td>
+                  <td className="py-4 px-4 text-sm text-gray-400 capitalize">
+                    {camp.target}
+                  </td>
+                  <td className="py-4 px-4 text-center font-mono text-sm text-green-400">
+                    {camp.sent_count || 0}
+                  </td>
+                  <td className="py-4 px-4 text-center font-mono text-sm text-red-400">
+                    {camp.error_count || 0}
+                  </td>
+                  <td className="py-4 pl-4 whitespace-nowrap">
+                    {camp.status === 'pending' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"><Clock className="w-3 h-3" /> Pending</span>}
+                    {camp.status === 'sending' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse"><Loader2 className="w-3 h-3 animate-spin" /> Sending</span>}
+                    {camp.status === 'done' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20"><CheckCircle className="w-3 h-3" /> Done</span>}
+                    {camp.status === 'cancelled' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20"><XCircle className="w-3 h-3" /> Cancelled</span>}
+                    {!['pending','sending','done','cancelled'].includes(camp.status) && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700 capitalize">{camp.status || 'unknown'}</span>}
+                  </td>
+                </tr>
+              ))}
+              {isHistoryLoading && campaigns.length === 0 && (
+                 <tr>
+                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                       <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                       Loading history...
+                    </td>
+                 </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTabHealth = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-2">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Activity className="w-5 h-5 text-[#d4af37]" /> Token Health Overview
+          </h2>
+          <p className="text-sm text-gray-400 mt-1">Monitor FCM token registration rates across your user base.</p>
+        </div>
+        <button 
+          onClick={fetchHealth}
+          disabled={isHealthLoading}
+          className="p-2 text-gray-400 hover:text-white bg-[#050508] border border-white/10 rounded-lg transition-all"
+        >
+          <RefreshCw className={`w-4 h-4 ${isHealthLoading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 flex flex-col justify-center items-center text-center shadow-lg relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-4 opacity-10"><Zap className="w-16 h-16 text-[#d4af37]" /></div>
+           <p className="text-sm text-gray-400 font-medium mb-1">Total Tokens</p>
+           <p className="text-4xl font-bold text-white font-mono">{isHealthLoading ? '-' : totalTokens.toLocaleString()}</p>
+        </div>
+        <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 flex flex-col justify-center items-center text-center shadow-lg relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-4 opacity-10"><Activity className="w-16 h-16 text-[#d4af37]" /></div>
+           <p className="text-sm text-gray-400 font-medium mb-1">Token Rate</p>
+           <p className="text-4xl font-bold text-[#d4af37] font-mono">{isHealthLoading ? '-' : `${tokenRate}%`}</p>
+        </div>
+        <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 flex flex-col justify-center items-center text-center shadow-lg relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-4 opacity-10"><Users className="w-16 h-16 text-[#d4af37]" /></div>
+           <p className="text-sm text-gray-400 font-medium mb-1">Total Users</p>
+           <p className="text-4xl font-bold text-white font-mono">{isHealthLoading ? '-' : totalUsers.toLocaleString()}</p>
+        </div>
+      </div>
+
+      {Number(tokenRate) < 80 && !isHealthLoading && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-5 flex gap-4 items-start shadow-lg">
+          <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-yellow-500 font-bold mb-1">Low Registration Rate Detected</h3>
+            <p className="text-sm text-yellow-500/80 leading-relaxed">
+              Less than 80% of your users have valid push notification tokens. Ensure that the mobile app is properly requesting notification permissions on launch and syncing tokens to PocketBase.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-lg mt-8">
+        <h3 className="text-lg font-bold text-white mb-4">Maintenance</h3>
+        <p className="text-sm text-gray-400 mb-6">Remove expired or invalid tokens from the database to improve delivery rates and reduce sending errors.</p>
+        <button 
+          onClick={() => console.log('Clean stale tokens initiated')}
+          className="px-5 py-2.5 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 rounded-lg transition-all font-medium flex items-center gap-2 text-sm"
+        >
+          <Trash2 className="w-4 h-4" /> Clean Stale Tokens
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+      {/* Header & Tabs */}
+      <div>
+        <h1 className="text-3xl font-bold text-white flex items-center gap-3 mb-6">
+          <Bell className="w-8 h-8 text-[#d4af37]" /> Notification Command Center
+        </h1>
+        
+        <div className="flex bg-[#0d0d15] border border-white/10 rounded-xl p-1 w-full max-w-md shadow-lg">
+          <button
+            onClick={() => setActiveTab('compose')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'compose' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Send className="w-4 h-4" /> Compose
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'history' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
+          >
+            <History className="w-4 h-4" /> History
+          </button>
+          <button
+            onClick={() => setActiveTab('health')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'health' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Activity className="w-4 h-4" /> Health
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="transition-all duration-300">
+        {activeTab === 'compose' && renderTabCompose()}
+        {activeTab === 'history' && renderTabHistory()}
+        {activeTab === 'health' && renderTabHealth()}
       </div>
     </div>
   );
