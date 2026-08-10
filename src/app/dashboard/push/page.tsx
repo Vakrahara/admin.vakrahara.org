@@ -5,8 +5,9 @@ import { pb } from '@/lib/pocketbase';
 import { 
   Bell, Send, Smartphone, ShieldAlert, Loader2, 
   History, Activity, Image as ImageIcon, Clock, Zap, 
-  Users, CheckCircle, XCircle, RefreshCw, AlertTriangle, Trash2 
+  Users, CheckCircle, XCircle, RefreshCw, AlertTriangle, Trash2, ChevronDown, ChevronUp
 } from 'lucide-react';
+import React from 'react';
 
 function timeAgo(dateString: string) {
   if (!dateString) return '';
@@ -48,6 +49,8 @@ export default function PushNotificationsPage() {
   // --- HISTORY STATE ---
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [expandedCampId, setExpandedCampId] = useState<string | null>(null);
+  const [campaignStats, setCampaignStats] = useState<Record<string, { opened: number }>>({});
 
   // --- HEALTH STATE ---
   const [totalTokens, setTotalTokens] = useState<number>(0);
@@ -90,7 +93,21 @@ export default function PushNotificationsPage() {
     setIsHistoryLoading(true);
     try {
       const res = await pb.collection('notification_campaigns').getList(1, 50, { sort: '-created' });
-      setCampaigns(res.items);
+      const items = res.items;
+      
+      const stats: Record<string, { opened: number }> = {};
+      await Promise.all(items.map(async (camp) => {
+        try {
+           const nRes = await pb.collection('notifications').getList(1, 1, {
+              filter: `campaign_id = '${camp.id}' && opened_at != ''`
+           });
+           stats[camp.id] = { opened: nRes.totalItems };
+        } catch (e) {
+           stats[camp.id] = { opened: 0 };
+        }
+      }));
+      setCampaignStats(stats);
+      setCampaigns(items);
     } catch (err) {
       console.error("Failed to fetch campaigns", err);
     } finally {
@@ -476,41 +493,80 @@ export default function PushNotificationsPage() {
                 <th className="pb-3 px-4">Title</th>
                 <th className="pb-3 px-4">Target</th>
                 <th className="pb-3 px-4 text-center">Sent</th>
+                <th className="pb-3 px-4 text-center">Open Rate</th>
                 <th className="pb-3 px-4 text-center">Errors</th>
                 <th className="pb-3 pl-4">Status</th>
+                <th className="pb-3 pl-4"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {campaigns.map((camp) => (
-                <tr key={camp.id} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="py-4 pr-4 whitespace-nowrap text-sm text-gray-400">
-                    <div className="font-medium text-gray-300">{timeAgo(camp.created)}</div>
-                    <div className="text-xs">{new Date(camp.created).toLocaleDateString()}</div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="font-bold text-gray-200 line-clamp-1">{camp.title}</div>
-                  </td>
-                  <td className="py-4 px-4 text-sm text-gray-400 capitalize">
-                    {camp.target}
-                  </td>
-                  <td className="py-4 px-4 text-center font-mono text-sm text-green-400">
-                    {camp.sent_count || 0}
-                  </td>
-                  <td className="py-4 px-4 text-center font-mono text-sm text-red-400">
-                    {camp.error_count || 0}
-                  </td>
-                  <td className="py-4 pl-4 whitespace-nowrap">
-                    {camp.status === 'pending' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"><Clock className="w-3 h-3" /> Pending</span>}
-                    {camp.status === 'sending' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse"><Loader2 className="w-3 h-3 animate-spin" /> Sending</span>}
-                    {camp.status === 'done' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20"><CheckCircle className="w-3 h-3" /> Done</span>}
-                    {camp.status === 'cancelled' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20"><XCircle className="w-3 h-3" /> Cancelled</span>}
-                    {!['pending','sending','done','cancelled'].includes(camp.status) && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700 capitalize">{camp.status || 'unknown'}</span>}
-                  </td>
-                </tr>
-              ))}
+              {campaigns.map((camp) => {
+                const opened = campaignStats[camp.id]?.opened || 0;
+                const sent = camp.sent_count || 0;
+                const openRate = sent > 0 ? ((opened / sent) * 100).toFixed(1) : '0.0';
+                
+                return (
+                <React.Fragment key={camp.id}>
+                  <tr onClick={() => setExpandedCampId(expandedCampId === camp.id ? null : camp.id)} className="hover:bg-white/[0.02] transition-colors cursor-pointer">
+                    <td className="py-4 pr-4 whitespace-nowrap text-sm text-gray-400">
+                      <div className="font-medium text-gray-300">{timeAgo(camp.created)}</div>
+                      <div className="text-xs">{new Date(camp.created).toLocaleDateString()}</div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="font-bold text-gray-200 line-clamp-1">{camp.title}</div>
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-400 capitalize">
+                      {camp.target}
+                    </td>
+                    <td className="py-4 px-4 text-center font-mono text-sm text-green-400">
+                      {sent}
+                    </td>
+                    <td className="py-4 px-4 text-center font-mono text-sm text-blue-400">
+                      {openRate}%
+                    </td>
+                    <td className="py-4 px-4 text-center font-mono text-sm text-red-400">
+                      {camp.error_count || 0}
+                    </td>
+                    <td className="py-4 pl-4 whitespace-nowrap">
+                      {camp.status === 'pending' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500 border border-yellow-500/20"><Clock className="w-3 h-3" /> Pending</span>}
+                      {camp.status === 'sending' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse"><Loader2 className="w-3 h-3 animate-spin" /> Sending</span>}
+                      {camp.status === 'done' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20"><CheckCircle className="w-3 h-3" /> Done</span>}
+                      {camp.status === 'cancelled' && <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20"><XCircle className="w-3 h-3" /> Cancelled</span>}
+                      {!['pending','sending','done','cancelled'].includes(camp.status) && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-800 text-gray-300 border border-gray-700 capitalize">{camp.status || 'unknown'}</span>}
+                    </td>
+                    <td className="py-4 pl-4 text-gray-500">
+                       {expandedCampId === camp.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </td>
+                  </tr>
+                  {expandedCampId === camp.id && (
+                    <tr className="bg-white/[0.01]">
+                      <td colSpan={8} className="p-6 text-sm text-gray-300">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                           <div>
+                              <div className="text-gray-500 mb-1">Body</div>
+                              <div className="font-medium text-white">{camp.body}</div>
+                           </div>
+                           <div>
+                              <div className="text-gray-500 mb-1">Deep Link</div>
+                              <div className="font-medium font-mono text-white">{camp.deep_link || '-'}</div>
+                           </div>
+                           <div>
+                              <div className="text-gray-500 mb-1">Total Opens</div>
+                              <div className="font-medium text-white text-xl">{opened}</div>
+                           </div>
+                           <div>
+                              <div className="text-gray-500 mb-1">CTR / Open Rate</div>
+                              <div className="font-medium text-blue-400 text-xl">{openRate}%</div>
+                           </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              )})}
               {isHistoryLoading && campaigns.length === 0 && (
                  <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                    <td colSpan={8} className="py-8 text-center text-gray-500">
                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                        Loading history...
                     </td>
