@@ -29,7 +29,7 @@ function timeAgo(dateString: string) {
 }
 
 export default function PushNotificationsPage() {
-  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'templates' | 'health'>('compose');
+  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'templates' | 'health' | 'automation'>('compose');
 
   // --- COMPOSE STATE ---
   const [targetType, setTargetType] = useState('all');
@@ -63,6 +63,22 @@ export default function PushNotificationsPage() {
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [showSaveTemplateForm, setShowSaveTemplateForm] = useState(false);
+
+  // --- AUTOMATION STATE ---
+  const [rules, setRules] = useState<any[]>([]);
+  const [isRulesLoading, setIsRulesLoading] = useState(false);
+  const [showRuleModal, setShowRuleModal] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [ruleName, setRuleName] = useState('');
+  const [triggerType, setTriggerType] = useState('inactive_days');
+  const [triggerValue, setTriggerValue] = useState(3);
+  const [customFilter, setCustomFilter] = useState('');
+  const [ruleTitle, setRuleTitle] = useState('');
+  const [ruleBody, setRuleBody] = useState('');
+  const [ruleType, setRuleType] = useState('announcement');
+  const [runInterval, setRunInterval] = useState(24);
+  const [ruleActive, setRuleActive] = useState(false);
+  const [isSavingRule, setIsSavingRule] = useState(false);
 
   // Fetch Estimated Reach
   useEffect(() => {
@@ -143,10 +159,24 @@ export default function PushNotificationsPage() {
     }
   };
 
+  // Fetch Rules
+  const fetchRules = async () => {
+    setIsRulesLoading(true);
+    try {
+      const res = await pb.collection('notification_rules').getList(1, 50, { sort: '-created' });
+      setRules(res.items);
+    } catch (err) {
+      console.error("Failed to fetch rules", err);
+    } finally {
+      setIsRulesLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'history') fetchHistory();
     if (activeTab === 'health') fetchHealth();
     if (activeTab === 'templates') fetchTemplates();
+    if (activeTab === 'automation') fetchRules();
   }, [activeTab]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -716,6 +746,249 @@ export default function PushNotificationsPage() {
     </div>
   );
 
+  const renderTabAutomation = () => {
+    const totalActive = rules.filter(r => r.is_active).length;
+    const totalAutomatedSends = rules.reduce((acc, r) => acc + (r.total_sent || 0), 0);
+
+    return (
+      <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Zap className="w-5 h-5 text-[#d4af37]" /> Automation Rules
+            </h2>
+            <p className="text-sm text-gray-400 mt-1">Set-and-forget rules that automatically notify matching users.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={fetchRules} disabled={isRulesLoading} className="p-2 text-gray-400 hover:text-white bg-[#050508] border border-white/10 rounded-lg transition-all">
+              <RefreshCw className={`w-4 h-4 ${isRulesLoading ? 'animate-spin' : ''}`} />
+            </button>
+            <button 
+              onClick={() => {
+                setEditingRuleId(null);
+                setRuleName('');
+                setTriggerType('inactive_days');
+                setTriggerValue(3);
+                setCustomFilter('');
+                setRuleTitle('');
+                setRuleBody('');
+                setRuleType('announcement');
+                setRunInterval(24);
+                setRuleActive(false);
+                setShowRuleModal(true);
+              }}
+              className="px-4 py-2 bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/50 rounded-lg text-sm font-bold hover:bg-[#d4af37]/20 transition-all flex items-center gap-2"
+            >
+              + New Rule
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-[#050508] border border-white/5 rounded-xl p-4 flex flex-col items-center">
+            <span className="text-gray-400 text-sm">Total Active Rules</span>
+            <span className="text-2xl font-bold text-white">{totalActive}</span>
+          </div>
+          <div className="bg-[#050508] border border-white/5 rounded-xl p-4 flex flex-col items-center">
+            <span className="text-gray-400 text-sm">Total Automated Sends</span>
+            <span className="text-2xl font-bold text-[#d4af37]">{totalAutomatedSends.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/10 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                <th className="pb-3 pr-4">Rule Name</th>
+                <th className="pb-3 px-4">Trigger</th>
+                <th className="pb-3 px-4 text-center">Status</th>
+                <th className="pb-3 px-4 text-center">Last Run</th>
+                <th className="pb-3 px-4 text-center">Total Sent</th>
+                <th className="pb-3 px-4 text-center">Runs</th>
+                <th className="pb-3 pl-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {rules.map(rule => (
+                <tr key={rule.id} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="py-4 pr-4">
+                    <div className="font-bold text-gray-200">{rule.name}</div>
+                  </td>
+                  <td className="py-4 px-4 text-sm text-gray-400">
+                    <span className="bg-white/5 px-2 py-1 rounded text-xs">{rule.trigger_type.replace('_', ' ')}</span>
+                  </td>
+                  <td className="py-4 px-4 text-center">
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await pb.collection('notification_rules').update(rule.id, { is_active: !rule.is_active });
+                          fetchRules();
+                        } catch(e) {}
+                      }}
+                      className={`w-12 h-6 rounded-full transition-colors relative inline-block ${rule.is_active ? 'bg-[#d4af37]' : 'bg-gray-700'}`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${rule.is_active ? 'translate-x-7' : 'translate-x-1'}`} />
+                    </button>
+                  </td>
+                  <td className="py-4 px-4 text-center text-sm text-gray-400">
+                    {rule.last_run_at ? new Date(rule.last_run_at).toLocaleDateString() : 'Never'}
+                  </td>
+                  <td className="py-4 px-4 text-center font-mono text-sm text-green-400">
+                    {rule.total_sent || 0}
+                  </td>
+                  <td className="py-4 px-4 text-center font-mono text-sm text-blue-400">
+                    {rule.total_runs || 0}
+                  </td>
+                  <td className="py-4 pl-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          setEditingRuleId(rule.id);
+                          setRuleName(rule.name);
+                          setTriggerType(rule.trigger_type);
+                          setTriggerValue(rule.trigger_value || 0);
+                          setCustomFilter(rule.custom_filter || '');
+                          setRuleTitle(rule.notification_title);
+                          setRuleBody(rule.notification_body);
+                          setRuleType(rule.notification_type || 'announcement');
+                          setRunInterval(rule.run_interval_hours || 24);
+                          setRuleActive(rule.is_active);
+                          setShowRuleModal(true);
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded"
+                      >
+                        <span className="text-sm">✎</span>
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (confirm('Delete rule?')) {
+                            await pb.collection('notification_rules').delete(rule.id);
+                            fetchRules();
+                          }
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-red-400 bg-white/5 hover:bg-white/10 rounded"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {rules.length === 0 && !isRulesLoading && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-gray-500">
+                    No automation rules defined.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Modal */}
+        {showRuleModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+            <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-bold text-white mb-4">{editingRuleId ? 'Edit Rule' : 'New Rule'}</h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setIsSavingRule(true);
+                try {
+                  const payload = {
+                    name: ruleName,
+                    trigger_type: triggerType,
+                    trigger_value: triggerValue,
+                    custom_filter: customFilter,
+                    notification_title: ruleTitle,
+                    notification_body: ruleBody,
+                    notification_type: ruleType,
+                    run_interval_hours: runInterval,
+                    is_active: ruleActive
+                  };
+                  if (editingRuleId) {
+                    await pb.collection('notification_rules').update(editingRuleId, payload);
+                  } else {
+                    await pb.collection('notification_rules').create(payload);
+                  }
+                  setShowRuleModal(false);
+                  fetchRules();
+                } catch(e) {
+                  alert('Error saving rule');
+                } finally {
+                  setIsSavingRule(false);
+                }
+              }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Rule Name</label>
+                  <input type="text" required value={ruleName} onChange={e => setRuleName(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Trigger Type</label>
+                    <select value={triggerType} onChange={e => setTriggerType(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white">
+                      <option value="inactive_days">Inactive Days</option>
+                      <option value="streak_broken">Streak Broken</option>
+                      <option value="new_user">New User</option>
+                      <option value="premium_expired">Premium Expiring</option>
+                      <option value="custom_filter">Custom Filter</option>
+                    </select>
+                  </div>
+                  {(triggerType === 'inactive_days' || triggerType === 'premium_expired' || triggerType === 'new_user') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">Trigger Value (Days)</label>
+                      <input type="number" min="0" value={triggerValue} onChange={e => setTriggerValue(parseInt(e.target.value))} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white" />
+                    </div>
+                  )}
+                </div>
+                {triggerType === 'custom_filter' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-1">Custom PocketBase Filter</label>
+                    <input type="text" value={customFilter} onChange={e => setCustomFilter(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-sm" placeholder="e.g. current_streak > 10" />
+                  </div>
+                )}
+                <div className="border-t border-white/5 pt-4">
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Notification Title</label>
+                  <input type="text" required value={ruleTitle} onChange={e => setRuleTitle(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white mb-4" />
+                  
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Notification Body</label>
+                  <textarea rows={3} required value={ruleBody} onChange={e => setRuleBody(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white mb-4 resize-none"></textarea>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
+                      <select value={ruleType} onChange={e => setRuleType(e.target.value)} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white">
+                        <option value="announcement">Announcement</option>
+                        <option value="feature">Feature</option>
+                        <option value="promotion">Promotion</option>
+                        <option value="system">System</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1">Interval (Hours)</label>
+                      <input type="number" min="1" required value={runInterval} onChange={e => setRunInterval(parseInt(e.target.value))} className="w-full bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 pt-2">
+                  <input type="checkbox" id="ruleActive" checked={ruleActive} onChange={e => setRuleActive(e.target.checked)} className="w-4 h-4 rounded bg-[#050508] border-white/10 text-[#d4af37]" />
+                  <label htmlFor="ruleActive" className="text-sm font-medium text-white">Active (Run automatically)</label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                  <button type="button" onClick={() => setShowRuleModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
+                  <button type="submit" disabled={isSavingRule} className="px-4 py-2 bg-[#d4af37] text-black font-bold rounded-lg hover:bg-yellow-500 disabled:opacity-50">
+                    {isSavingRule ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Rule'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
       {/* Header & Tabs */}
@@ -744,6 +1017,12 @@ export default function PushNotificationsPage() {
             <span className="text-lg leading-none">📋</span> Templates
           </button>
           <button
+            onClick={() => setActiveTab('automation')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'automation' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
+          >
+            <Zap className="w-4 h-4" /> Automation
+          </button>
+          <button
             onClick={() => setActiveTab('health')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'health' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
           >
@@ -757,6 +1036,7 @@ export default function PushNotificationsPage() {
         {activeTab === 'compose' && renderTabCompose()}
         {activeTab === 'history' && renderTabHistory()}
         {activeTab === 'templates' && renderTabTemplates()}
+        {activeTab === 'automation' && renderTabAutomation()}
         {activeTab === 'health' && renderTabHealth()}
       </div>
     </div>
