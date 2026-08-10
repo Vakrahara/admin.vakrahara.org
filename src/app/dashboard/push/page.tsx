@@ -28,7 +28,7 @@ function timeAgo(dateString: string) {
 }
 
 export default function PushNotificationsPage() {
-  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'health'>('compose');
+  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'templates' | 'health'>('compose');
 
   // --- COMPOSE STATE ---
   const [targetType, setTargetType] = useState('all');
@@ -53,6 +53,13 @@ export default function PushNotificationsPage() {
   const [totalTokens, setTotalTokens] = useState<number>(0);
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const [isHealthLoading, setIsHealthLoading] = useState(false);
+
+  // --- TEMPLATES STATE ---
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [showSaveTemplateForm, setShowSaveTemplateForm] = useState(false);
 
   // Fetch Estimated Reach
   useEffect(() => {
@@ -106,9 +113,23 @@ export default function PushNotificationsPage() {
     }
   };
 
+  // Fetch Templates
+  const fetchTemplates = async () => {
+    setIsTemplatesLoading(true);
+    try {
+      const res = await pb.collection('notification_templates').getList(1, 50, { sort: '-use_count' });
+      setTemplates(res.items);
+    } catch (err) {
+      console.error("Failed to fetch templates", err);
+    } finally {
+      setIsTemplatesLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'history') fetchHistory();
     if (activeTab === 'health') fetchHealth();
+    if (activeTab === 'templates') fetchTemplates();
   }, [activeTab]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -320,6 +341,46 @@ export default function PushNotificationsPage() {
             {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : (scheduleForLater ? <Clock className="w-5 h-5" /> : <Send className="w-5 h-5" />)}
             {isSending ? 'Processing...' : (scheduleForLater ? 'Schedule Notification' : 'Dispatch Notification')}
           </button>
+          
+          <div className="pt-4 flex flex-col items-center">
+            {!showSaveTemplateForm ? (
+                <button type="button" onClick={() => setShowSaveTemplateForm(true)} className="text-sm text-gray-400 hover:text-[#d4af37] flex items-center gap-1 transition-colors">
+                  <span className="text-lg">💾</span> Save as Template
+                </button>
+            ) : (
+                <div className="w-full animate-in fade-in slide-in-from-top-2 flex gap-2">
+                    <input 
+                        type="text" value={saveTemplateName} onChange={e => setSaveTemplateName(e.target.value)}
+                        className="flex-1 bg-[#050508] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#d4af37]/50 text-sm"
+                        placeholder="Template Name..."
+                    />
+                    <button 
+                        type="button" 
+                        disabled={isSavingTemplate || !saveTemplateName}
+                        onClick={async () => {
+                            if (!title || !body) return alert("Title and body required for template");
+                            setIsSavingTemplate(true);
+                            try {
+                                await pb.collection('notification_templates').create({
+                                    name: saveTemplateName, title, body, image_url: imageUrl, deep_link: deepLink, notification_type: notificationType, target_segment: targetType === 'all' || targetType === 'premium' ? targetType : 'all'
+                                });
+                                setStatusMsg({ type: 'success', msg: "Template saved!" });
+                                setShowSaveTemplateForm(false);
+                                setSaveTemplateName('');
+                            } catch (e: any) {
+                                alert("Failed to save template: " + e.message);
+                            } finally {
+                                setIsSavingTemplate(false);
+                            }
+                        }}
+                        className="bg-[#d4af37]/10 text-[#d4af37] px-4 rounded-lg font-medium text-sm hover:bg-[#d4af37]/20 border border-[#d4af37]/50 disabled:opacity-50"
+                    >
+                        {isSavingTemplate ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                    </button>
+                    <button type="button" onClick={() => setShowSaveTemplateForm(false)} className="text-gray-400 hover:text-white px-2 text-sm">Cancel</button>
+                </div>
+            )}
+          </div>
         </form>
       </div>
 
@@ -462,6 +523,82 @@ export default function PushNotificationsPage() {
     </div>
   );
 
+  const renderTabTemplates = () => (
+    <div className="bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <span className="text-[#d4af37] text-2xl">📋</span> Notification Templates
+        </h2>
+        <button 
+          onClick={fetchTemplates}
+          disabled={isTemplatesLoading}
+          className="p-2 text-gray-400 hover:text-white bg-[#050508] border border-white/10 rounded-lg transition-all"
+        >
+          <RefreshCw className={`w-4 h-4 ${isTemplatesLoading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {isTemplatesLoading && templates.length === 0 ? (
+        <div className="text-center py-16"><Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-500" /></div>
+      ) : templates.length === 0 ? (
+        <div className="text-center py-16 bg-[#050508]/50 rounded-xl border border-white/5 border-dashed">
+          <p className="text-gray-400">No templates found. Save one from the compose tab.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {templates.map(t => (
+            <div key={t.id} className="bg-[#050508] border border-white/5 rounded-xl p-5 hover:border-white/10 transition-all flex flex-col group relative">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-lg font-bold text-white group-hover:text-[#d4af37] transition-colors">{t.name}</h3>
+                <div className="flex gap-2 items-center">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        t.notification_type === 'announcement' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                        t.notification_type === 'feature' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                        t.notification_type === 'promotion' ? 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20' :
+                        'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                    }`}>
+                    {t.notification_type}
+                    </span>
+                    <button onClick={async () => {
+                        if (confirm('Delete this template?')) {
+                            try {
+                                await pb.collection('notification_templates').delete(t.id);
+                                fetchTemplates();
+                            } catch (e) { alert('Failed to delete'); }
+                        }
+                    }} className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+              </div>
+              <p className="text-white font-medium text-sm mb-1">{t.title}</p>
+              <p className="text-gray-400 text-xs mb-4 line-clamp-2">{t.body}</p>
+              <div className="mt-auto pt-3 border-t border-white/5 flex justify-between items-center">
+                <span className="text-[11px] text-gray-500">Target: {t.target_segment || 'all'}</span>
+                <button 
+                  onClick={() => {
+                    setTitle(t.title);
+                    setBody(t.body);
+                    setImageUrl(t.image_url || '');
+                    setDeepLink(t.deep_link || '');
+                    setNotificationType(t.notification_type || 'announcement');
+                    if (t.target_segment === 'all' || t.target_segment === 'premium') setTargetType(t.target_segment);
+                    setActiveTab('compose');
+                    // increment use_count asynchronously
+                    pb.collection('notification_templates').update(t.id, { use_count: (t.use_count || 0) + 1 }).catch(() => {});
+                  }}
+                  className="px-4 py-1.5 bg-[#0d0d15] hover:bg-[#d4af37]/10 border border-white/10 hover:border-[#d4af37]/50 text-gray-300 hover:text-[#d4af37] rounded-lg text-xs font-medium transition-colors"
+                >
+                  Use Template
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const renderTabHealth = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-2">
@@ -545,6 +682,12 @@ export default function PushNotificationsPage() {
             <History className="w-4 h-4" /> History
           </button>
           <button
+            onClick={() => setActiveTab('templates')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'templates' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
+          >
+            <span className="text-lg leading-none">📋</span> Templates
+          </button>
+          <button
             onClick={() => setActiveTab('health')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === 'health' ? 'bg-[#d4af37]/10 text-[#d4af37] shadow-sm' : 'text-gray-400 hover:text-white'}`}
           >
@@ -557,6 +700,7 @@ export default function PushNotificationsPage() {
       <div className="transition-all duration-300">
         {activeTab === 'compose' && renderTabCompose()}
         {activeTab === 'history' && renderTabHistory()}
+        {activeTab === 'templates' && renderTabTemplates()}
         {activeTab === 'health' && renderTabHealth()}
       </div>
     </div>
