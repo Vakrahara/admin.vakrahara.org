@@ -51,7 +51,7 @@ export function proxy(request: NextRequest) {
 
       // Assert email verification (PocketBase users collection does not have a role column)
       const userEmail = String(model.email || '').toLowerCase();
-      const adminEmails = ["vkarms.vk@gmail.com"];
+      const adminEmails = ["vkarms.vk@gmail.com", "vakrahara@gmail.com"];
       const isAdmin = adminEmails.includes(userEmail);
       if (!isAdmin) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
@@ -74,7 +74,7 @@ export function proxy(request: NextRequest) {
         const authData = JSON.parse(decodedCookie);
         const model = authData.model;
         const userEmail = String(model?.email || '').toLowerCase();
-        const adminEmails = ["vkarms.vk@gmail.com"];
+        const adminEmails = ["vkarms.vk@gmail.com", "vakrahara@gmail.com"];
         if (model && adminEmails.includes(userEmail)) {
           return NextResponse.redirect(new URL('/dashboard', request.url));
         }
