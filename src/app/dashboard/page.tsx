@@ -27,6 +27,9 @@ import {
 
 interface UserStats {
   totalUsers: number;
+  totalRevenue?: number;
+  mrr?: number;
+  activeSubscribers?: number;
   activeStats: {
     active24h: number;
     active7d: number;
@@ -73,6 +76,9 @@ export default function AnalyticsSummaryPage() {
               active7d: data.active7d || 0,
               inactive: data.inactive30d || 0,
             },
+            totalRevenue: data.totalRevenue || 0,
+            mrr: data.mrr || 0,
+            activeSubscribers: data.activeSubscribers || 0,
             demographics: {
               board: data.boards || {},
               class: data.classes || {},
@@ -229,7 +235,52 @@ export default function AnalyticsSummaryPage() {
         </button>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* Financial KPIs Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="glass-panel-gold p-6 rounded-2xl flex items-center justify-between border-[#d4af37]/30">
+          <div>
+            <span className="text-[10px] font-bold text-[#d4af37] uppercase tracking-widest block">Total Revenue</span>
+            <div className="text-3xl font-extrabold text-white mt-1.5">₹{stats?.totalRevenue?.toLocaleString('en-IN') || 0}</div>
+            <div className="text-[10px] text-[#d4af37]/80 mt-2 flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5" />
+              All-time processed volume
+            </div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#d4af37]/20 to-[#b8860b]/10 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37]">
+            <Activity className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="glass-panel p-6 rounded-2xl flex items-center justify-between border-emerald-500/20">
+          <div>
+            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">Active Subscribers</span>
+            <div className="text-3xl font-extrabold text-white mt-1.5">{stats?.activeSubscribers || 0}</div>
+            <div className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+              <Users className="w-3.5 h-3.5 text-emerald-400" />
+              Currently premium
+            </div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <Sparkles className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="glass-panel p-6 rounded-2xl flex items-center justify-between border-blue-500/20">
+          <div>
+            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block">Estimated MRR</span>
+            <div className="text-3xl font-extrabold text-white mt-1.5">₹{stats?.mrr?.toLocaleString('en-IN') || 0}</div>
+            <div className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+              <RefreshCw className="w-3.5 h-3.5 text-blue-400" />
+              Monthly recurring revenue
+            </div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* Activity KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="glass-panel p-6 rounded-2xl flex items-center justify-between">
           <div>
