@@ -17,7 +17,11 @@ import {
   Loader2,
   ChevronRight,
   Package,
-  Bell
+  Bell,
+  ShoppingBag,
+  Key,
+  Tag,
+  Settings2
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -52,7 +56,7 @@ export default function DashboardLayout({
       if (record) {
         setAdminName(record.name || record.username || 'Co-ordinator');
         const email = record.email?.toLowerCase();
-        setAdminRole(email === 'vkarms.vk@gmail.com' ? 'Super Admin' : 'Staff Admin');
+        setAdminRole((email === 'vkarms.vk@gmail.com' || email === 'vakrahara@gmail.com') ? 'Super Admin' : 'Staff Admin');
       }
       setLoading(false);
     };
@@ -70,12 +74,16 @@ export default function DashboardLayout({
   };
 
   const menuItems: SidebarItem[] = [
-    { name: 'Analytics Summary', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'User Management', href: '/dashboard/users', icon: Users },
-    { name: 'Institution Requests', href: '/dashboard/institutions', icon: Building2, badge: pendingCount },
-    { name: 'Curriculum CMS', href: '/dashboard/content', icon: BookOpen },
-    { name: 'App Releases', href: '/dashboard/releases', icon: Package },
-    { name: 'Push Notifications', href: '/dashboard/push', icon: Bell },
+    { name: 'Analytics Summary',    href: '/dashboard',                  icon: LayoutDashboard },
+    { name: 'User Management',      href: '/dashboard/users',             icon: Users },
+    { name: 'Orders',               href: '/dashboard/orders',            icon: ShoppingBag },
+    { name: 'Activation Keys',      href: '/dashboard/activation-keys',   icon: Key },
+    { name: 'Coupons',              href: '/dashboard/coupons',           icon: Tag },
+    { name: 'Remote Config',        href: '/dashboard/config',            icon: Settings2 },
+    { name: 'Institution Requests', href: '/dashboard/institutions',      icon: Building2, badge: pendingCount },
+    { name: 'Curriculum CMS',       href: '/dashboard/content',           icon: BookOpen },
+    { name: 'App Releases',         href: '/dashboard/releases',          icon: Package },
+    { name: 'Push Notifications',   href: '/dashboard/push',              icon: Bell },
   ];
 
   if (loading) {

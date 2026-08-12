@@ -170,7 +170,13 @@ export default function PushNotificationsPage() {
     try {
       const tokensReq = await pb.collection('users').getList(1, 1, { filter: "fcm_token != ''" });
       const usersReq = await pb.collection('users').getList(1, 1);
-      setTotalTokens(tokensReq.totalItems);
+      
+      try {
+        const multiDeviceReq = await pb.collection('user_fcm_tokens').getList(1, 1, { filter: "is_active = true" });
+        setTotalTokens(tokensReq.totalItems + multiDeviceReq.totalItems);
+      } catch (e) {
+        setTotalTokens(tokensReq.totalItems);
+      }
       setTotalUsers(usersReq.totalItems);
     } catch (err) {
       console.error("Failed to fetch token health", err);
