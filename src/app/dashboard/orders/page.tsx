@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
 import {
   ShoppingBag, TrendingUp, Clock, CheckCircle2, XCircle, RefreshCw,
-  Search, Filter, ChevronLeft, ChevronRight, IndianRupee, Copy, Check
+  Search, Filter, ChevronLeft, ChevronRight, IndianRupee, Copy, Check, Download
 } from 'lucide-react';
+import { exportToCsv } from '@/lib/export';
 
 interface Order {
   id: string;
@@ -143,12 +144,35 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold text-white">Orders</h1>
           <p className="text-sm text-gray-500 mt-1">All payment transactions via Cashfree</p>
         </div>
-        <button
-          onClick={() => { fetchOrders(); fetchKpis(); }}
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-        >
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const exportData = orders.map(o => ({
+                OrderID: o.order_id,
+                UserID: o.user_id,
+                Plan: o.plan,
+                AmountINR: o.amount_paise / 100,
+                Status: o.status,
+                CouponUsed: o.coupon_used || '',
+                Gateway: o.gateway,
+                CFPaymentID: o.cf_payment_id || '',
+                ProcessedAt: o.processed_at || '',
+                CreatedAt: o.created,
+              }));
+              exportToCsv(exportData, `orders_export_${new Date().toISOString().slice(0,10)}.csv`);
+            }}
+            disabled={orders.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button
+            onClick={() => { fetchOrders(); fetchKpis(); }}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}

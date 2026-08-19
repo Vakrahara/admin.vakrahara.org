@@ -1,0 +1,48 @@
+name: Deploy Admin Panel to Hostinger
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vakrahara-admin
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Admin Panel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🏗️ Build Static Next.js Admin
+        run: npm run build
+
+      - name: 🚀 Deploy to Hostinger public_html/admin/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: 91.108.107.97
+          username: ${{ secrets.HOSTINGER_FTP_USERNAME || secrets.GURUKULAM_FTP_USERNAME || secrets.FTP_USERNAME }}
+          password: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.GURUKULAM_FTP_PASSWORD || secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: ./out/
+          server-dir: ./admin/
+          dangerous-clean-slate: false
+          log-level: verbose
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .well-known/**
+            cgi-bin/**

@@ -20,7 +20,7 @@ function LoginForm() {
   useEffect(() => {
     if (pb.authStore.isValid) {
       const email = pb.authStore.record?.email?.toLowerCase();
-      const adminEmails = ["vkarms.vk@gmail.com"];
+      const adminEmails = ["vkarms.vk@gmail.com", "vakrahara@gmail.com"];
       if (email && adminEmails.includes(email)) {
         router.push(redirectTarget);
       }
@@ -35,17 +35,21 @@ function LoginForm() {
     setError(null);
 
     try {
-      // Authenticate with PocketBase
-      const authData = await pb.collection('users').authWithPassword(identifier, password);
+      // Authenticate directly via REST API since the backend is v0.22.9 and the SDK is v0.27.0
+      const authData = await pb.send('/api/admins/auth-with-password', {
+        method: 'POST',
+        body: JSON.stringify({ identity: identifier, password: password })
+      });
       
-      const record = authData.record;
-      const email = record?.email?.toLowerCase();
-      const adminEmails = ["vkarms.vk@gmail.com"];
+      // Manually save the token and admin record into the auth store
+      pb.authStore.save(authData.token, authData.admin);
+      
+      const email = authData.admin?.email?.toLowerCase();
+      const adminEmails = ["vkarms.vk@gmail.com", "vakrahara@gmail.com"];
 
-      // Hack resistance rule: Reject and clear auth state immediately if not admin
+      // Hack resistance rule: Reject if not explicitly allowed
       if (!email || !adminEmails.includes(email)) {
         pb.authStore.clear();
-        // Clear cookies
         document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         throw new Error('Access Denied: You do not have administrator permissions.');
       }

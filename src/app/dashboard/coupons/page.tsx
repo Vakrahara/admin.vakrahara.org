@@ -95,6 +95,7 @@ export default function CouponsPage() {
       const result = await pb.collection('coupons').getList<Coupon>(page, PER_PAGE, {
         filter: buildFilter() || undefined,
         sort: '-created',
+        requestKey: null,
       });
       setCoupons(result.items);
       setTotalItems(result.totalItems);
@@ -105,8 +106,8 @@ export default function CouponsPage() {
   const fetchKpis = useCallback(async () => {
     try {
       const [all, active] = await Promise.all([
-        pb.collection('coupons').getList(1, 500, { fields: 'id,active,used_count' }),
-        pb.collection('coupons').getList(1, 1, { filter: 'active = true' }),
+        pb.collection('coupons').getList(1, 500, { fields: 'id,active,used_count', requestKey: null }),
+        pb.collection('coupons').getList(1, 1, { filter: 'active = true', requestKey: null }),
       ]);
       setTotalCount(all.totalItems);
       setActiveCount(active.totalItems);

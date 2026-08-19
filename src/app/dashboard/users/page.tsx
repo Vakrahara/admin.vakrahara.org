@@ -23,9 +23,11 @@ import {
   Activity,
   Code2,
   Mail,
-  UserCheck
+  UserCheck,
+  Download
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { exportToCsv } from '@/lib/export';
 
 interface UserRecord {
   id: string;
@@ -284,6 +286,29 @@ export default function UserManagementPage() {
           <p className="text-gray-400 text-sm mt-1">
             Browse, search, and manage registered student accounts and credentials.
           </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const exportData = users.map(u => ({
+                ID: u.id,
+                Name: u.name,
+                Username: u.username,
+                Email: u.email,
+                Role: u.role,
+                IsPremium: u.isPremium ? 'YES' : 'NO',
+                Plan: u.premium_plan || 'none',
+                SubscriptionExpiry: u.subscription_expiry || '',
+                TrialEndDate: u.trial_end_date || '',
+                Created: u.created,
+              }));
+              exportToCsv(exportData, `users_export_${new Date().toISOString().slice(0,10)}.csv`);
+            }}
+            disabled={users.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-all disabled:opacity-50"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
         </div>
       </div>
 

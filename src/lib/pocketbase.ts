@@ -7,6 +7,8 @@ export const pb = new PocketBase(pbUrl);
 // Keep auth store synced with cookies for Middleware route protection
 if (typeof window !== 'undefined') {
   // Load initial store from cookie if present
+  pb.authStore.loadFromCookie(document.cookie);
+  
   pb.authStore.onChange((token, record) => {
     if (pb.authStore.isValid) {
       document.cookie = pb.authStore.exportToCookie({ 

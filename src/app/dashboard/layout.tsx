@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -6,29 +6,21 @@ import Link from 'next/link';
 import { pb } from '@/lib/pocketbase';
 import { useInstitutions } from '@/hooks/useInstitutions';
 import { 
-  LayoutDashboard, 
-  Users, 
-  BookOpen, 
-  Building2,
-  LogOut, 
-  ShieldAlert, 
-  Menu, 
-  X, 
-  Loader2,
-  ChevronRight,
-  Package,
-  Bell,
-  ShoppingBag,
-  Key,
-  Tag,
-  Settings2
+  LayoutDashboard, Users, BookOpen, Building2, LogOut, ShieldAlert, 
+  Menu, X, Loader2, ChevronRight, Package, Bell, ShoppingBag, 
+  Key, Tag, Settings2, Receipt, GraduationCap, School, Swords, 
+  Globe2, Server, ShieldCheck, Headphones, Sliders, Code
 } from 'lucide-react';
+import { LivePulseStream } from '@/components/LivePulseStream';
 
-interface SidebarItem {
-  name: string;
-  href: string;
-  icon: any;
-  badge?: number;
+interface NavGroup {
+  category: string;
+  items: {
+    name: string;
+    href: string;
+    icon: any;
+    badge?: number;
+  }[];
 }
 
 export default function DashboardLayout({
@@ -73,17 +65,52 @@ export default function DashboardLayout({
     router.refresh();
   };
 
-  const menuItems: SidebarItem[] = [
-    { name: 'Analytics Summary',    href: '/dashboard',                  icon: LayoutDashboard },
-    { name: 'User Management',      href: '/dashboard/users',             icon: Users },
-    { name: 'Orders',               href: '/dashboard/orders',            icon: ShoppingBag },
-    { name: 'Activation Keys',      href: '/dashboard/activation-keys',   icon: Key },
-    { name: 'Coupons',              href: '/dashboard/coupons',           icon: Tag },
-    { name: 'Remote Config',        href: '/dashboard/config',            icon: Settings2 },
-    { name: 'Institution Requests', href: '/dashboard/institutions',      icon: Building2, badge: pendingCount },
-    { name: 'Curriculum CMS',       href: '/dashboard/content',           icon: BookOpen },
-    { name: 'App Releases',         href: '/dashboard/releases',          icon: Package },
-    { name: 'Push Notifications',   href: '/dashboard/push',              icon: Bell },
+  const navGroups: NavGroup[] = [
+    {
+      category: 'Core Operations',
+      items: [
+        { name: 'Analytics Summary', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'User Management', href: '/dashboard/users', icon: Users },
+        { name: 'Orders & Revenue', href: '/dashboard/orders', icon: ShoppingBag },
+        { name: 'Audit Trail', href: '/dashboard/audit', icon: ShieldAlert },
+        { name: 'GST & Finance', href: '/dashboard/finance', icon: Receipt },
+      ],
+    },
+    {
+      category: 'Pedagogy & B2B',
+      items: [
+        { name: 'Pedagogy Funnels', href: '/dashboard/pedagogy', icon: GraduationCap },
+        { name: 'Curriculum CMS', href: '/dashboard/content', icon: BookOpen },
+        { name: 'School Affiliates', href: '/dashboard/affiliates', icon: School },
+        { name: 'Institution Requests', href: '/dashboard/institutions', icon: Building2, badge: pendingCount },
+      ],
+    },
+    {
+      category: 'Multiplayer & Map',
+      items: [
+        { name: 'Buddhi Arena', href: '/dashboard/arena', icon: Swords },
+        { name: 'Jambudvipa Map', href: '/dashboard/jambudvipa', icon: Globe2 },
+      ],
+    },
+    {
+      category: 'Growth & Deals',
+      items: [
+        { name: 'Push Campaigns', href: '/dashboard/push', icon: Bell },
+        { name: 'Coupons & Deals', href: '/dashboard/coupons', icon: Tag },
+        { name: 'Activation Keys', href: '/dashboard/activation-keys', icon: Key },
+      ],
+    },
+    {
+      category: 'System & Security',
+      items: [
+        { name: 'Infrastructure VPS', href: '/dashboard/infrastructure', icon: Server },
+        { name: 'UGC Moderation', href: '/dashboard/moderation', icon: ShieldCheck },
+        { name: 'Customer Support', href: '/dashboard/support', icon: Headphones },
+        { name: 'Feature Flags', href: '/dashboard/experiments', icon: Sliders },
+        { name: 'App Releases', href: '/dashboard/releases', icon: Package },
+        { name: 'DevTools Sandbox', href: '/dashboard/devtools', icon: Code },
+      ],
+    },
   ];
 
   if (loading) {
@@ -101,7 +128,7 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#050508] text-gray-100 flex flex-col md:flex-row relative">
-      {/* Background radial accent glow */}
+      {/* Radial Background Accent Glows */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#d4af37]/5 rounded-full blur-[140px] pointer-events-none z-0" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#800020]/10 rounded-full blur-[140px] pointer-events-none z-0" />
 
@@ -123,75 +150,84 @@ export default function DashboardLayout({
 
       {/* Sidebar Navigation */}
       <aside className={`
-        fixed inset-y-0 left-0 z-30 w-72 bg-[#08080c] border-r border-white/10 p-6 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:static md:translate-x-0
+        fixed inset-y-0 left-0 z-30 w-72 bg-[#08080c] border-r border-white/10 p-5 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 overflow-y-auto
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Logo Header */}
           <div className="hidden md:flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#b8860b] to-[#d4af37] rounded-xl flex items-center justify-center shadow-lg shadow-[#d4af37]/20 border border-[#d4af37]/30">
-              <ShieldAlert className="w-5 h-5 text-[#050508]" />
+            <div className="w-9 h-9 bg-gradient-to-br from-[#b8860b] to-[#d4af37] rounded-xl flex items-center justify-center shadow-lg shadow-[#d4af37]/20 border border-[#d4af37]/30">
+              <ShieldAlert className="w-4 h-4 text-[#050508]" />
             </div>
             <div>
-              <span className="font-bold tracking-wide text-white text-base block">Vakrahara</span>
-              <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Admin Console</span>
+              <span className="font-bold tracking-wide text-white text-sm block">Vakrahara</span>
+              <span className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Admin Console</span>
             </div>
           </div>
 
           {/* User Account Info */}
-          <div className="p-4 bg-[#0d0d15] border border-white/10 rounded-2xl flex items-center gap-3 shadow-inner">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-600 to-[#d4af37] flex items-center justify-center font-bold text-sm text-[#050508] shadow-[0_0_12px_rgba(212,175,55,0.2)]">
+          <div className="p-3.5 bg-[#0d0d15] border border-white/10 rounded-xl flex items-center gap-3 shadow-inner">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-600 to-[#d4af37] flex items-center justify-center font-bold text-xs text-[#050508] shadow-[0_0_12px_rgba(212,175,55,0.2)]">
               {adminName.substring(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-white truncate">{adminName}</div>
-              <div className="text-[10px] font-bold text-[#d4af37] uppercase tracking-wider mt-0.5">{adminRole}</div>
+              <div className="text-xs font-semibold text-white truncate">{adminName}</div>
+              <div className="text-[9px] font-bold text-[#d4af37] uppercase tracking-wider">{adminRole}</div>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="space-y-1.5">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`
-                    w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all group relative
-                    ${isActive 
-                      ? 'bg-gradient-to-r from-[#d4af37]/20 to-[#d4af37]/5 border-l-2 border-[#d4af37] text-white shadow-[0_0_15px_rgba(212,175,55,0.05)]' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
-                    }
-                  `}
-                >
-                  <span className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-[#d4af37]' : 'text-gray-400 group-hover:text-white'}`} />
-                    {item.name}
-                  </span>
+          {/* Categorized Navigation Links */}
+          <nav className="space-y-5">
+            {navGroups.map((group) => (
+              <div key={group.category} className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 px-3">
+                  {group.category}
+                </span>
+                <div className="space-y-0.5 pt-1">
+                  {group.items.map((item) => {
+                    const isActive = pathname === item.href;
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`
+                          w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all group relative
+                          ${isActive 
+                            ? 'bg-gradient-to-r from-[#d4af37]/20 to-[#d4af37]/5 border-l-2 border-[#d4af37] text-white shadow-[0_0_15px_rgba(212,175,55,0.05)]' 
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          }
+                        `}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-[#d4af37]' : 'text-gray-400 group-hover:text-white'}`} />
+                          {item.name}
+                        </span>
 
-                  <div className="flex items-center gap-2">
-                    {item.badge !== undefined && item.badge > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-[#d4af37] text-[#050508] text-[10px] font-bold shadow-[0_0_8px_rgba(212,175,55,0.4)]">
-                        {item.badge}
-                      </span>
-                    )}
-                    <ChevronRight className={`w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ${isActive ? 'text-[#d4af37] opacity-80' : 'text-gray-500'}`} />
-                  </div>
-                </Link>
-              );
-            })}
+                        <div className="flex items-center gap-1.5">
+                          {item.badge !== undefined && item.badge > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-[#d4af37] text-[#050508] text-[9px] font-bold">
+                              {item.badge}
+                            </span>
+                          )}
+                          <ChevronRight className={`w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all ${isActive ? 'text-[#d4af37] opacity-80' : 'text-gray-500'}`} />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </div>
 
         {/* Sign Out Action */}
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+          className="w-full mt-6 flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium text-gray-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-3.5 h-3.5" />
           Sign Out Node
         </button>
       </aside>
@@ -201,7 +237,10 @@ export default function DashboardLayout({
         {children}
       </main>
 
-      {/* Overlay background when mobile sidebar is open */}
+      {/* Global Realtime Pulse Widget */}
+      <LivePulseStream />
+
+      {/* Mobile Backdrop Overlay */}
       {mobileMenuOpen && (
         <div 
           onClick={() => setMobileMenuOpen(false)}
