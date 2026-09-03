@@ -36,12 +36,20 @@ async function deploy() {
     // If we are already inside public_html (no public_html directory), navigate directly to admin.
     const hasPublicHtml = list.some(item => item.name === 'public_html' && item.isDirectory);
     const targetDir = hasPublicHtml ? 'public_html/admin' : 'admin';
-    console.log(`🎯 Target directory determined: '${targetDir}' (hasPublicHtml: ${hasPublicHtml})`);
+    
+    console.log('\n========================================');
+    console.log('📍 HOSTINGER PATH VERIFICATION DIAGNOSTIC:');
+    console.log(`   - Connected User: ${user}`);
+    console.log(`   - Initial Working Directory: ${pwd}`);
+    console.log(`   - Is 'public_html' found in list: ${hasPublicHtml}`);
+    console.log(`   - Navigating to Target Subdirectory: '${targetDir}'`);
+    console.log('========================================\n');
     
     await client.ensureDir(targetDir);
     
     const finalPwd = await client.pwd();
-    console.log(`📍 Ready to upload. Current directory: ${finalPwd}`);
+    console.log(`✅ VERIFIED DESTINATION PATH: ${finalPwd}`);
+    console.log(`🚀 All admin files from ${localDir} will be uploaded directly into: ${finalPwd}\n`);
 
     client.trackProgress(info => {
       console.log(`📤 Uploading: ${info.name} (${Math.round(info.bytesOverall / 1024)} KB)`);
