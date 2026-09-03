@@ -34,8 +34,8 @@ jobs:
       - name: 🚀 Deploy to Hostinger FTPS
         env:
           FTP_SERVER: 91.108.107.97
-          FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD }}
+          FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME || secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.FTP_PASSWORD }}
           LOCAL_DIR: ./out
           REMOTE_DIR: /public_html/admin
         run: node scripts/deploy-ftp.js
