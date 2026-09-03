@@ -31,18 +31,41 @@ async function deploy() {
     console.log(`📁 Contents of ${pwd}:`);
     list.forEach(item => console.log(`   - ${item.name} (${item.isDirectory ? 'DIR' : 'FILE'})`));
 
-    // Smart detection:
-    // If public_html exists in the listing, navigate to public_html/admin.
-    // If we are already inside public_html (no public_html directory), navigate directly to admin.
+    // Hostinger Multi-Domain / Shared Hosting Detection:
+    // On Hostinger, domain roots are located at: /domains/<domain_name>/public_html/
+    // Since admin is inside vakrahara.org's public_html, the path is:
+    // domains/vakrahara.org/public_html/admin
+    let targetDir = 'public_html/admin';
+    const hasDomains = list.some(item => item.name === 'domains' && item.isDirectory);
     const hasPublicHtml = list.some(item => item.name === 'public_html' && item.isDirectory);
-    const targetDir = hasPublicHtml ? 'public_html/admin' : 'admin';
+
+    if (hasDomains) {
+      try {
+        await client.cd('domains');
+        const domainList = await client.list();
+        console.log(`📁 Domains found on server:`, domainList.map(i => i.name));
+        const vDomain = domainList.find(i => i.name.toLowerCase() === 'vakrahara.org');
+        if (vDomain) {
+          targetDir = 'domains/vakrahara.org/public_html/admin';
+        }
+        await client.cd('/'); // return to root before ensureDir
+      } catch (err) {
+        console.warn('⚠️ Could not inspect domains folder, defaulting:', err.message);
+        await client.cd('/');
+      }
+    } else if (hasPublicHtml) {
+      targetDir = 'public_html/admin';
+    } else {
+      targetDir = 'admin';
+    }
     
     console.log('\n========================================');
     console.log('📍 HOSTINGER PATH VERIFICATION DIAGNOSTIC:');
     console.log(`   - Connected User: ${user}`);
     console.log(`   - Initial Working Directory: ${pwd}`);
-    console.log(`   - Is 'public_html' found in list: ${hasPublicHtml}`);
-    console.log(`   - Navigating to Target Subdirectory: '${targetDir}'`);
+    console.log(`   - Has 'domains' folder: ${hasDomains}`);
+    console.log(`   - Has 'public_html' folder: ${hasPublicHtml}`);
+    console.log(`   - Target Destination: '${targetDir}'`);
     console.log('========================================\n');
     
     await client.ensureDir(targetDir);
