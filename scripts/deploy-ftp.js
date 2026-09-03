@@ -1,0 +1,71 @@
+const ftp = require('basic-ftp');
+const path = require('path');
+
+async function deploy() {
+  const client = new ftp.Client();
+  client.ftp.verbose = true;
+  client.timeout = 60000;
+
+  const host = process.env.FTP_SERVER || '91.108.107.97';
+  const user = process.env.FTP_USERNAME;
+  const password = process.env.FTP_PASSWORD;
+  const localDir = path.resolve(process.env.LOCAL_DIR || './out');
+
+  console.log(`🚀 Connecting to Hostinger (${host}) as ${user}...`);
+
+  try {
+    await client.access({
+      host: host,
+      user: user,
+      password: password,
+      secure: true,
+      secureOptions: {
+        rejectUnauthorized: false
+      }
+    });
+
+    console.log('✅ Connected and authenticated via FTPS successfully.');
+    const pwd = await client.pwd();
+    console.log(`🔍 Current FTP Directory: ${pwd}`);
+    const list = await client.list();
+    console.log(`📁 Contents of ${pwd}:`);
+    list.forEach(item => console.log(`   - ${item.name} (${item.isDirectory ? 'DIR' : 'FILE'})`));
+
+    const remoteDir = process.env.REMOTE_DIR || '/';
+    
+    if (remoteDir && remoteDir !== '/' && remoteDir !== '') {
+      console.log(`🎯 Target directory is: '${remoteDir}'`);
+      try {
+        await client.cd(remoteDir);
+        console.log(`📂 Successfully navigated to ${remoteDir}`);
+      } catch (err) {
+        console.log(`⚠️ Could not cd into ${remoteDir}, attempting to create it...`);
+        await client.ensureDir(remoteDir);
+        console.log(`📂 Created and navigated to ${remoteDir}`);
+      }
+    } else {
+      console.log(`🎯 Deploying directly to FTP root ('/')`);
+      await client.cd('/');
+    }
+    
+    const finalPwd = await client.pwd();
+    console.log(`📍 Ready to upload. Current directory: ${finalPwd}`);
+
+    client.trackProgress(info => {
+      console.log(`📤 Uploading: ${info.name} (${Math.round(info.bytesOverall / 1024)} KB)`);
+    });
+
+    // Upload directly into the current working directory
+    await client.uploadFromDir(localDir);
+
+    console.log('🎉 Deployment completed successfully with 0 errors!');
+  } catch (err) {
+    console.error('❌ FTP Deployment failed with error:', err.message || err);
+    console.error(err);
+    process.exit(1);
+  } finally {
+    client.close();
+  }
+}
+
+deploy();
