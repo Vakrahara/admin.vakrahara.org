@@ -37,5 +37,4 @@ jobs:
           FTP_USERNAME: ${{ secrets.HOSTINGER_FTP_USERNAME || secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.HOSTINGER_FTP_PASSWORD || secrets.FTP_PASSWORD }}
           LOCAL_DIR: ./out
-          REMOTE_DIR: /public_html/admin
         run: node scripts/deploy-ftp.js

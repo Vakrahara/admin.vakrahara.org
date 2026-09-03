@@ -31,22 +31,14 @@ async function deploy() {
     console.log(`📁 Contents of ${pwd}:`);
     list.forEach(item => console.log(`   - ${item.name} (${item.isDirectory ? 'DIR' : 'FILE'})`));
 
-    const remoteDir = process.env.REMOTE_DIR || '/';
+    // Smart detection:
+    // If public_html exists in the listing, navigate to public_html/admin.
+    // If we are already inside public_html (no public_html directory), navigate directly to admin.
+    const hasPublicHtml = list.some(item => item.name === 'public_html' && item.isDirectory);
+    const targetDir = hasPublicHtml ? 'public_html/admin' : 'admin';
+    console.log(`🎯 Target directory determined: '${targetDir}' (hasPublicHtml: ${hasPublicHtml})`);
     
-    if (remoteDir && remoteDir !== '/' && remoteDir !== '') {
-      console.log(`🎯 Target directory is: '${remoteDir}'`);
-      try {
-        await client.cd(remoteDir);
-        console.log(`📂 Successfully navigated to ${remoteDir}`);
-      } catch (err) {
-        console.log(`⚠️ Could not cd into ${remoteDir}, attempting to create it...`);
-        await client.ensureDir(remoteDir);
-        console.log(`📂 Created and navigated to ${remoteDir}`);
-      }
-    } else {
-      console.log(`🎯 Deploying directly to FTP root ('/')`);
-      await client.cd('/');
-    }
+    await client.ensureDir(targetDir);
     
     const finalPwd = await client.pwd();
     console.log(`📍 Ready to upload. Current directory: ${finalPwd}`);
