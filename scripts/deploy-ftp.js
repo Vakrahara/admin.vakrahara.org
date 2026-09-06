@@ -1,93 +1,93 @@
 const ftp = require('basic-ftp');
 const path = require('path');
+const fs = require('fs');
+
+const envPath = path.resolve(__dirname, '../../../infra/.env.hostinger');
+if (fs.existsSync(envPath)) {
+  const content = fs.readFileSync(envPath, 'utf8');
+  content.split('\n').forEach(line => {
+    const match = line.match(/^\s*([\w_]+)\s*=\s*(.*?)\s*$/);
+    if (match && !process.env[match[1]]) {
+      process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, '');
+    }
+  });
+}
+
+async function syncDirectory(client, localDir) {
+  let remoteList = [];
+  try {
+    remoteList = await client.list();
+  } catch (e) {
+    remoteList = [];
+  }
+  const remoteMap = new Map(remoteList.map(item => [item.name, item]));
+
+  const localEntries = fs.readdirSync(localDir);
+  for (const entry of localEntries) {
+    const localPath = path.join(localDir, entry);
+    const stat = fs.statSync(localPath);
+
+    if (stat.isDirectory()) {
+      await client.ensureDir(entry);
+      await syncDirectory(client, localPath);
+      await client.cdup();
+    } else if (stat.isFile()) {
+      const remoteItem = remoteMap.get(entry);
+      if (remoteItem && remoteItem.size === stat.size) {
+        // Skip unchanged file
+        continue;
+      }
+      console.log(`📤 Uploading: ${entry} (${Math.round(stat.size / 1024)} KB)`);
+      await client.uploadFrom(localPath, entry);
+    }
+  }
+}
 
 async function deploy() {
-  const client = new ftp.Client();
-  client.ftp.verbose = true;
-  client.timeout = 60000;
-
-  const host = process.env.FTP_SERVER || '91.108.107.97';
-  const user = process.env.FTP_USERNAME;
-  const password = process.env.FTP_PASSWORD;
+  const host = process.env.HOSTINGER_FTP_SERVER || process.env.FTP_SERVER || '91.108.107.97';
+  const user = process.env.HOSTINGER_FTP_USERNAME || process.env.FTP_USERNAME;
+  const password = process.env.HOSTINGER_FTP_PASSWORD || process.env.FTP_PASSWORD;
   const localDir = path.resolve(process.env.LOCAL_DIR || './out');
 
-  console.log(`🚀 Connecting to Hostinger (${host}) as ${user}...`);
+  const maxRetries = 5;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const client = new ftp.Client();
+    client.ftp.verbose = false;
+    client.timeout = 60000;
 
-  try {
-    await client.access({
-      host: host,
-      user: user,
-      password: password,
-      secure: true,
-      secureOptions: {
-        rejectUnauthorized: false
-      }
-    });
-
-    console.log('✅ Connected and authenticated via FTPS successfully.');
-    const pwd = await client.pwd();
-    console.log(`🔍 Current FTP Directory: ${pwd}`);
-    const list = await client.list();
-    console.log(`📁 Contents of ${pwd}:`);
-    list.forEach(item => console.log(`   - ${item.name} (${item.isDirectory ? 'DIR' : 'FILE'})`));
-
-    // Hostinger Multi-Domain / Shared Hosting Detection:
-    // On Hostinger, domain roots are located at: /domains/<domain_name>/public_html/
-    // Since admin is inside vakrahara.org's public_html, the path is:
-    // domains/vakrahara.org/public_html/admin
-    let targetDir = 'public_html/admin';
-    const hasDomains = list.some(item => item.name === 'domains' && item.isDirectory);
-    const hasPublicHtml = list.some(item => item.name === 'public_html' && item.isDirectory);
-
-    if (hasDomains) {
-      try {
-        await client.cd('domains');
-        const domainList = await client.list();
-        console.log(`📁 Domains found on server:`, domainList.map(i => i.name));
-        const vDomain = domainList.find(i => i.name.toLowerCase() === 'vakrahara.org');
-        if (vDomain) {
-          targetDir = 'domains/vakrahara.org/public_html/admin';
+    try {
+      console.log(`🚀 Connecting to Hostinger (${host}) as ${user} (Attempt ${attempt}/${maxRetries})...`);
+      await client.access({
+        host: host,
+        user: user,
+        password: password,
+        secure: true,
+        secureOptions: {
+          rejectUnauthorized: false
         }
-        await client.cd('/'); // return to root before ensureDir
-      } catch (err) {
-        console.warn('⚠️ Could not inspect domains folder, defaulting:', err.message);
-        await client.cd('/');
+      });
+
+      console.log('✅ Connected and authenticated via FTPS successfully.');
+      const targetDir = 'domains/vakrahara.org/public_html/admin';
+      await client.ensureDir(targetDir);
+      const finalPwd = await client.pwd();
+      console.log(`✅ Destination directory: ${finalPwd}`);
+
+      await syncDirectory(client, localDir);
+
+      console.log('🎉 Deployment completed successfully with 0 errors!');
+      client.close();
+      return;
+    } catch (err) {
+      console.warn(`⚠️ Attempt ${attempt} encountered error: ${err.message || err}`);
+      client.close();
+      if (attempt >= maxRetries) {
+        console.error('❌ All deployment attempts failed.');
+        process.exit(1);
       }
-    } else if (hasPublicHtml) {
-      targetDir = 'public_html/admin';
-    } else {
-      targetDir = 'admin';
+      console.log('⏳ Resuming incremental upload in 3 seconds...');
+      await new Promise(r => setTimeout(r, 3000));
     }
-    
-    console.log('\n========================================');
-    console.log('📍 HOSTINGER PATH VERIFICATION DIAGNOSTIC:');
-    console.log(`   - Connected User: ${user}`);
-    console.log(`   - Initial Working Directory: ${pwd}`);
-    console.log(`   - Has 'domains' folder: ${hasDomains}`);
-    console.log(`   - Has 'public_html' folder: ${hasPublicHtml}`);
-    console.log(`   - Target Destination: '${targetDir}'`);
-    console.log('========================================\n');
-    
-    await client.ensureDir(targetDir);
-    
-    const finalPwd = await client.pwd();
-    console.log(`✅ VERIFIED DESTINATION PATH: ${finalPwd}`);
-    console.log(`🚀 All admin files from ${localDir} will be uploaded directly into: ${finalPwd}\n`);
-
-    client.trackProgress(info => {
-      console.log(`📤 Uploading: ${info.name} (${Math.round(info.bytesOverall / 1024)} KB)`);
-    });
-
-    // Upload directly into the current working directory
-    await client.uploadFromDir(localDir);
-
-    console.log('🎉 Deployment completed successfully with 0 errors!');
-  } catch (err) {
-    console.error('❌ FTP Deployment failed with error:', err.message || err);
-    console.error(err);
-    process.exit(1);
-  } finally {
-    client.close();
   }
 }
 

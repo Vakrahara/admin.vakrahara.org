@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
@@ -26,13 +26,11 @@ export default function FinanceGSTPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [cashfreeRevenue, setCashfreeRevenue] = useState(0);
+  const [playRevenue, setPlayRevenue] = useState(0);
   const [totalGST, setTotalGST] = useState(0);
 
-  // Sudo Refund Modal
-  const [refundModal, setRefundModal] = useState<{
-    isOpen: boolean;
-    order: Order | null;
-  }>({
+  const [refundModal, setRefundModal] = useState<{ isOpen: boolean; order: Order | null }>({
     isOpen: false,
     order: null,
   });
@@ -40,19 +38,24 @@ export default function FinanceGSTPage() {
   const fetchFinance = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await pb.collection('orders').getList(1, 100, {
-        sort: '-created',
-      });
+      const res = await pb.collection('orders').getList(1, 100, { sort: '-created' });
       const items = res.items as unknown as Order[];
       setOrders(items);
 
       let rev = 0;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].status === 'paid') {
-          rev += items[i].amount_paise / 100;
+      let cfRev = 0;
+      let playRev = 0;
+      for (const item of items) {
+        if (item.status === 'paid') {
+          const amt = item.amount_paise / 100;
+          rev += amt;
+          if (item.gateway === 'google_play') playRev += amt;
+          else cfRev += amt;
         }
       }
       setTotalRevenue(rev);
+      setCashfreeRevenue(cfRev);
+      setPlayRevenue(playRev);
       setTotalGST(Math.round(rev * 0.18)); // 18% GST SAC 9984
     } catch (err) {
       console.error('Failed to fetch finance records:', err);
@@ -70,7 +73,6 @@ export default function FinanceGSTPage() {
       const amt = o.amount_paise / 100;
       const taxable = Math.round((amt / 1.18) * 100) / 100;
       const gst = Math.round((amt - taxable) * 100) / 100;
-
       return {
         InvoiceNumber: `INV-${o.id.slice(0,8).toUpperCase()}`,
         InvoiceDate: o.created.slice(0,10),
@@ -86,15 +88,12 @@ export default function FinanceGSTPage() {
         Status: o.status,
       };
     });
-
     exportToCsv(data, `gstr1_report_${new Date().toISOString().slice(0,10)}.csv`);
   };
 
   const handleProcessRefund = async (orderId: string) => {
     try {
-      await pb.collection('orders').update(orderId, {
-        status: 'refunded',
-      });
+      await pb.collection('orders').update(orderId, { status: 'refunded' });
       setRefundModal({ isOpen: false, order: null });
       fetchFinance();
     } catch (err) {
@@ -151,29 +150,29 @@ export default function FinanceGSTPage() {
 
         <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Cashfree UPI Volume</span>
+            <CreditCard className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="text-2xl font-bold text-emerald-400">₹{cashfreeRevenue.toLocaleString('en-IN')}</div>
+          <div className="text-xs text-gray-500 mt-1">Web prepaid passes</div>
+        </div>
+
+        <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Google Play Volume</span>
+            <CreditCard className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div className="text-2xl font-bold text-indigo-400">₹{playRevenue.toLocaleString('en-IN')}</div>
+          <div className="text-xs text-gray-500 mt-1">Android app subscriptions</div>
+        </div>
+
+        <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
+          <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">GST Liability (18%)</span>
             <Receipt className="w-4 h-4 text-[#d4af37]" />
           </div>
           <div className="text-2xl font-bold text-[#d4af37]">₹{totalGST.toLocaleString('en-IN')}</div>
           <div className="text-xs text-gray-500 mt-1">CGST (9%) + SGST (9%)</div>
-        </div>
-
-        <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Settlement Velocity</span>
-            <CreditCard className="w-4 h-4 text-blue-400" />
-          </div>
-          <div className="text-2xl font-bold text-blue-400">T+1 Auto</div>
-          <div className="text-xs text-gray-500 mt-1">Cashfree PG Direct Payout</div>
-        </div>
-
-        <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Refund Rate</span>
-            <Undo2 className="w-4 h-4 text-purple-400" />
-          </div>
-          <div className="text-2xl font-bold text-purple-400">&lt; 0.1%</div>
-          <div className="text-xs text-gray-500 mt-1">Ultra-low dispute index</div>
         </div>
       </div>
 
@@ -185,6 +184,7 @@ export default function FinanceGSTPage() {
               <tr>
                 <th className="py-3.5 px-4">Invoice / Date</th>
                 <th className="py-3.5 px-4">Customer User ID</th>
+                <th className="py-3.5 px-4">Gateway</th>
                 <th className="py-3.5 px-4">Plan</th>
                 <th className="py-3.5 px-4">Gross ₹</th>
                 <th className="py-3.5 px-4">GST (18%)</th>
@@ -195,14 +195,14 @@ export default function FinanceGSTPage() {
             <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                  <td colSpan={8} className="py-12 text-center text-gray-500">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#d4af37]" />
                     <span>Loading financial ledger...</span>
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                  <td colSpan={8} className="py-12 text-center text-gray-500">
                     <Receipt className="w-8 h-8 mx-auto mb-2 text-gray-600" />
                     <span>No settled invoices recorded yet.</span>
                   </td>
@@ -220,6 +220,15 @@ export default function FinanceGSTPage() {
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap text-xs font-mono text-gray-400">
                         {o.user_id}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          o.gateway === 'google_play'
+                            ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
+                            : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        }`}>
+                          {o.gateway === 'google_play' ? 'Google Play' : 'Cashfree'}
+                        </span>
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/30">

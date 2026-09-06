@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { exportToCsv } from '@/lib/export';
+import { UserSubscriptionTab } from './components/UserSubscriptionTab';
 
 interface UserRecord {
   id: string;
@@ -729,49 +730,13 @@ export default function UserManagementPage() {
               )}
 
               {modalTab === 'subscriptions' && (
-                <div className="space-y-4">
-                  <span className="text-xs font-bold text-[#d4af37] uppercase tracking-widest block">Grant / Control Premium Access</span>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => handleGrantPremium(selectedUser.id, 'monthly', 30)}
-                      disabled={isUpdatingUser}
-                      className="py-3 px-4 rounded-xl border border-[#d4af37]/40 bg-[#d4af37]/10 text-xs text-[#f3e5ab] font-bold hover:bg-[#d4af37]/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      👑 1-Month Premium (30d)
-                    </button>
-                    <button
-                      onClick={() => handleGrantPremium(selectedUser.id, 'yearly', 365)}
-                      disabled={isUpdatingUser}
-                      className="py-3 px-4 rounded-xl border border-[#d4af37] bg-gradient-to-r from-amber-600 to-[#d4af37] text-xs text-black font-extrabold hover:brightness-110 transition-all flex items-center justify-center gap-2"
-                    >
-                      👑 1-Year Premium (365d)
-                    </button>
-                    <button
-                      onClick={() => handleGrantPremium(selectedUser.id, 'lifetime', 36500)}
-                      disabled={isUpdatingUser}
-                      className="py-3 px-4 rounded-xl border border-cyan-500/50 bg-cyan-950/40 text-xs text-cyan-300 font-extrabold hover:bg-cyan-900/50 transition-all flex items-center justify-center gap-2"
-                    >
-                      ♾️ Lifetime Premium
-                    </button>
-                    <button
-                      onClick={() => handleGiveTrial(selectedUser.id, 7)}
-                      disabled={isUpdatingUser}
-                      className="py-3 px-4 rounded-xl border border-purple-500/50 bg-purple-950/40 text-xs text-purple-300 font-bold hover:bg-purple-900/50 transition-all flex items-center justify-center gap-2"
-                    >
-                      ⌛ Give 7-Day Trial
-                    </button>
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      onClick={() => handleRevokePremium(selectedUser.id)}
-                      disabled={isUpdatingUser}
-                      className="w-full py-3 px-4 rounded-xl border border-rose-500/40 bg-rose-950/40 text-xs text-rose-300 font-bold hover:bg-rose-900/50 transition-all flex items-center justify-center gap-2"
-                    >
-                      ❌ Revoke Premium & Reset to Free Tier
-                    </button>
-                  </div>
-                </div>
+                <UserSubscriptionTab
+                  user={selectedUser}
+                  isUpdatingUser={isUpdatingUser}
+                  onGrantPremium={handleGrantPremium}
+                  onGiveTrial={handleGiveTrial}
+                  onRevokePremium={handleRevokePremium}
+                />
               )}
             </div>
 

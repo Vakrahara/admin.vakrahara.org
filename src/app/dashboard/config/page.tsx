@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { pb } from '@/lib/pocketbase';
-import { Settings2, Save, RefreshCw, AlertTriangle, IndianRupee, Clock, Smartphone, Tag, ToggleLeft, ToggleRight, CheckCircle2 } from 'lucide-react';
+import { Settings2, Save, RefreshCw, AlertTriangle, IndianRupee, Clock, Smartphone, Tag, ToggleLeft, ToggleRight, CheckCircle2, Info } from 'lucide-react';
 
 interface AppConfig {
   id: string;
@@ -67,12 +67,12 @@ export default function RemoteConfigPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [saveMsg, setSaveMsg] = useState('');
 
-  // Form state (mirrors AppConfig)
-  const [monthlyRs, setMonthlyRs] = useState(79);
-  const [yearlyRs, setYearlyRs] = useState(999);
+  // Form state (Default: ₹99 / ₹799 / ₹1,999 for Web Cashfree passes)
+  const [monthlyRs, setMonthlyRs] = useState(99);
+  const [yearlyRs, setYearlyRs] = useState(799);
   const [lifetimeRs, setLifetimeRs] = useState(1999);
-  const [monthlyPaise, setMonthlyPaise] = useState(7900);
-  const [yearlyPaise, setYearlyPaise] = useState(99900);
+  const [monthlyPaise, setMonthlyPaise] = useState(9900);
+  const [yearlyPaise, setYearlyPaise] = useState(79900);
   const [lifetimePaise, setLifetimePaise] = useState(199900);
   const [couponHint, setCouponHint] = useState('');
   const [trialDays, setTrialDays] = useState(2);
@@ -88,11 +88,11 @@ export default function RemoteConfigPage() {
         const c = res.items[0];
         setConfig(c);
         setRecordId(c.id);
-        setMonthlyRs(c.monthly_discount_price || 79);
-        setYearlyRs(c.yearly_discount_price || 999);
+        setMonthlyRs(c.monthly_discount_price || 99);
+        setYearlyRs(c.yearly_discount_price || 799);
         setLifetimeRs(c.lifetime_discount_price || 1999);
-        setMonthlyPaise(c.monthly_price_paise || 7900);
-        setYearlyPaise(c.yearly_price_paise || 99900);
+        setMonthlyPaise(c.monthly_price_paise || 9900);
+        setYearlyPaise(c.yearly_price_paise || 79900);
         setLifetimePaise(c.lifetime_price_paise || 199900);
         setCouponHint(c.coupon_hint_text || '');
         setTrialDays(c.trial_duration_days || 2);
@@ -139,176 +139,108 @@ export default function RemoteConfigPage() {
         setRecordId(rec.id);
       }
       setSaveStatus('success');
-      setSaveMsg('Settings saved successfully!');
-      await load();
+      setSaveMsg('Config saved successfully');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (e: any) {
       setSaveStatus('error');
-      setSaveMsg('Error saving: ' + (e.message || 'Unknown error'));
+      setSaveMsg(e?.message || 'Failed to save config');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center space-y-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-[#d4af37] mx-auto" />
-          <p className="text-sm text-gray-500">Loading configuration...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-4xl">
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Remote Config</h1>
+          <h1 className="text-2xl font-bold text-white">App Configuration</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Control app pricing, behavior, and maintenance mode globally.
-            {config?.updated && <span className="ml-2 text-gray-600">Last updated: {new Date(config.updated).toLocaleString('en-IN')}</span>}
+            Global pricing and maintenance controls.
+            {config?.updated && <span className="ml-2 text-gray-600">Updated: {new Date(config.updated).toLocaleDateString('en-IN')}</span>}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {saveStatus === 'success' && (
-            <span className="flex items-center gap-1.5 text-sm text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" /> {saveMsg}
-            </span>
-          )}
-          {saveStatus === 'error' && (
-            <span className="flex items-center gap-1.5 text-sm text-red-400">
-              <AlertTriangle className="w-4 h-4" /> {saveMsg}
-            </span>
-          )}
-          <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#d4af37] hover:bg-[#c9a227] text-[#050508] font-semibold rounded-xl text-sm transition-all shadow-lg shadow-[#d4af37]/20 disabled:opacity-50">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+        <button onClick={handleSave} disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#d4af37] hover:bg-[#c9a227] text-[#050508] font-semibold rounded-xl text-sm transition-all disabled:opacity-50">
+          {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+
+      {/* Dual Platform Pricing Callout */}
+      <div className="flex items-start gap-3 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+        <Info className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+        <div className="text-xs text-indigo-300 space-y-1">
+          <p className="font-semibold">Domestic Dual-Platform Pricing Protocol:</p>
+          <p>• <strong>Web Portal (Cashfree UPI):</strong> ₹99 (30d Pass), ₹799 (365d Pass), ₹1,999 (Lifetime Pass).</p>
+          <p>• <strong>Android Mobile App:</strong> Fixed Google Play SKUs: ₹149/mo, ₹999/yr (Save 44%), ₹2,499 (Lifetime).</p>
         </div>
       </div>
 
-      {/* Price change warning */}
-      <div className="flex items-start gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-        <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-        <p className="text-xs text-amber-400">
-          <strong>Price changes take effect immediately for all new purchases.</strong> Existing active subscriptions are unaffected.
-          Always sync the Paise values after changing ₹ prices.
-        </p>
-      </div>
-
-      {/* Maintenance mode warning */}
+      {/* Maintenance alert */}
       {isMaintenance && (
-        <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl animate-pulse">
+        <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
           <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
           <div>
             <p className="text-sm font-bold text-red-400">⚠️ Maintenance Mode is ON</p>
-            <p className="text-xs text-red-400/70 mt-1">All users will see the maintenance message. Turn this off when done.</p>
+            <p className="text-xs text-red-400/70 mt-0.5">All mobile and web users are seeing the maintenance screen.</p>
           </div>
         </div>
       )}
 
       {/* Section 1: Pricing (₹) */}
       <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-6 space-y-5">
-        <SectionHeader icon={IndianRupee} title="Pricing (₹)" description="Display prices shown to users in the app and on the website" />
+        <SectionHeader icon={IndianRupee} title="Web Cashfree Pricing (₹)" description="Prepaid pass rates displayed on gurukulam.vakrahara.org" />
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Monthly Price (₹)">
-            <NumberInput value={monthlyRs} onChange={setMonthlyRs} min={1} prefix="₹" />
-          </Field>
-          <Field label="Yearly Price (₹)">
-            <NumberInput value={yearlyRs} onChange={setYearlyRs} min={1} prefix="₹" />
-          </Field>
-          <Field label="Lifetime Price (₹)">
-            <NumberInput value={lifetimeRs} onChange={setLifetimeRs} min={1} prefix="₹" />
-          </Field>
+          <Field label="Monthly Pass (₹)"><NumberInput value={monthlyRs} onChange={setMonthlyRs} min={1} prefix="₹" /></Field>
+          <Field label="Yearly Pass (₹)"><NumberInput value={yearlyRs} onChange={setYearlyRs} min={1} prefix="₹" /></Field>
+          <Field label="Lifetime Pass (₹)"><NumberInput value={lifetimeRs} onChange={setLifetimeRs} min={1} prefix="₹" /></Field>
         </div>
       </div>
 
-      {/* Section 2: Pricing (Paise for Cashfree) */}
+      {/* Section 2: Pricing (Paise for Cashfree API) */}
       <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-6 space-y-5">
         <div className="flex items-start justify-between">
-          <SectionHeader icon={IndianRupee} title="Pricing (Paise — Cashfree API)" description="These values are sent to Cashfree. Must be ₹ price × 100." />
+          <SectionHeader icon={IndianRupee} title="Pricing (Paise — Cashfree API)" description="Must equal ₹ price × 100 for Cashfree orders" />
           <button onClick={syncPaiseFromRs}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-all mt-1 shrink-0">
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-300 hover:text-white transition-all mt-1">
             <RefreshCw className="w-3 h-3" /> Sync from ₹
           </button>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Monthly (paise)" note={`= ₹${(monthlyPaise / 100).toFixed(2)}`}>
-            <NumberInput value={monthlyPaise} onChange={setMonthlyPaise} min={100} />
-          </Field>
-          <Field label="Yearly (paise)" note={`= ₹${(yearlyPaise / 100).toFixed(2)}`}>
-            <NumberInput value={yearlyPaise} onChange={setYearlyPaise} min={100} />
-          </Field>
-          <Field label="Lifetime (paise)" note={`= ₹${(lifetimePaise / 100).toFixed(2)}`}>
-            <NumberInput value={lifetimePaise} onChange={setLifetimePaise} min={100} />
-          </Field>
+          <Field label="Monthly (paise)" note={`= ₹${(monthlyPaise / 100).toFixed(2)}`}><NumberInput value={monthlyPaise} onChange={setMonthlyPaise} min={100} /></Field>
+          <Field label="Yearly (paise)" note={`= ₹${(yearlyPaise / 100).toFixed(2)}`}><NumberInput value={yearlyPaise} onChange={setYearlyPaise} min={100} /></Field>
+          <Field label="Lifetime (paise)" note={`= ₹${(lifetimePaise / 100).toFixed(2)}`}><NumberInput value={lifetimePaise} onChange={setLifetimePaise} min={100} /></Field>
         </div>
       </div>
 
-      {/* Section 3: App Behavior */}
+      {/* Section 3: App Behavior & Maintenance */}
       <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-6 space-y-5">
-        <SectionHeader icon={Smartphone} title="App Behavior" description="Control trial duration, force-update, and coupon UX" />
+        <SectionHeader icon={Smartphone} title="App Behavior & Maintenance" description="Control trial duration, version gates, and maintenance" />
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Trial Duration (days)" note="How long the free trial lasts when a user taps 'Start Trial'">
-            <NumberInput value={trialDays} onChange={setTrialDays} min={1} max={30} />
-          </Field>
-          <Field label="Min App Version Code" note="Users below this version code will see a force-update screen (0 = disabled)">
-            <NumberInput value={minAppVersion} onChange={setMinAppVersion} min={0} />
-          </Field>
+          <Field label="Trial Duration (days)" note="Length of initial free trial"><NumberInput value={trialDays} onChange={setTrialDays} min={1} max={30} /></Field>
+          <Field label="Min App Version Code" note="Version enforcement cutoff (0 = disabled)"><NumberInput value={minAppVersion} onChange={setMinAppVersion} min={0} /></Field>
         </div>
-        <Field label="Coupon Hint Text" note="Shown in the coupon input field placeholder in the app">
+        <Field label="Coupon Hint Text" note="Placeholder in coupon input box">
           <input type="text" value={couponHint} onChange={e => setCouponHint(e.target.value)}
-            placeholder="e.g. Have a promo code? Enter here"
-            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#d4af37]/40 transition-all" />
+            placeholder="e.g. Have an access code? Enter here"
+            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#d4af37]/40" />
         </Field>
-      </div>
-
-      {/* Section 4: Maintenance Mode */}
-      <div className={`bg-[#0d0d15] border rounded-2xl p-6 space-y-5 ${isMaintenance ? 'border-red-500/30' : 'border-white/8'}`}>
-        <SectionHeader icon={AlertTriangle} title="Maintenance Mode" description="When enabled, all app users see the maintenance screen" />
-        <div className="flex items-center gap-4">
-          <button onClick={() => setIsMaintenance(m => !m)}>
-            {isMaintenance
-              ? <ToggleRight className="w-10 h-10 text-red-400" />
-              : <ToggleLeft className="w-10 h-10 text-gray-600" />}
-          </button>
+        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
           <div>
-            <span className={`text-sm font-semibold ${isMaintenance ? 'text-red-400' : 'text-gray-400'}`}>
-              Maintenance Mode is {isMaintenance ? 'ON' : 'OFF'}
-            </span>
-            <p className="text-xs text-gray-600 mt-0.5">{isMaintenance ? 'App is unavailable to users.' : 'App is live and accessible.'}</p>
+            <span className="text-sm font-semibold text-white">Emergency Maintenance Mode</span>
+            <p className="text-xs text-gray-500">Block learner traffic during major migrations</p>
           </div>
+          <button onClick={() => setIsMaintenance(m => !m)}>
+            {isMaintenance ? <ToggleRight className="w-10 h-10 text-red-400" /> : <ToggleLeft className="w-10 h-10 text-gray-600" />}
+          </button>
         </div>
-        <Field label="Maintenance Message" note="This message is shown to users when maintenance mode is active">
-          <textarea
-            value={maintenanceMsg}
-            onChange={e => setMaintenanceMsg(e.target.value)}
-            rows={3}
-            placeholder="e.g. We're performing scheduled maintenance. We'll be back in a few hours!"
-            className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#d4af37]/40 transition-all resize-none"
-          />
-        </Field>
-      </div>
-
-      {/* Save button (bottom) */}
-      <div className="flex items-center justify-end gap-4 pb-4">
-        {saveStatus === 'success' && (
-          <span className="flex items-center gap-1.5 text-sm text-emerald-400">
-            <CheckCircle2 className="w-4 h-4" /> {saveMsg}
-          </span>
+        {isMaintenance && (
+          <Field label="Maintenance Message">
+            <textarea value={maintenanceMsg} onChange={e => setMaintenanceMsg(e.target.value)} rows={2}
+              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#d4af37]/40 resize-none" />
+          </Field>
         )}
-        {saveStatus === 'error' && (
-          <span className="text-sm text-red-400">{saveMsg}</span>
-        )}
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 px-6 py-3 bg-[#d4af37] hover:bg-[#c9a227] text-[#050508] font-semibold rounded-xl text-sm transition-all shadow-lg shadow-[#d4af37]/20 disabled:opacity-50">
-          {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? 'Saving...' : 'Save All Changes'}
-        </button>
       </div>
     </div>
   );

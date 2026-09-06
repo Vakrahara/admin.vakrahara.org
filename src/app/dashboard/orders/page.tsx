@@ -3,69 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
 import {
-  ShoppingBag, TrendingUp, Clock, CheckCircle2, XCircle, RefreshCw,
-  Search, Filter, ChevronLeft, ChevronRight, IndianRupee, Copy, Check, Download
+  ShoppingBag, CheckCircle2, Clock, RefreshCw,
+  Search, ChevronLeft, ChevronRight, IndianRupee, Download, XCircle
 } from 'lucide-react';
 import { exportToCsv } from '@/lib/export';
-
-interface Order {
-  id: string;
-  order_id: string;
-  user_id: string;
-  plan: string;
-  amount_paise: number;
-  status: string;
-  coupon_used: string;
-  gateway: string;
-  cf_order_id: string;
-  cf_payment_id: string;
-  processed_at: string;
-  created: string;
-}
-
-const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-  paid:     { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' },
-  pending:  { bg: 'bg-amber-500/10',   text: 'text-amber-400',   dot: 'bg-amber-400' },
-  failed:   { bg: 'bg-red-500/10',     text: 'text-red-400',     dot: 'bg-red-400' },
-  refunded: { bg: 'bg-gray-500/10',    text: 'text-gray-400',    dot: 'bg-gray-400' },
-};
-
-const PLAN_STYLES: Record<string, string> = {
-  monthly:  'text-blue-400 bg-blue-500/10',
-  yearly:   'text-purple-400 bg-purple-500/10',
-  lifetime: 'text-[#d4af37] bg-[#d4af37]/10',
-};
-
-function KpiCard({ icon: Icon, label, value, sub, color }: {
-  icon: any; label: string; value: string; sub?: string; color: string;
-}) {
-  return (
-    <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5">
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">{label}</span>
-        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-      </div>
-      <div className="text-2xl font-bold text-white">{value}</div>
-      {sub && <div className="text-xs text-gray-500 mt-1">{sub}</div>}
-    </div>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <button onClick={copy} className="ml-1 p-0.5 text-gray-600 hover:text-gray-300 transition-colors">
-      {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-    </button>
-  );
-}
+import {
+  Order, STATUS_STYLES, PLAN_STYLES,
+  KpiCard, CopyButton, GatewayBadge, fmtRupees, fmtDate
+} from './components/OrderComponents';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -77,6 +22,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
+  const [gatewayFilter, setGatewayFilter] = useState('all');
 
   // KPI totals
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -88,12 +34,13 @@ export default function OrdersPage() {
     const parts: string[] = [];
     if (statusFilter !== 'all') parts.push(`status = "${statusFilter}"`);
     if (planFilter !== 'all') parts.push(`plan = "${planFilter}"`);
+    if (gatewayFilter !== 'all') parts.push(`gateway = "${gatewayFilter}"`);
     if (search.trim()) {
       const s = search.trim().replace(/"/g, '');
       parts.push(`(order_id ~ "${s}" || user_id ~ "${s}" || cf_payment_id ~ "${s}")`);
     }
     return parts.join(' && ');
-  }, [statusFilter, planFilter, search]);
+  }, [statusFilter, planFilter, gatewayFilter, search]);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -112,7 +59,6 @@ export default function OrdersPage() {
     }
   }, [page, buildFilter]);
 
-  // Fetch KPI stats (all paid orders)
   const fetchKpis = useCallback(async () => {
     try {
       const [allRes, paidRes, pendingRes] = await Promise.all([
@@ -130,19 +76,17 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
   useEffect(() => { fetchKpis(); }, [fetchKpis]);
-  useEffect(() => { setPage(1); }, [statusFilter, planFilter, search]);
+  useEffect(() => { setPage(1); }, [statusFilter, planFilter, gatewayFilter, search]);
 
   const totalPages = Math.ceil(totalItems / PER_PAGE);
-  const fmtRupees = (paise: number) => '₹' + (paise / 100).toLocaleString('en-IN');
-  const fmtDate = (d: string) => d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">All payment transactions via Cashfree</p>
+          <h1 className="text-2xl font-bold text-white">Orders & Subscriptions</h1>
+          <p className="text-sm text-gray-500 mt-1">Transactions across Google Play & Cashfree</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -153,10 +97,9 @@ export default function OrdersPage() {
                 Plan: o.plan,
                 AmountINR: o.amount_paise / 100,
                 Status: o.status,
+                Gateway: o.gateway || 'cashfree',
                 CouponUsed: o.coupon_used || '',
-                Gateway: o.gateway,
-                CFPaymentID: o.cf_payment_id || '',
-                ProcessedAt: o.processed_at || '',
+                PaymentID: o.cf_payment_id || o.order_id,
                 CreatedAt: o.created,
               }));
               exportToCsv(exportData, `orders_export_${new Date().toISOString().slice(0,10)}.csv`);
@@ -197,6 +140,15 @@ export default function OrdersPage() {
             />
           </div>
           <select
+            value={gatewayFilter}
+            onChange={e => setGatewayFilter(e.target.value)}
+            className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-[#d4af37]/40"
+          >
+            <option value="all">All Gateways</option>
+            <option value="cashfree">Cashfree UPI</option>
+            <option value="google_play">Google Play</option>
+          </select>
+          <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
             className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-[#d4af37]/40"
@@ -226,7 +178,7 @@ export default function OrdersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/8">
-                {['Order ID', 'User ID', 'Plan', 'Amount', 'Status', 'Coupon', 'CF Payment ID', 'Created'].map(h => (
+                {['Order ID', 'User ID', 'Gateway', 'Plan', 'Amount', 'Status', 'Payment ID', 'Created'].map(h => (
                   <th key={h} className="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -238,6 +190,7 @@ export default function OrdersPage() {
                 <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-600">No orders found</td></tr>
               ) : orders.map(o => {
                 const st = STATUS_STYLES[o.status] || STATUS_STYLES.pending;
+                const paymentId = o.cf_payment_id || (o.gateway === 'google_play' ? o.order_id : '');
                 return (
                   <tr key={o.id} className="hover:bg-white/3 transition-colors">
                     <td className="px-5 py-3.5 font-mono text-xs text-gray-300 whitespace-nowrap">
@@ -245,6 +198,9 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-5 py-3.5 font-mono text-xs text-gray-400 whitespace-nowrap">
                       {o.user_id.slice(0, 12)}…<CopyButton text={o.user_id} />
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <GatewayBadge gateway={o.gateway} />
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${PLAN_STYLES[o.plan] || 'text-gray-400 bg-white/5'}`}>
@@ -260,13 +216,8 @@ export default function OrdersPage() {
                         {o.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-xs text-gray-500">
-                      {o.coupon_used || <span className="text-gray-700">—</span>}
-                    </td>
                     <td className="px-5 py-3.5 font-mono text-xs text-gray-500 whitespace-nowrap">
-                      {o.cf_payment_id
-                        ? <>{o.cf_payment_id.slice(0, 14)}…<CopyButton text={o.cf_payment_id} /></>
-                        : <span className="text-gray-700">—</span>}
+                      {paymentId ? <>{paymentId.slice(0, 16)}…<CopyButton text={paymentId} /></> : <span className="text-gray-700">—</span>}
                     </td>
                     <td className="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap">{fmtDate(o.created)}</td>
                   </tr>
@@ -300,10 +251,10 @@ export default function OrdersPage() {
         )}
       </div>
 
-      {/* Refund note */}
-      <div className="flex items-start gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-xs text-amber-400">
-        <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-        <span>To issue a refund, go to your <strong>Cashfree Dashboard → Orders → Refunds</strong>. After processing, manually update the order status here if needed.</span>
+      {/* Gateway reconciliation note */}
+      <div className="flex items-start gap-3 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl text-xs text-indigo-300">
+        <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-indigo-400" />
+        <span>Dual Gateway Reconciliation: Cashfree transactions settle T+1 via UPI/Cards. Google Play subscriptions auto-renew on Play Console and sync via PocketBase play_billing hook.</span>
       </div>
     </div>
   );
