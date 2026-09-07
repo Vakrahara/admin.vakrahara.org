@@ -32,14 +32,19 @@ export default function FinanceGSTPage() {
       setOrders(items);
 
       // fetch order items for GST breakdown
-      const itemsRes = await pb.collection('order_items').getFullList({ expand: 'order' });
+      const itemsRes = await pb.collection('order_items').getFullList({ expand: 'order_id' });
       const orderItems = itemsRes as unknown as OrderItem[];
 
       let rev = 0;
       let cfRev = 0;
       let playRev = 0;
 
-      const paidOrderIds = new Set(items.filter((i) => i.status === 'paid').map((i) => i.id));
+      const paidOrders = items.filter((i) => i.status === 'paid');
+      const paidOrderIds = new Set<string>();
+      for (const po of paidOrders) {
+        if (po.id) paidOrderIds.add(po.id);
+        if (po.order_id) paidOrderIds.add(po.order_id);
+      }
       const breakdownMap = new Map<string, GSTBreakdown>();
       let totalGstCalc = 0;
 
@@ -53,19 +58,20 @@ export default function FinanceGSTPage() {
       }
 
       for (const oItem of orderItems) {
-        if (paidOrderIds.has(oItem.order)) {
-          const amt = oItem.amount_paise / 100;
-          const rate = oItem.gst_rate / 100;
-          const taxable = Math.round((amt / (1 + rate)) * 100) / 100;
-          const gst = Math.round((amt - taxable) * 100) / 100;
+        const isPaid = paidOrderIds.has(oItem.order_id) || (oItem as any).expand?.order_id?.status === 'paid';
+        if (isPaid) {
+          const gst = (oItem.gst_amount_paise || 0) / 100;
+          const taxable = Math.max(0, ((oItem.unit_price_paise || 0) - (oItem.gst_amount_paise || 0)) / 100);
+          const rate = oItem.gst_rate_pct || 18;
+          const hsn = oItem.hsn_sac_code || '998439';
 
           totalGstCalc += gst;
 
-          const key = `${oItem.hsn_sac_code}_${oItem.gst_rate}`;
+          const key = `${hsn}_${rate}`;
           if (!breakdownMap.has(key)) {
             breakdownMap.set(key, {
-              hsn_sac_code: oItem.hsn_sac_code,
-              rate: oItem.gst_rate,
+              hsn_sac_code: hsn,
+              rate: rate,
               taxable_value: 0,
               cgst: 0,
               sgst: 0,
@@ -108,28 +114,29 @@ export default function FinanceGSTPage() {
       TaxableValueINR: b.taxable_value,
       CGST_INR: b.cgst,
       SGST_INR: b.sgst,
-      TotalTaxINR: b.cgst + b.sgst,
+      TotalTaxINR: Math.round((b.cgst + b.sgst) * 100) / 100,
     }));
 
     exportToCsv(data, `gstr1_report_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
-  const handleProcessRefund = async (adminPassword?: string) => {
-    if (!refundModal.order || !adminPassword) return;
+  const handleProcessRefund = async () => {
+    if (!refundModal.order) return;
     try {
-      const res = await fetch('https://pb.vakrahara.org/api/admin/payments/refund', {
+      await pb.send('/api/admin/payments/refund', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: refundModal.order.id, adminPassword }),
+        body: {
+          order_id: refundModal.order.order_id || refundModal.order.cf_order_id || refundModal.order.id,
+          reason: 'Admin portal refund',
+        },
       });
-      if (!res.ok) throw new Error('Refund API failed');
 
-      await pb.collection('orders').update(refundModal.order.id, { status: 'refunded' });
       setRefundModal({ isOpen: false, order: null });
       fetchFinance();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to process refund:', err);
-      throw err;
+      const msg = err?.data?.message || err?.message || 'Failed to process refund';
+      throw new Error(msg);
     }
   };
 
@@ -194,9 +201,10 @@ export default function FinanceGSTPage() {
           onClose={() => setRefundModal({ isOpen: false, order: null })}
           onConfirm={handleProcessRefund}
           title={`Process Refund for INV-${refundModal.order.id.slice(0, 8).toUpperCase()}`}
-          description={`This will issue a full refund of ₹${refundModal.order.amount_paise / 100} via Cashfree and revoke the associated subscription. Admin password required.`}
+          description={`This will issue a full refund of ₹${refundModal.order.amount_paise / 100} via Cashfree and revoke the associated subscription. Type REFUND to confirm.`}
           actionLabel="Execute Refund"
-          requirePassword={true}
+          requiredText="REFUND"
+          requirePassword={false}
           isDangerous={true}
         />
       )}

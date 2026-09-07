@@ -2,16 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
-import { RefreshCw, Users, CreditCard, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { RefreshCw, Users, AlertTriangle, UserX } from 'lucide-react';
 
 interface Subscription {
   id: string;
   user_id: string;
-  plan: string;
+  plan_id: string;
   amount_paise: number;
   status: string;
   expires_at: string;
-  renewal_count: number;
+  renewal_count?: number;
   created: string;
 }
 
@@ -27,11 +27,10 @@ export default function SubscriptionsPage() {
   const fetchSubs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await pb.collection('subscriptions').getList(1, 100, {
+      const items = await pb.collection('subscriptions').getFullList<Subscription>({
         sort: '-created',
-        filter: 'gateway = "cashfree"'
+        expand: 'order_id'
       });
-      const items = res.items as unknown as Subscription[];
       setSubs(items);
 
       let active = 0;
@@ -43,7 +42,7 @@ export default function SubscriptionsPage() {
       in7Days.setDate(in7Days.getDate() + 7);
 
       for (const sub of items) {
-        if (sub.status === 'active') {
+        if (sub.status === 'active' || sub.status === 'renewed') {
           active++;
           if (sub.expires_at) {
             const expiresAt = new Date(sub.expires_at);
@@ -51,7 +50,10 @@ export default function SubscriptionsPage() {
               expiring++;
             }
           }
-        } else if (sub.status === 'expired' || sub.status === 'cancelled') {
+        } else if (sub.status === 'expiring_soon') {
+          active++;
+          expiring++;
+        } else if (sub.status === 'expired') {
           churned++;
         }
       }
@@ -79,7 +81,27 @@ export default function SubscriptionsPage() {
       }
       return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Active</span>;
     }
-    return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30 capitalize">{status}</span>;
+    if (status === 'expiring_soon') {
+      return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">Expiring Soon</span>;
+    }
+    if (status === 'renewed') {
+      return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">Renewed</span>;
+    }
+    if (status === 'pending') {
+      return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">Pending</span>;
+    }
+    if (status === 'expired') {
+      return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30">Expired</span>;
+    }
+    return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-500/10 text-gray-400 border border-gray-500/30 capitalize">{status}</span>;
+  };
+
+  const formatExpiryDate = (expiresAtStr: string) => {
+    if (!expiresAtStr) return 'N/A';
+    const date = new Date(expiresAtStr);
+    if (isNaN(date.getTime())) return 'N/A';
+    if (date.getFullYear() >= 9000) return 'Lifetime';
+    return date.toLocaleDateString();
   };
 
   return (
@@ -102,21 +124,21 @@ export default function SubscriptionsPage() {
         <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Active Subs</span>
-            <Activity className="w-4 h-4 text-emerald-400" />
+            <Users className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-bold text-emerald-400">{activeCount}</div>
         </div>
         <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Expiring Soon</span>
-            <Activity className="w-4 h-4 text-yellow-400" />
+            <AlertTriangle className="w-4 h-4 text-yellow-400" />
           </div>
           <div className="text-2xl font-bold text-yellow-400">{expiringSoonCount}</div>
         </div>
         <div className="bg-[#0d0d15] border border-white/8 rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Churned (Expired/Canceled)</span>
-            <Activity className="w-4 h-4 text-red-400" />
+            <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Churned (Expired)</span>
+            <UserX className="w-4 h-4 text-red-400" />
           </div>
           <div className="text-2xl font-bold text-red-400">{churnedCount}</div>
         </div>
@@ -150,10 +172,10 @@ export default function SubscriptionsPage() {
                 subs.map(s => (
                   <tr key={s.id} className="hover:bg-white/2 transition">
                     <td className="py-3.5 px-4 font-mono text-xs">{s.user_id}</td>
-                    <td className="py-3.5 px-4 capitalize font-semibold">{s.plan}</td>
-                    <td className="py-3.5 px-4 font-mono font-bold">₹{s.amount_paise / 100}</td>
+                    <td className="py-3.5 px-4 capitalize font-semibold">{s.plan_id || '—'}</td>
+                    <td className="py-3.5 px-4 font-mono font-bold">₹{((s.amount_paise || 0) / 100).toLocaleString('en-IN')}</td>
                     <td className="py-3.5 px-4">{getStatusBadge(s.status, s.expires_at)}</td>
-                    <td className="py-3.5 px-4 font-mono text-xs">{s.expires_at ? new Date(s.expires_at).toLocaleDateString() : 'N/A'}</td>
+                    <td className="py-3.5 px-4 font-mono text-xs">{formatExpiryDate(s.expires_at)}</td>
                     <td className="py-3.5 px-4 text-center font-mono">{s.renewal_count || 0}</td>
                   </tr>
                 ))

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, BookOpen, Building2, LogOut, ShieldAlert, 
   Menu, X, Loader2, ChevronRight, Package, Bell, ShoppingBag, 
   Key, Tag, Settings2, Receipt, GraduationCap, School, Swords, 
-  Globe2, Server, ShieldCheck, Headphones, Sliders, Code
+  Globe2, Server, ShieldCheck, Headphones, Sliders, Code, Repeat
 } from 'lucide-react';
 import { LivePulseStream } from '@/components/LivePulseStream';
 
@@ -72,6 +72,7 @@ export default function DashboardLayout({
         { name: 'Analytics Summary', href: '/dashboard', icon: LayoutDashboard },
         { name: 'User Management', href: '/dashboard/users', icon: Users },
         { name: 'Orders & Revenue', href: '/dashboard/orders', icon: ShoppingBag },
+        { name: 'Subscriptions', href: '/dashboard/subscriptions', icon: Repeat },
         { name: 'Audit Trail', href: '/dashboard/audit', icon: ShieldAlert },
         { name: 'GST & Finance', href: '/dashboard/finance', icon: Receipt },
       ],

@@ -13,10 +13,11 @@ export interface Order {
 
 export interface OrderItem {
   id: string;
-  order: string;
+  order_id: string;
   hsn_sac_code: string;
-  gst_rate: number;
-  amount_paise: number;
+  gst_rate_pct: number;
+  unit_price_paise: number;
+  gst_amount_paise: number;
 }
 
 export interface GSTBreakdown {
