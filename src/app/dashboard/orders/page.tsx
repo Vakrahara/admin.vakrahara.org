@@ -38,7 +38,7 @@ export default function OrdersPage() {
     if (gatewayFilter !== 'all') parts.push(`gateway = "${gatewayFilter}"`);
     if (search.trim()) {
       const s = search.trim().replace(/"/g, '');
-      parts.push(`(order_id ~ "${s}" || user_id ~ "${s}" || cf_payment_id ~ "${s}")`);
+      parts.push(`(order_id ~ "${s}" || user_id ~ "${s}" || gateway_payment_id ~ "${s}")`);
     }
     return parts.join(' && ');
   }, [statusFilter, planFilter, gatewayFilter, search]);
@@ -111,7 +111,7 @@ export default function OrdersPage() {
                 Status: o.status,
                 Gateway: o.gateway || 'cashfree',
                 CouponUsed: o.coupon_used || '',
-                GatewayPaymentID: o.cf_payment_id || o.order_id,
+                gateway_payment_id: o.gateway_payment_id || o.order_id,
                 CreatedAt: o.created,
               }));
               exportToCsv(exportData, `orders_export_${new Date().toISOString().slice(0,10)}.csv`);
@@ -191,7 +191,7 @@ export default function OrdersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/8">
-                {['Order ID', 'User ID', 'Gateway', 'Plan', 'Amount', 'Status', 'Gateway Payment ID', 'Created'].map(h => (
+                {['Order ID', 'User ID', 'Gateway', 'Plan', 'Amount', 'Status', 'gateway_payment_id', 'Created'].map(h => (
                   <th key={h} className="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -203,7 +203,7 @@ export default function OrdersPage() {
                 <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-600">No orders found</td></tr>
               ) : orders.map(o => {
                 const st = STATUS_STYLES[o.status] || STATUS_STYLES.pending;
-                const paymentId = o.cf_payment_id || (o.gateway === 'google_play' ? o.order_id : '');
+                const paymentId = o.gateway_payment_id || (o.gateway === 'google_play' ? o.order_id : '');
                 return (
                   <tr key={o.id} className="hover:bg-white/3 transition-colors">
                     <td className="px-5 py-3.5 font-mono text-xs text-gray-300 whitespace-nowrap">

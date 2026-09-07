@@ -13,7 +13,7 @@ export interface Order {
   coupon_used: string;
   gateway: string;
   cf_order_id: string;
-  cf_payment_id: string;
+  gateway_payment_id: string;
   processed_at: string;
   created: string;
 }

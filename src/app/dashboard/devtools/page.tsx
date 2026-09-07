@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { pb } from '@/lib/pocketbase';
@@ -65,7 +65,7 @@ export default function DevToolsPage() {
             },
             payment: {
               payment_status: 'SUCCESS',
-              cf_payment_id: 'cf_sim_test_9999',
+              gateway_payment_id: 'cf_sim_test_9999',
             },
           },
         },

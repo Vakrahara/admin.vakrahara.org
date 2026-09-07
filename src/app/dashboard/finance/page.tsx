@@ -18,7 +18,7 @@ interface Order {
   status: string;
   gateway: string;
   cf_order_id: string;
-  cf_payment_id: string;
+  gateway_payment_id: string;
   created: string;
 }
 
