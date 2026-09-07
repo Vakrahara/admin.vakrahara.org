@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import { AlertTriangle, Lock, X } from "lucide-react";
+import { AlertTriangle, Lock, X, Key } from "lucide-react";
 
 interface SudoConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: (password?: string) => void | Promise<void>;
   title: string;
   description: string;
   confirmText?: string;
   actionLabel?: string;
   requiredText?: string;
+  requirePassword?: boolean;
   isDangerous?: boolean;
 }
 
@@ -24,14 +25,17 @@ export function SudoConfirmModal({
   confirmText = "Confirm Action",
   actionLabel,
   requiredText,
+  requirePassword = false,
   isDangerous = false,
 }: SudoConfirmModalProps) {
   const [typedKeyword, setTypedKeyword] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const targetKeyword = requiredText || (isDangerous ? "CONFIRM" : "");
+  const targetKeyword = requiredText || (isDangerous && !requirePassword ? "CONFIRM" : "");
   const buttonLabel = actionLabel || confirmText;
 
   const handleConfirm = async () => {
@@ -39,9 +43,21 @@ export function SudoConfirmModal({
       setError(`Please type "${targetKeyword}" exactly to proceed`);
       return;
     }
+    if (requirePassword && !password) {
+      setError(`Admin password is required to proceed`);
+      return;
+    }
+    
     setError("");
-    await onConfirm();
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onConfirm(requirePassword ? password : undefined);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "Action failed. Please check credentials.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -50,7 +66,8 @@ export function SudoConfirmModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+          disabled={isSubmitting}
+          className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors disabled:opacity-50"
         >
           <X className="w-5 h-5" />
         </button>
@@ -66,6 +83,8 @@ export function SudoConfirmModal({
           >
             {isDangerous ? (
               <AlertTriangle className="w-5 h-5" />
+            ) : requirePassword ? (
+              <Key className="w-5 h-5" />
             ) : (
               <Lock className="w-5 h-5" />
             )}
@@ -84,7 +103,7 @@ export function SudoConfirmModal({
         </p>
 
         {/* Typed confirmation for dangerous actions or explicit keyword */}
-        {targetKeyword && (
+        {targetKeyword && !requirePassword && (
           <div className="mb-5">
             <label className="block text-[11px] font-mono uppercase text-white/50 mb-1.5">
               Type <span className="text-rose-400 font-bold">{targetKeyword}</span> to proceed:
@@ -97,29 +116,53 @@ export function SudoConfirmModal({
                 if (error) setError("");
               }}
               placeholder={targetKeyword}
-              className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-rose-500/50"
+              disabled={isSubmitting}
+              className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-rose-500/50 disabled:opacity-50"
             />
-            {error && <p className="text-xs text-rose-400 mt-1.5">{error}</p>}
           </div>
         )}
+
+        {/* Password input */}
+        {requirePassword && (
+          <div className="mb-5">
+            <label className="block text-[11px] font-mono uppercase text-white/50 mb-1.5">
+              Enter Admin Password to proceed:
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError("");
+              }}
+              placeholder="Admin Password"
+              disabled={isSubmitting}
+              className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-[#d4af37]/50 disabled:opacity-50"
+            />
+          </div>
+        )}
+        
+        {error && <p className="text-xs text-rose-400 mt-1.5 mb-5">{error}</p>}
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-white/5">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-white/60 hover:text-white transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-xs font-semibold text-white/60 hover:text-white transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            className={`px-5 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 shadow-lg ${
+            disabled={isSubmitting}
+            className={`px-5 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 shadow-lg disabled:opacity-50 ${
               isDangerous || targetKeyword
                 ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20"
                 : "bg-[#d4af37] hover:bg-[#e6c34f] text-black shadow-[#d4af37]/20 font-bold"
             }`}
           >
-            {buttonLabel}
+            {isSubmitting ? "Processing..." : buttonLabel}
           </button>
         </div>
       </div>

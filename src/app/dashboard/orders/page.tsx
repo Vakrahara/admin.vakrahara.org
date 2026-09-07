@@ -23,6 +23,7 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
   const [gatewayFilter, setGatewayFilter] = useState('all');
+  const [gateways, setGateways] = useState<string[]>([]);
 
   // KPI totals
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -41,6 +42,16 @@ export default function OrdersPage() {
     }
     return parts.join(' && ');
   }, [statusFilter, planFilter, gatewayFilter, search]);
+
+  const fetchGateways = useCallback(async () => {
+    try {
+      const result = await pb.collection('orders').getFullList({ fields: 'gateway' });
+      const uniqueGateways = Array.from(new Set(result.map((o: any) => o.gateway).filter(Boolean)));
+      setGateways(uniqueGateways as string[]);
+    } catch (e) {
+      console.error('Failed to fetch gateways', e);
+    }
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -74,6 +85,7 @@ export default function OrdersPage() {
     } catch (e) { /* ignore */ }
   }, []);
 
+  useEffect(() => { fetchGateways(); }, [fetchGateways]);
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
   useEffect(() => { fetchKpis(); }, [fetchKpis]);
   useEffect(() => { setPage(1); }, [statusFilter, planFilter, gatewayFilter, search]);
@@ -86,7 +98,7 @@ export default function OrdersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Orders & Subscriptions</h1>
-          <p className="text-sm text-gray-500 mt-1">Transactions across Google Play & Cashfree</p>
+          <p className="text-sm text-gray-500 mt-1">Transactions across multiple gateways</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -99,7 +111,7 @@ export default function OrdersPage() {
                 Status: o.status,
                 Gateway: o.gateway || 'cashfree',
                 CouponUsed: o.coupon_used || '',
-                PaymentID: o.cf_payment_id || o.order_id,
+                GatewayPaymentID: o.cf_payment_id || o.order_id,
                 CreatedAt: o.created,
               }));
               exportToCsv(exportData, `orders_export_${new Date().toISOString().slice(0,10)}.csv`);
@@ -110,7 +122,7 @@ export default function OrdersPage() {
             <Download className="w-4 h-4" /> Export CSV
           </button>
           <button
-            onClick={() => { fetchOrders(); fetchKpis(); }}
+            onClick={() => { fetchOrders(); fetchKpis(); fetchGateways(); }}
             className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
           >
             <RefreshCw className="w-4 h-4" /> Refresh
@@ -145,8 +157,9 @@ export default function OrdersPage() {
             className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-[#d4af37]/40"
           >
             <option value="all">All Gateways</option>
-            <option value="cashfree">Cashfree UPI</option>
-            <option value="google_play">Google Play</option>
+            {gateways.map(g => (
+              <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1).replace('_', ' ')}</option>
+            ))}
           </select>
           <select
             value={statusFilter}
@@ -178,7 +191,7 @@ export default function OrdersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/8">
-                {['Order ID', 'User ID', 'Gateway', 'Plan', 'Amount', 'Status', 'Payment ID', 'Created'].map(h => (
+                {['Order ID', 'User ID', 'Gateway', 'Plan', 'Amount', 'Status', 'Gateway Payment ID', 'Created'].map(h => (
                   <th key={h} className="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
