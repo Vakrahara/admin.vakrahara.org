@@ -44,12 +44,20 @@ export default function DashboardLayout({
         return;
       }
       
-      const record = pb.authStore.record;
-      if (record) {
-        setAdminName(record.name || record.username || 'Co-ordinator');
-        const email = record.email?.toLowerCase();
-        setAdminRole((email === 'vkarms.vk@gmail.com' || email === 'vakrahara@gmail.com') ? 'Super Admin' : 'Staff Admin');
+      const record = (pb.authStore.record || pb.authStore.model) as any;
+      const email = record?.email?.toLowerCase();
+      const adminEmails = ['vkarms.vk@gmail.com', 'vakrahara@gmail.com'];
+      const isSuperuser = pb.authStore.isSuperuser || pb.authStore.isAdmin || (email && adminEmails.includes(email));
+
+      if (!isSuperuser) {
+        pb.authStore.clear();
+        document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        router.push(`/login?redirect=${pathname}&error=unauthorized`);
+        return;
       }
+
+      setAdminName(record?.name || record?.username || 'Administrator');
+      setAdminRole('Super Admin');
       setLoading(false);
     };
 
@@ -104,6 +112,7 @@ export default function DashboardLayout({
     {
       category: 'System & Security',
       items: [
+        { name: 'Global Config', href: '/dashboard/config', icon: Settings2 },
         { name: 'Infrastructure VPS', href: '/dashboard/infrastructure', icon: Server },
         { name: 'UGC Moderation', href: '/dashboard/moderation', icon: ShieldCheck },
         { name: 'Customer Support', href: '/dashboard/support', icon: Headphones },
