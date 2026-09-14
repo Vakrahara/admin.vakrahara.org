@@ -27,44 +27,84 @@ export default function FinanceGSTPage() {
   const fetchFinance = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await pb.collection('orders').getList(1, 500, { sort: '-created' });
-      const items = res.items as unknown as Order[];
+      // Fetch all orders without truncation for accurate revenue and tax calculation
+      const items = (await pb.collection('orders').getFullList({ sort: '-created' })) as unknown as Order[];
       setOrders(items);
 
-      // fetch order items for GST breakdown
-      const itemsRes = await pb.collection('order_items').getFullList({ expand: 'order_id' });
-      const orderItems = itemsRes as unknown as OrderItem[];
+      // Fetch order items with fallback to orders collection if empty
+      let orderItems: OrderItem[] = [];
+      try {
+        const itemsRes = await pb.collection('order_items').getFullList({ expand: 'order_id' });
+        orderItems = itemsRes as unknown as OrderItem[];
+      } catch (oiErr) {
+        console.warn('Notice: order_items fetch fallback to orders table:', oiErr);
+      }
 
       let rev = 0;
       let cfRev = 0;
       let playRev = 0;
 
       const paidOrders = items.filter((i) => i.status === 'paid');
-      const paidOrderIds = new Set<string>();
+      const paidOrdersMap = new Map<string, Order>();
       for (const po of paidOrders) {
-        if (po.id) paidOrderIds.add(po.id);
-        if (po.order_id) paidOrderIds.add(po.order_id);
+        if (po.id) paidOrdersMap.set(po.id, po);
+        if (po.order_id) paidOrdersMap.set(po.order_id, po);
       }
+
+      for (const item of paidOrders) {
+        const amt = (item.amount_paise || 0) / 100;
+        rev += amt;
+        if (item.gateway === 'google_play') playRev += amt;
+        else cfRev += amt;
+      }
+
       const breakdownMap = new Map<string, GSTBreakdown>();
       let totalGstCalc = 0;
 
-      for (const item of items) {
-        if (item.status === 'paid') {
-          const amt = item.amount_paise / 100;
-          rev += amt;
-          if (item.gateway === 'google_play') playRev += amt;
-          else cfRev += amt;
+      if (orderItems.length > 0) {
+        for (const oItem of orderItems) {
+          const parentOrder = paidOrdersMap.get(oItem.order_id) || (oItem as any).expand?.order_id;
+          const isPaid = parentOrder?.status === 'paid' || paidOrdersMap.has(oItem.order_id);
+          if (isPaid) {
+            const gst = (oItem.gst_amount_paise || 0) / 100;
+            const taxable = Math.max(0, ((oItem.unit_price_paise || 0) - (oItem.gst_amount_paise || 0)) / 100);
+            const rate = oItem.gst_rate_pct || 18;
+            const hsn = oItem.hsn_sac_code || '998439';
+
+            totalGstCalc += gst;
+
+            const key = `${hsn}_${rate}`;
+            if (!breakdownMap.has(key)) {
+              breakdownMap.set(key, {
+                hsn_sac_code: hsn,
+                rate: rate,
+                taxable_value: 0,
+                igst: 0,
+                cgst: 0,
+                sgst: 0,
+              });
+            }
+            const entry = breakdownMap.get(key)!;
+            entry.taxable_value += taxable;
+
+            // Statutory Place of Supply: UP (09) = CGST+SGST, all other states = IGST
+            const isIntrastate = parentOrder?.place_of_supply === '09' || ((parentOrder?.cgst_paise || 0) > 0);
+            if (isIntrastate) {
+              entry.cgst += gst / 2;
+              entry.sgst += gst / 2;
+            } else {
+              entry.igst += gst;
+            }
+          }
         }
-      }
-
-      for (const oItem of orderItems) {
-        const isPaid = paidOrderIds.has(oItem.order_id) || (oItem as any).expand?.order_id?.status === 'paid';
-        if (isPaid) {
-          const gst = (oItem.gst_amount_paise || 0) / 100;
-          const taxable = Math.max(0, ((oItem.unit_price_paise || 0) - (oItem.gst_amount_paise || 0)) / 100);
-          const rate = oItem.gst_rate_pct || 18;
-          const hsn = oItem.hsn_sac_code || '998439';
-
+      } else {
+        // Fallback: Compute statutory GST breakdown directly from paid orders
+        for (const po of paidOrders) {
+          const rate = 18;
+          const hsn = '998439';
+          const amt = (po.amount_paise || 0) / 100;
+          const taxable = po.taxable_paise ? po.taxable_paise / 100 : Math.round((amt / 1.18) * 100) / 100;
+          const gst = amt - taxable;
           totalGstCalc += gst;
 
           const key = `${hsn}_${rate}`;
@@ -73,14 +113,21 @@ export default function FinanceGSTPage() {
               hsn_sac_code: hsn,
               rate: rate,
               taxable_value: 0,
+              igst: 0,
               cgst: 0,
               sgst: 0,
             });
           }
           const entry = breakdownMap.get(key)!;
           entry.taxable_value += taxable;
-          entry.cgst += gst / 2;
-          entry.sgst += gst / 2;
+
+          const isIntrastate = po.place_of_supply === '09' || ((po.cgst_paise || 0) > 0);
+          if (isIntrastate) {
+            entry.cgst += gst / 2;
+            entry.sgst += gst / 2;
+          } else {
+            entry.igst += gst;
+          }
         }
       }
 
@@ -92,6 +139,7 @@ export default function FinanceGSTPage() {
       const arr = Array.from(breakdownMap.values()).map((e) => ({
         ...e,
         taxable_value: Math.round(e.taxable_value * 100) / 100,
+        igst: Math.round(e.igst * 100) / 100,
         cgst: Math.round(e.cgst * 100) / 100,
         sgst: Math.round(e.sgst * 100) / 100,
       }));
@@ -112,9 +160,10 @@ export default function FinanceGSTPage() {
       HSN_SAC_Code: b.hsn_sac_code,
       Rate_Percent: b.rate,
       TaxableValueINR: b.taxable_value,
+      IGST_INR: b.igst,
       CGST_INR: b.cgst,
       SGST_INR: b.sgst,
-      TotalTaxINR: Math.round((b.cgst + b.sgst) * 100) / 100,
+      TotalTaxINR: Math.round((b.igst + b.cgst + b.sgst) * 100) / 100,
     }));
 
     exportToCsv(data, `gstr1_report_${new Date().toISOString().slice(0, 10)}.csv`);

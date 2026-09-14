@@ -19,6 +19,7 @@ export function FinanceGstTable({ gstBreakdowns }: FinanceGstTableProps) {
               <th className="py-3.5 px-4">HSN / SAC Code</th>
               <th className="py-3.5 px-4">Rate (%)</th>
               <th className="py-3.5 px-4">Taxable Value ₹</th>
+              <th className="py-3.5 px-4">IGST ₹</th>
               <th className="py-3.5 px-4">CGST ₹</th>
               <th className="py-3.5 px-4">SGST ₹</th>
               <th className="py-3.5 px-4">Total Tax ₹</th>
@@ -27,7 +28,7 @@ export function FinanceGstTable({ gstBreakdowns }: FinanceGstTableProps) {
           <tbody className="divide-y divide-white/5">
             {gstBreakdowns.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-gray-500">
+                <td colSpan={7} className="py-8 text-center text-gray-500">
                   No GST breakdown data available.
                 </td>
               </tr>
@@ -39,6 +40,9 @@ export function FinanceGstTable({ gstBreakdowns }: FinanceGstTableProps) {
                   <td className="py-3.5 px-4 font-mono">
                     ₹{b.taxable_value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                   </td>
+                  <td className="py-3.5 px-4 font-mono text-cyan-400">
+                    ₹{(b.igst || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                  </td>
                   <td className="py-3.5 px-4 font-mono">
                     ₹{b.cgst.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                   </td>
@@ -46,7 +50,7 @@ export function FinanceGstTable({ gstBreakdowns }: FinanceGstTableProps) {
                     ₹{b.sgst.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                   </td>
                   <td className="py-3.5 px-4 font-mono text-emerald-400 font-bold">
-                    ₹{(b.cgst + b.sgst).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    ₹{(b.igst + b.cgst + b.sgst).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                   </td>
                 </tr>
               ))

@@ -74,13 +74,13 @@ export default function OrdersPage() {
     try {
       const [allRes, paidRes, pendingRes] = await Promise.all([
         pb.collection('orders').getList(1, 1, {}),
-        pb.collection('orders').getList(1, 500, { filter: 'status = "paid"', fields: 'amount_paise' }),
+        pb.collection('orders').getFullList({ filter: 'status = "paid"', fields: 'amount_paise' }),
         pb.collection('orders').getList(1, 1, { filter: 'status = "pending"' }),
       ]);
       setTotalCount(allRes.totalItems);
-      setPaidCount(paidRes.totalItems);
+      setPaidCount(paidRes.length);
       setPendingCount(pendingRes.totalItems);
-      const rev = paidRes.items.reduce((sum, o) => sum + (o.amount_paise || 0), 0);
+      const rev = paidRes.reduce((sum, o) => sum + (o.amount_paise || 0), 0);
       setTotalRevenue(rev);
     } catch (e) { /* ignore */ }
   }, []);
