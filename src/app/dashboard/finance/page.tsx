@@ -15,8 +15,8 @@ export default function FinanceGSTPage() {
   const [gstBreakdowns, setGstBreakdowns] = useState<GSTBreakdown[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalRevenue, setTotalRevenue] = useState(0);
-  const [cashfreeRevenue, setCashfreeRevenue] = useState(0);
-  const [playRevenue, setPlayRevenue] = useState(0);
+  const [promotionalSubsidy, setPromotionalSubsidy] = useState(0);
+  const [gmv, setGmv] = useState(0);
   const [totalGST, setTotalGST] = useState(0);
 
   const [refundModal, setRefundModal] = useState<{ isOpen: boolean; order: Order | null }>({
@@ -41,21 +41,38 @@ export default function FinanceGSTPage() {
       }
 
       let rev = 0;
-      let cfRev = 0;
-      let playRev = 0;
+      let promoSub = 0;
 
-      const paidOrders = items.filter((i) => i.status === 'paid');
-      const paidOrdersMap = new Map<string, Order>();
-      for (const po of paidOrders) {
-        if (po.id) paidOrdersMap.set(po.id, po);
-        if (po.order_id) paidOrdersMap.set(po.order_id, po);
-      }
+      // Filter paid commercial orders (Statutory Cash Ledger)
+      const paidCommercialOrders = items.filter(
+        (i) => i.status === 'paid' && (i.amount_paise || 0) > 0 && i.invoice_type !== 'bill_of_supply'
+      );
 
-      for (const item of paidOrders) {
+      // Filter complimentary orders (Promotional / Scholarship Ledger)
+      const complimentaryOrders = items.filter(
+        (i) =>
+          (i.amount_paise || 0) === 0 ||
+          i.invoice_type === 'bill_of_supply' ||
+          i.order_type === 'complimentary' ||
+          i.order_type === 'activation_key'
+      );
+
+      for (const item of paidCommercialOrders) {
         const amt = (item.amount_paise || 0) / 100;
         rev += amt;
-        if (item.gateway === 'google_play') playRev += amt;
-        else cfRev += amt;
+      }
+
+      for (const item of complimentaryOrders) {
+        const val =
+          (item.discount_paise || item.subtotal_paise || 0) / 100 ||
+          (item.plan === 'lifetime' ? 1999 : item.plan === 'yearly' ? 799 : 99);
+        promoSub += val;
+      }
+
+      const paidCommercialOrdersMap = new Map<string, Order>();
+      for (const po of paidCommercialOrders) {
+        if (po.id) paidCommercialOrdersMap.set(po.id, po);
+        if (po.order_id) paidCommercialOrdersMap.set(po.order_id, po);
       }
 
       const breakdownMap = new Map<string, GSTBreakdown>();
@@ -63,9 +80,9 @@ export default function FinanceGSTPage() {
 
       if (orderItems.length > 0) {
         for (const oItem of orderItems) {
-          const parentOrder = paidOrdersMap.get(oItem.order_id) || (oItem as any).expand?.order_id;
-          const isPaid = parentOrder?.status === 'paid' || paidOrdersMap.has(oItem.order_id);
-          if (isPaid) {
+          const parentOrder = paidCommercialOrdersMap.get(oItem.order_id) || (oItem as any).expand?.order_id;
+          const isPaidCommercial = parentOrder && (parentOrder.amount_paise || 0) > 0 && parentOrder.invoice_type !== 'bill_of_supply';
+          if (isPaidCommercial) {
             const gst = (oItem.gst_amount_paise || 0) / 100;
             const taxable = Math.max(0, ((oItem.unit_price_paise || 0) - (oItem.gst_amount_paise || 0)) / 100);
             const rate = oItem.gst_rate_pct || 18;
@@ -98,8 +115,8 @@ export default function FinanceGSTPage() {
           }
         }
       } else {
-        // Fallback: Compute statutory GST breakdown directly from paid orders
-        for (const po of paidOrders) {
+        // Fallback: Compute statutory GST breakdown directly from paid commercial orders
+        for (const po of paidCommercialOrders) {
           const rate = 18;
           const hsn = '998439';
           const amt = (po.amount_paise || 0) / 100;
@@ -132,8 +149,8 @@ export default function FinanceGSTPage() {
       }
 
       setTotalRevenue(rev);
-      setCashfreeRevenue(cfRev);
-      setPlayRevenue(playRev);
+      setPromotionalSubsidy(promoSub);
+      setGmv(rev + promoSub);
       setTotalGST(totalGstCalc);
 
       const arr = Array.from(breakdownMap.values()).map((e) => ({
@@ -228,8 +245,8 @@ export default function FinanceGSTPage() {
       {/* KPI Cards */}
       <FinanceKpiCards
         totalRevenue={totalRevenue}
-        cashfreeRevenue={cashfreeRevenue}
-        playRevenue={playRevenue}
+        promotionalSubsidy={promotionalSubsidy}
+        gmv={gmv}
         totalGST={totalGST}
       />
 

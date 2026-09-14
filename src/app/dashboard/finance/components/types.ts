@@ -12,6 +12,9 @@ export interface Order {
   sgst_paise?: number;
   place_of_supply?: string;
   order_type?: string;
+  invoice_type?: string;
+  grant_reason?: string;
+  campaign_id?: string;
   coupon_code?: string;
   status: string;
   gateway: string;
