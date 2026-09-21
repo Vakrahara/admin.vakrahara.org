@@ -11,7 +11,8 @@ import {
   Award, 
   GraduationCap,
   ShieldCheck,
-  Clock
+  Clock,
+  UserCheck
 } from 'lucide-react';
 import type { UserRecord } from '../types';
 
@@ -120,6 +121,8 @@ export function UserTable({
                         <Badge variant="gold" icon={Crown}>Super Admin</Badge>
                       ) : userRole === 'teacher' ? (
                         <Badge variant="amber" icon={Award}>Teacher</Badge>
+                      ) : userRole === 'parent' ? (
+                        <Badge variant="green" icon={UserCheck}>Parent</Badge>
                       ) : (
                         <Badge variant="gray" icon={GraduationCap}>Learner</Badge>
                       )}

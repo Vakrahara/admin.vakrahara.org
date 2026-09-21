@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
-import { UserRecord } from '../types';
+import { UserRecord, parseDisciplineStats } from '../types';
 
 export function useUserManagement() {
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -27,16 +27,6 @@ export function useUserManagement() {
   const triggerMessage = (type: 'success' | 'error', text: string) => {
     setActionMessage({ type, text });
     setTimeout(() => setActionMessage(null), 5000);
-  };
-
-  const parseDisciplineStats = (statsField: any) => {
-    if (!statsField) return {};
-    if (typeof statsField === 'object') return statsField;
-    try {
-      return JSON.parse(statsField);
-    } catch {
-      return {};
-    }
   };
 
   const fetchUsers = async (page = 1) => {
@@ -200,12 +190,11 @@ export function useUserManagement() {
       const statsObj = parseDisciplineStats(rawStats);
       statsObj.user_role = newRole;
       
-      const updatedStatsJson = JSON.stringify(statsObj);
-      await pb.collection('users').update(userId, { discipline_stats: updatedStatsJson });
+      await pb.collection('users').update(userId, { discipline_stats: statsObj });
       
-      setUsers(users.map(u => u.id === userId ? { ...u, discipline_stats: updatedStatsJson } : u));
+      setUsers(users.map(u => u.id === userId ? { ...u, discipline_stats: statsObj } : u));
       if (selectedUser && selectedUser.id === userId) {
-        setSelectedUser({ ...selectedUser, discipline_stats: updatedStatsJson });
+        setSelectedUser({ ...selectedUser, discipline_stats: statsObj });
       }
       triggerMessage('success', 'User role authorization successfully updated.');
     } catch (err: any) {
@@ -232,14 +221,15 @@ export function useUserManagement() {
   };
 
   const handleResendVerification = async (email: string) => {
-    if (!email) {
+    const targetEmail = (email || '').trim();
+    if (!targetEmail) {
       triggerMessage('error', 'No email address registered for user.');
       return;
     }
     setIsUpdatingUser(true);
     try {
-      await pb.collection('users').requestVerification(email);
-      triggerMessage('success', `Verification email dispatched to ${email}.`);
+      await pb.collection('users').requestVerification(targetEmail);
+      triggerMessage('success', `Verification email dispatched to ${targetEmail}.`);
     } catch (err: any) {
       triggerMessage('error', err.message || 'Failed to send verification email.');
     } finally {
@@ -254,7 +244,7 @@ export function useUserManagement() {
 
     setIsUpdatingUser(true);
     try {
-      await pb.collection('users').update(userId, { discipline_stats: JSON.stringify({}) });
+      await pb.collection('users').update(userId, { discipline_stats: {} });
       triggerMessage('success', 'User curriculum and progress logs successfully reset.');
       fetchUsers(currentPage);
     } catch (err: any) {

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
 import {
   Swords, ShieldAlert, Award, TrendingUp, AlertTriangle, RefreshCw,
-  Search, Filter, ChevronLeft, ChevronRight, Undo2, Ban, CheckCircle2
+  Search, Filter, ChevronLeft, ChevronRight, Undo2, Ban, CheckCircle2, Crown
 } from 'lucide-react';
 import { SudoConfirmModal } from '@/components/ui/SudoConfirmModal';
 
@@ -210,16 +210,18 @@ export default function ArenaMatchCenterPage() {
                       {new Date(m.created).toLocaleString()}
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap text-xs">
-                      <div className="font-semibold text-white">
-                        {m.expand?.sender?.name || m.expand?.sender?.username || 'Learner'}
+                      <div className="font-semibold text-white flex items-center gap-1">
+                        {m.winner && m.winner === m.sender && <Crown className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />}
+                        <span>{m.expand?.sender?.name || m.expand?.sender?.username || 'Learner'}</span>
                       </div>
                       <div className="text-[11px] font-mono text-gray-500">
                         {m.expand?.sender?.username ? `@${m.expand.sender.username}` : m.sender}
                       </div>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap text-xs">
-                      <div className="font-semibold text-gray-300">
-                        {m.expand?.receiver?.name || m.expand?.receiver?.username || (m.receiver ? 'Learner' : 'Open Lobby')}
+                      <div className="font-semibold text-gray-300 flex items-center gap-1">
+                        {m.winner && m.winner === m.receiver && <Crown className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />}
+                        <span>{m.expand?.receiver?.name || m.expand?.receiver?.username || (m.receiver ? 'Learner' : 'Open Lobby')}</span>
                       </div>
                       <div className="text-[11px] font-mono text-gray-500">
                         {m.expand?.receiver?.username ? `@${m.expand.receiver.username}` : (m.receiver || '—')}
@@ -233,17 +235,26 @@ export default function ArenaMatchCenterPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
+                        m.status === 'invalidated'
+                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                          : m.status === 'finished' || m.status === 'completed'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : m.status === 'pending' || m.status === 'waiting'
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : 'bg-white/5 text-gray-400 border-white/10'
+                      }`}>
                         {m.status}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleRollback(m.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium border border-red-500/30 transition"
+                        disabled={m.status === 'invalidated'}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 disabled:opacity-30 disabled:pointer-events-none text-red-400 text-xs font-medium border border-red-500/30 transition"
                       >
                         <Undo2 className="w-3.5 h-3.5" />
-                        <span>Invalidate</span>
+                        <span>{m.status === 'invalidated' ? 'Invalidated' : 'Invalidate'}</span>
                       </button>
                     </td>
                   </tr>
@@ -263,6 +274,7 @@ export default function ArenaMatchCenterPage() {
         description={confirmModal.description}
         actionLabel="Invalidate Match"
         requiredText="ROLLBACK"
+        isDangerous={true}
       />
     </div>
   );

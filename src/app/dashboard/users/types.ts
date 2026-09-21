@@ -15,3 +15,13 @@ export interface UserRecord {
   trial_end_date?: string;
   ad_premium_end_date?: string;
 }
+
+export function parseDisciplineStats(statsField: any): Record<string, any> {
+  if (!statsField) return {};
+  if (typeof statsField === 'object') return statsField;
+  try {
+    return JSON.parse(statsField);
+  } catch {
+    return {};
+  }
+}
