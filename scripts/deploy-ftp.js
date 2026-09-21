@@ -48,6 +48,8 @@ function isEligibleForSkip(filePath) {
   return HASHED_ASSET_EXTENSIONS.has(ext);
 }
 
+const uploadedInSession = new Set();
+
 async function syncDirectory(client, localDir) {
   let remoteList = [];
   try {
@@ -67,14 +69,19 @@ async function syncDirectory(client, localDir) {
       await syncDirectory(client, localPath);
       await client.cdup();
     } else if (stat.isFile()) {
+      if (uploadedInSession.has(localPath)) {
+        continue;
+      }
       const remoteItem = remoteMap.get(entry);
       const isHashedAsset = isEligibleForSkip(localPath);
       if (isHashedAsset && remoteItem && remoteItem.size === stat.size) {
-        // Skip unchanged content-hashed asset
+        uploadedInSession.add(localPath);
         continue;
       }
       console.log(`📤 Uploading: ${entry} (${Math.round(stat.size / 1024)} KB)`);
       await client.uploadFrom(localPath, entry);
+      uploadedInSession.add(localPath);
+      await new Promise(r => setTimeout(r, 40));
     }
   }
 }
@@ -85,11 +92,11 @@ async function deploy() {
   const password = process.env.HOSTINGER_FTP_PASSWORD || process.env.FTP_PASSWORD;
   const localDir = path.resolve(process.env.LOCAL_DIR || './out');
 
-  const maxRetries = 5;
+  const maxRetries = 10;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const client = new ftp.Client();
     client.ftp.verbose = false;
-    client.timeout = 60000;
+    client.timeout = 180000;
 
     try {
       console.log(`🚀 Connecting to Hostinger (${host}) as ${user} (Attempt ${attempt}/${maxRetries})...`);
