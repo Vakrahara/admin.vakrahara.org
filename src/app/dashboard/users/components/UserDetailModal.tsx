@@ -10,10 +10,13 @@ import {
   Calendar, 
   Code2, 
   Info, 
-  RefreshCcw 
+  RefreshCcw,
+  ShieldCheck,
+  Mail,
+  Clock
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { UserRecord } from './UserTable';
+import { UserRecord } from '../types';
 import { UserSubscriptionTab } from './UserSubscriptionTab';
 
 interface UserDetailModalProps {
@@ -26,6 +29,8 @@ interface UserDetailModalProps {
   handleGiveTrial: (userId: string, trialDays: number) => Promise<void>;
   handleRevokePremium: (userId: string) => Promise<void>;
   handleUpdateRole: (userId: string, newRole: string) => Promise<void>;
+  handleVerifyManually: (userId: string) => Promise<void>;
+  handleResendVerification: (email: string) => Promise<void>;
   handleResetProgress: (userId: string) => Promise<void>;
   currentAdminEmail: string;
   parseDisciplineStats: (stats: any) => any;
@@ -41,6 +46,8 @@ export function UserDetailModal({
   handleGiveTrial,
   handleRevokePremium,
   handleUpdateRole,
+  handleVerifyManually,
+  handleResendVerification,
   handleResetProgress,
   currentAdminEmail,
   parseDisciplineStats,
@@ -129,6 +136,57 @@ export function UserDetailModal({
                 <div className="p-4 bg-[#0d0d15] border border-white/5 rounded-xl">
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Email Address</span>
                   <span className="text-sm font-semibold text-white mt-1 block truncate">{selectedUser.email || 'None'}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-[#0d0d15] border border-white/5 rounded-xl">
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Canonical Email</span>
+                  <span className="text-sm font-semibold text-white mt-1 block truncate font-mono text-xs">
+                    {selectedUser.canonical_email || selectedUser.email || 'None'}
+                  </span>
+                </div>
+                <div className="p-4 bg-[#0d0d15] border border-white/5 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Verification Status</span>
+                    <div className="mt-1">
+                      {selectedUser.verified ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                          <Clock className="w-3.5 h-3.5 text-amber-400" />
+                          Pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-[#0d0d15] border border-white/5 rounded-xl space-y-3">
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">Verification Actions</span>
+                <div className="flex flex-wrap gap-2.5">
+                  {!selectedUser.verified && (
+                    <button
+                      onClick={() => handleVerifyManually(selectedUser.id)}
+                      disabled={isUpdatingUser}
+                      className="px-3 py-2 bg-emerald-500/15 border border-emerald-500/40 rounded-xl text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 transition-all inline-flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      Verify Manually
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleResendVerification(selectedUser.email)}
+                    disabled={isUpdatingUser || !selectedUser.email}
+                    className="px-3 py-2 bg-blue-500/15 border border-blue-500/40 rounded-xl text-xs font-semibold text-blue-300 hover:bg-blue-500/25 transition-all inline-flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-blue-400" />
+                    Resend Verification Email
+                  </button>
                 </div>
               </div>
 

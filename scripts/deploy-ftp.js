@@ -13,6 +13,41 @@ if (fs.existsSync(envPath)) {
   });
 }
 
+const HASHED_ASSET_EXTENSIONS = new Set([
+  '.js',
+  '.css',
+  '.woff2',
+  '.woff',
+  '.ttf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
+  '.svg'
+]);
+
+function isEligibleForSkip(filePath) {
+  const normalized = filePath.replace(/\\/g, '/');
+  // ONLY content-hashed assets inside _next/static/(chunks|media|css)/ are eligible for size-based skipping
+  if (!/(?:^|\/)_next\/static\/(?:chunks|media|css)\//.test(normalized)) {
+    return false;
+  }
+  const filename = path.basename(filePath).toLowerCase();
+  // Manifest and unhashed entry files must ALWAYS be uploaded unconditionally
+  if (
+    filename.includes('manifest') ||
+    filename.endsWith('.html') ||
+    filename.endsWith('.txt') ||
+    filename.endsWith('.json') ||
+    filename.endsWith('.xml') ||
+    filename === '.htaccess'
+  ) {
+    return false;
+  }
+  const ext = path.extname(filePath).toLowerCase();
+  return HASHED_ASSET_EXTENSIONS.has(ext);
+}
+
 async function syncDirectory(client, localDir) {
   let remoteList = [];
   try {
@@ -33,8 +68,9 @@ async function syncDirectory(client, localDir) {
       await client.cdup();
     } else if (stat.isFile()) {
       const remoteItem = remoteMap.get(entry);
-      if (remoteItem && remoteItem.size === stat.size) {
-        // Skip unchanged file
+      const isHashedAsset = isEligibleForSkip(localPath);
+      if (isHashedAsset && remoteItem && remoteItem.size === stat.size) {
+        // Skip unchanged content-hashed asset
         continue;
       }
       console.log(`📤 Uploading: ${entry} (${Math.round(stat.size / 1024)} KB)`);

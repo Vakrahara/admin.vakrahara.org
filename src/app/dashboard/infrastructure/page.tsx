@@ -125,9 +125,9 @@ export default function InfrastructurePage() {
         <MetricGauge
           label="VPS Memory (RAM)"
           value={360}
-          max={945}
+          max={healthData?.metrics?.vpsRamLimitMb || 11161}
           unit="MB"
-          subtext="~38% memory pressure (Safe Zone)"
+          subtext="~3.2% memory pressure (10.9 GB Flex Headroom)"
           type="ram"
         />
 
@@ -247,7 +247,7 @@ export default function InfrastructurePage() {
           <div className="text-emerald-400">   Active: active (running) since VPS boot</div>
           <div className="text-gray-400">   Main PID: 2082101 (pocketbase)</div>
           <div className="text-gray-400">   Tasks: 14 (limit: 4684)</div>
-          <div className="text-gray-400">   Memory: ~140.2M (limit: 945.0M)</div>
+          <div className="text-gray-400">   Memory: ~140.2M (limit: 11161.0M / 10.9 GB)</div>
           <div className="text-gray-400">   CGroup: /system.slice/pocketbase.service</div>
           <div className="text-gray-500 pt-2">Aug 19 18:54:19 amritam-backend pocketbase[2082101]: Server started at https://pb.vakrahara.org</div>
           <div className="text-gray-500">Aug 19 18:54:19 amritam-backend pocketbase[2082101]: ├─ REST API: https://pb.vakrahara.org/api/</div>

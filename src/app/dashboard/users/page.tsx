@@ -35,6 +35,8 @@ export default function UserManagementPage() {
     handleGiveTrial,
     handleRevokePremium,
     handleUpdateRole,
+    handleVerifyManually,
+    handleResendVerification,
     handleResetProgress,
   } = useUserManagement();
 
@@ -132,6 +134,8 @@ export default function UserManagementPage() {
           handleGiveTrial={handleGiveTrial}
           handleRevokePremium={handleRevokePremium}
           handleUpdateRole={handleUpdateRole}
+          handleVerifyManually={handleVerifyManually}
+          handleResendVerification={handleResendVerification}
           handleResetProgress={handleResetProgress}
           currentAdminEmail={currentAdminEmail}
           parseDisciplineStats={parseDisciplineStats}

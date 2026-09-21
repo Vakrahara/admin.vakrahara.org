@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { pb } from '@/lib/pocketbase';
-import { UserRecord } from '../components/UserTable';
+import { UserRecord } from '../types';
 
 export function useUserManagement() {
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -182,7 +182,6 @@ export function useUserManagement() {
       triggerMessage('error', 'Action Blocked: Only Super Administrators can alter user roles.');
       return;
     }
-
     if (userId === currentAdminId) {
       triggerMessage('error', 'Security Block: You cannot modify your own administrative role.');
       return;
@@ -191,13 +190,18 @@ export function useUserManagement() {
     setIsUpdatingUser(true);
     try {
       const userToUpdate = users.find(u => u.id === userId);
-      const statsObj = parseDisciplineStats(userToUpdate?.discipline_stats);
+      let rawStats = userToUpdate?.discipline_stats;
+      try {
+        const freshUser = await pb.collection('users').getOne(userId);
+        if (freshUser?.discipline_stats) rawStats = freshUser.discipline_stats;
+      } catch (fe) {
+        console.warn('Could not fetch fresh user for role update:', fe);
+      }
+      const statsObj = parseDisciplineStats(rawStats);
       statsObj.user_role = newRole;
       
       const updatedStatsJson = JSON.stringify(statsObj);
-      await pb.collection('users').update(userId, { 
-        discipline_stats: updatedStatsJson 
-      });
+      await pb.collection('users').update(userId, { discipline_stats: updatedStatsJson });
       
       setUsers(users.map(u => u.id === userId ? { ...u, discipline_stats: updatedStatsJson } : u));
       if (selectedUser && selectedUser.id === userId) {
@@ -211,6 +215,38 @@ export function useUserManagement() {
     }
   };
 
+  const handleVerifyManually = async (userId: string) => {
+    setIsUpdatingUser(true);
+    try {
+      await pb.collection('users').update(userId, { verified: true });
+      setUsers(users.map(u => u.id === userId ? { ...u, verified: true } : u));
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser({ ...selectedUser, verified: true });
+      }
+      triggerMessage('success', 'User marked as email-verified.');
+    } catch (err: any) {
+      triggerMessage('error', err.message || 'Failed to verify user manually.');
+    } finally {
+      setIsUpdatingUser(false);
+    }
+  };
+
+  const handleResendVerification = async (email: string) => {
+    if (!email) {
+      triggerMessage('error', 'No email address registered for user.');
+      return;
+    }
+    setIsUpdatingUser(true);
+    try {
+      await pb.collection('users').requestVerification(email);
+      triggerMessage('success', `Verification email dispatched to ${email}.`);
+    } catch (err: any) {
+      triggerMessage('error', err.message || 'Failed to send verification email.');
+    } finally {
+      setIsUpdatingUser(false);
+    }
+  };
+
   const handleResetProgress = async (userId: string) => {
     if (!confirm('Are you sure you want to reset all learning statistics and onboarding configuration for this user? This action cannot be undone.')) {
       return;
@@ -218,10 +254,7 @@ export function useUserManagement() {
 
     setIsUpdatingUser(true);
     try {
-      await pb.collection('users').update(userId, {
-        discipline_stats: JSON.stringify({}),
-      });
-
+      await pb.collection('users').update(userId, { discipline_stats: JSON.stringify({}) });
       triggerMessage('success', 'User curriculum and progress logs successfully reset.');
       fetchUsers(currentPage);
     } catch (err: any) {
@@ -257,6 +290,8 @@ export function useUserManagement() {
     handleGiveTrial,
     handleRevokePremium,
     handleUpdateRole,
+    handleVerifyManually,
+    handleResendVerification,
     handleResetProgress,
   };
 }

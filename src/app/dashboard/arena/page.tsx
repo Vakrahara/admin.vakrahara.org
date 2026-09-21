@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
@@ -10,14 +10,18 @@ import { SudoConfirmModal } from '@/components/ui/SudoConfirmModal';
 
 interface ArenaChallenge {
   id: string;
-  challenger: string;
-  opponent: string;
+  sender: string;
+  receiver: string;
   status: string;
   is_rated: boolean;
   winner: string;
   game_state: any;
   created: string;
   updated: string;
+  expand?: {
+    sender?: { id: string; name?: string; username?: string; email?: string };
+    receiver?: { id: string; name?: string; username?: string; email?: string };
+  };
 }
 
 export default function ArenaMatchCenterPage() {
@@ -49,6 +53,7 @@ export default function ArenaMatchCenterPage() {
       const res = await pb.collection('arena_challenges').getList(1, 50, {
         filter,
         sort: '-created',
+        expand: 'sender,receiver',
       });
       setMatches(res.items as unknown as ArenaChallenge[]);
       setTotalItems(res.totalItems);
@@ -176,8 +181,8 @@ export default function ArenaMatchCenterPage() {
             <thead className="bg-white/3 border-b border-white/8 text-xs uppercase tracking-wider text-gray-400 font-semibold">
               <tr>
                 <th className="py-3.5 px-4">Date</th>
-                <th className="py-3.5 px-4">Challenger</th>
-                <th className="py-3.5 px-4">Opponent</th>
+                <th className="py-3.5 px-4">Challenger (Sender)</th>
+                <th className="py-3.5 px-4">Opponent (Receiver)</th>
                 <th className="py-3.5 px-4">Type</th>
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
@@ -204,11 +209,21 @@ export default function ArenaMatchCenterPage() {
                     <td className="py-3.5 px-4 whitespace-nowrap text-xs text-gray-400 font-mono">
                       {new Date(m.created).toLocaleString()}
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap text-xs font-mono text-white">
-                      {m.challenger}
+                    <td className="py-3.5 px-4 whitespace-nowrap text-xs">
+                      <div className="font-semibold text-white">
+                        {m.expand?.sender?.name || m.expand?.sender?.username || 'Learner'}
+                      </div>
+                      <div className="text-[11px] font-mono text-gray-500">
+                        {m.expand?.sender?.username ? `@${m.expand.sender.username}` : m.sender}
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap text-xs font-mono text-gray-400">
-                      {m.opponent}
+                    <td className="py-3.5 px-4 whitespace-nowrap text-xs">
+                      <div className="font-semibold text-gray-300">
+                        {m.expand?.receiver?.name || m.expand?.receiver?.username || (m.receiver ? 'Learner' : 'Open Lobby')}
+                      </div>
+                      <div className="text-[11px] font-mono text-gray-500">
+                        {m.expand?.receiver?.username ? `@${m.expand.receiver.username}` : (m.receiver || '—')}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <span className={`px-2 py-0.5 rounded text-xs font-semibold ${

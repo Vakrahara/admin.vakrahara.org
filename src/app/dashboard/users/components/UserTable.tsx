@@ -9,23 +9,13 @@ import {
   Mail, 
   Crown, 
   Award, 
-  GraduationCap 
+  GraduationCap,
+  ShieldCheck,
+  Clock
 } from 'lucide-react';
+import type { UserRecord } from '../types';
 
-export interface UserRecord {
-  id: string;
-  username: string;
-  email: string;
-  name: string;
-  role: string;
-  created: string;
-  discipline_stats?: Record<string, any> | string;
-  isPremium?: boolean;
-  premium_plan?: string;
-  subscription_expiry?: string;
-  trial_end_date?: string;
-  ad_premium_end_date?: string;
-}
+export type { UserRecord };
 
 interface UserTableProps {
   loading: boolean;
@@ -63,6 +53,7 @@ export function UserTable({
               <tr className="border-b border-white/10 bg-[#0d0d15] text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 <th className="py-3.5 px-3.5 min-w-[150px] whitespace-nowrap">User Profile</th>
                 <th className="py-3.5 px-3.5 min-w-[210px] whitespace-nowrap">Contact Credentials</th>
+                <th className="py-3.5 px-3.5 min-w-[120px] whitespace-nowrap">Verification</th>
                 <th className="py-3.5 px-3.5 min-w-[110px] whitespace-nowrap">Role</th>
                 <th className="py-3.5 px-3.5 min-w-[100px] whitespace-nowrap">Premium</th>
                 <th className="py-3.5 px-3.5 min-w-[120px] whitespace-nowrap">Curriculum</th>
@@ -95,10 +86,32 @@ export function UserTable({
 
                     {/* Contact */}
                     <td className="py-3.5 px-3.5">
-                      <span className="font-mono text-xs text-gray-300 flex items-center gap-1.5 whitespace-nowrap">
-                        <Mail className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                        {user.email || 'No Email'}
-                      </span>
+                      <div className="space-y-0.5">
+                        <span className="font-mono text-xs text-gray-300 flex items-center gap-1.5 whitespace-nowrap">
+                          <Mail className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                          {user.email || 'No Email'}
+                        </span>
+                        {user.canonical_email && user.canonical_email !== user.email && (
+                          <span className="text-[10px] font-mono text-gray-500 block truncate">
+                            canon: {user.canonical_email}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Verification Status */}
+                    <td className="py-3.5 px-3.5 whitespace-nowrap">
+                      {user.verified ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                          <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                          <Clock className="w-3 h-3 text-amber-400" />
+                          Pending
+                        </span>
+                      )}
                     </td>
 
                     {/* Role */}
