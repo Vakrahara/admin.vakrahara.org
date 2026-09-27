@@ -89,6 +89,21 @@ export default function InfrastructurePage() {
     return () => clearInterval(interval);
   }, [fetchHealth]);
 
+  const getLatencySubtext = (ms: number | null) => {
+    if (ms === null) return 'Measuring response...';
+    if (ms < 250) return 'Sub-250ms ultra fast response';
+    if (ms < 500) return 'Normal public network RTT (250-500ms)';
+    if (ms < 800) return 'Moderate network latency (500-800ms)';
+    return 'High network latency (>800ms)';
+  };
+
+  const getLatencyColorClass = (ms: number | null) => {
+    if (ms === null) return 'text-gray-400';
+    if (ms < 350) return 'text-emerald-400';
+    if (ms < 700) return 'text-amber-400';
+    return 'text-rose-400';
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -107,7 +122,7 @@ export default function InfrastructurePage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-xs text-gray-400 font-mono">
-            Latency: <span className="text-emerald-400 font-bold">{latencyMs !== null ? `${latencyMs}ms` : '—'}</span>
+            Latency: <span className={`${getLatencyColorClass(latencyMs)} font-bold`}>{latencyMs !== null ? `${latencyMs}ms` : '—'}</span>
           </div>
           <button
             onClick={fetchHealth}
@@ -142,11 +157,11 @@ export default function InfrastructurePage() {
 
         <MetricGauge
           label="API Gateway Latency"
-          value={latencyMs || 45}
-          max={300}
+          value={latencyMs ?? 0}
+          max={1000}
           unit="ms"
-          subtext="Sub-100ms ultra response"
-          type="general"
+          subtext={getLatencySubtext(latencyMs)}
+          type="latency"
         />
       </div>
 

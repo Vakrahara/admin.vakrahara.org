@@ -8,7 +8,7 @@ interface MetricGaugeProps {
   max: number; // Maximum limit
   unit?: string;
   subtext?: string;
-  type?: "ram" | "disk" | "general";
+  type?: "ram" | "disk" | "latency" | "general";
 }
 
 export function MetricGauge({
@@ -17,18 +17,31 @@ export function MetricGauge({
   max,
   unit = "%",
   subtext,
+  type = "general",
 }: MetricGaugeProps) {
-  const percentage = Math.min(Math.max(Math.round((value / max) * 100), 0), 100);
+  const isLatency = type === "latency";
+  const percentage = Math.min(Math.max(Math.round((value / max) * 100), isLatency ? 4 : 0), 100);
 
   // Determine health color threshold
-  let strokeColor = "#10b981"; // Emerald green (< 70%)
+  let strokeColor = "#10b981"; // Emerald green (< 70% or < 350ms)
   let glowColor = "rgba(16, 185, 129, 0.25)";
-  if (percentage >= 85) {
-    strokeColor = "#f43f5e"; // Ruby red (>= 85%)
-    glowColor = "rgba(244, 63, 94, 0.35)";
-  } else if (percentage >= 70) {
-    strokeColor = "#f59e0b"; // Amber warning (70-84%)
-    glowColor = "rgba(245, 158, 11, 0.3)";
+
+  if (isLatency) {
+    if (value >= 700) {
+      strokeColor = "#f43f5e"; // Ruby red (>= 700ms - high network latency)
+      glowColor = "rgba(244, 63, 94, 0.35)";
+    } else if (value >= 350) {
+      strokeColor = "#f59e0b"; // Amber warning (350-699ms - moderate RTT)
+      glowColor = "rgba(245, 158, 11, 0.3)";
+    }
+  } else {
+    if (percentage >= 85) {
+      strokeColor = "#f43f5e"; // Ruby red (>= 85%)
+      glowColor = "rgba(244, 63, 94, 0.35)";
+    } else if (percentage >= 70) {
+      strokeColor = "#f59e0b"; // Amber warning (70-84%)
+      glowColor = "rgba(245, 158, 11, 0.3)";
+    }
   }
 
   // SVG circle calculation
@@ -68,12 +81,12 @@ export function MetricGauge({
           />
         </svg>
 
-        <div className="absolute flex flex-col items-center justify-center">
+        <div className="absolute flex flex-col items-center justify-center text-center">
           <span className="text-xl font-bold font-mono text-white tracking-tight">
-            {percentage}%
+            {isLatency ? `${value}ms` : `${percentage}%`}
           </span>
           <span className="text-[10px] text-white/40 uppercase tracking-widest font-mono">
-            {unit === "%" ? "UTIL" : `${value}/${max}`}
+            {isLatency ? "PING RTT" : (unit === "%" ? "UTIL" : `${value}/${max}`)}
           </span>
         </div>
       </div>
