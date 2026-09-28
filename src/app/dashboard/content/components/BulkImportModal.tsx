@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Upload, FileText, Check, AlertCircle } from 'lucide-react';
 import { AnveshanaQuestion } from '@/types/curriculum';
+import { parseBulkQuestions } from './bulkImportParser';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -14,85 +15,47 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
   const [rawText, setRawText] = useState('');
   const [parsedPreview, setParsedPreview] = useState<AnveshanaQuestion[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
   const handleParse = () => {
     setParseError(null);
-    if (!rawText.trim()) {
-      setParseError('Please paste JSON or tabular question data.');
-      return;
-    }
-
     try {
-      // 1. Try parsing JSON directly
-      const parsed = JSON.parse(rawText);
-      const list: any[] = Array.isArray(parsed) ? parsed : parsed.questions || [parsed];
-
-      const questions: AnveshanaQuestion[] = list.map((item, idx) => ({
-        id: `imp_${Date.now()}_${idx}`,
-        questionEn: item.questionEn || item.question || '',
-        options: Array.isArray(item.options) ? item.options : ['A', 'B', 'C', 'D'],
-        correctOptionIndex: typeof item.correctOptionIndex === 'number' ? item.correctOptionIndex : 0,
-        explanationEn: item.explanationEn || item.explanation || ''
-      }));
-
-      if (questions.length === 0) {
-        setParseError('No valid questions found in payload.');
-        return;
-      }
-
+      const questions = parseBulkQuestions(rawText);
       setParsedPreview(questions);
-    } catch {
-      // 2. Simple line-by-line fallback parser for AI markdown format
-      try {
-        const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-        const questions: AnveshanaQuestion[] = [];
-        let currentQ: Partial<AnveshanaQuestion> | null = null;
-        const currentOpts: string[] = [];
-
-        for (const line of lines) {
-          if (line.match(/^(\d+\.|Q:)/i)) {
-            if (currentQ && currentQ.questionEn && currentOpts.length >= 2) {
-              questions.push({
-                id: `imp_${Date.now()}_${questions.length}`,
-                questionEn: currentQ.questionEn,
-                options: [...currentOpts],
-                correctOptionIndex: currentQ.correctOptionIndex ?? 0,
-                explanationEn: currentQ.explanationEn || ''
-              });
-            }
-            currentQ = { questionEn: line.replace(/^(\d+\.|Q:)\s*/i, '') };
-            currentOpts.length = 0;
-          } else if (line.match(/^[A-D]\)/i)) {
-            currentOpts.push(line.replace(/^[A-D]\)\s*/i, ''));
-          } else if (line.match(/^Answer:\s*([A-D])/i)) {
-            const char = line.match(/^Answer:\s*([A-D])/i)?.[1].toUpperCase();
-            if (char && currentQ) {
-              currentQ.correctOptionIndex = char.charCodeAt(0) - 65;
-            }
-          }
-        }
-
-        if (currentQ && currentQ.questionEn && currentOpts.length >= 2) {
-          questions.push({
-            id: `imp_${Date.now()}_${questions.length}`,
-            questionEn: currentQ.questionEn,
-            options: [...currentOpts],
-            correctOptionIndex: currentQ.correctOptionIndex ?? 0,
-            explanationEn: currentQ.explanationEn || ''
-          });
-        }
-
-        if (questions.length > 0) {
-          setParsedPreview(questions);
-        } else {
-          setParseError('Could not parse text format. Please paste JSON with { question, options, correctOptionIndex }.');
-        }
-      } catch (err: any) {
-        setParseError(`Parse failed: ${err.message}`);
-      }
+    } catch (err: any) {
+      setParseError(err.message);
     }
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) readFile(file);
+  };
+
+  const readFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setRawText(text);
+        try {
+          const questions = parseBulkQuestions(text);
+          setParsedPreview(questions);
+          setParseError(null);
+        } catch (err: any) {
+          setParseError(err.message);
+        }
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleConfirm = () => {
@@ -118,17 +81,36 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
 
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto flex-1">
-          <p className="text-xs text-slate-400">
-            Paste raw JSON from LLM or structured Markdown. Supports batch ingestion of 30+ questions.
-          </p>
+          {/* Drag & Drop File Area */}
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleFileDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className="border border-dashed border-slate-700/80 rounded-xl p-3.5 bg-[#03050B]/60 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-emerald-500/50 transition-colors"
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept=".json,.csv,.tsv,.txt,.md"
+              className="hidden"
+            />
+            <FileText className="w-5 h-5 text-emerald-400" />
+            <p className="text-xs text-slate-300">
+              Drag & drop CSV / JSON file here, or <span className="text-emerald-400 underline">browse</span>
+            </p>
+            <p className="text-[10px] text-slate-500">Supports JSON, CSV (module, question, options...), or LLM Markdown</p>
+          </div>
 
-          <textarea
-            value={rawText}
-            onChange={(e) => setRawText(e.target.value)}
-            placeholder={`[\n  {\n    "questionEn": "What is reflection of light?",\n    "options": ["Bouncing back", "Bending", "Absorption", "Scattering"],\n    "correctOptionIndex": 0,\n    "explanationEn": "Light bounces back into the same medium."\n  }\n]`}
-            rows={7}
-            className="w-full text-xs font-mono bg-[#03050B] border border-slate-800 rounded-xl p-3 text-slate-200 focus:border-emerald-400 outline-none resize-none"
-          />
+          <div className="relative">
+            <textarea
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              placeholder={`Paste JSON, CSV, or Markdown:\n\nJSON: [{"questionEn": "...", "options": [...], "correctOptionIndex": 0}]\nCSV: module_num, question, optA, optB, optC, optD, correct, explanation\nMarkdown: 1. Question\nA) Option\nAnswer: A`}
+              rows={6}
+              className="w-full text-xs font-mono bg-[#03050B] border border-slate-800 rounded-xl p-3 text-slate-200 focus:border-emerald-400 outline-none resize-none"
+            />
+          </div>
 
           <div className="flex items-center justify-between">
             <button

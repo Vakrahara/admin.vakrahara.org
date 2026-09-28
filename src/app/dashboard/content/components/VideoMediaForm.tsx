@@ -16,6 +16,27 @@ export function VideoMediaForm({ step, onChange }: VideoMediaFormProps) {
     step.simulationId ? 'simulation_only' : 'none'
   );
 
+  const [rawParams, setRawParams] = React.useState<string>(
+    step.params ? JSON.stringify(step.params) : '{}'
+  );
+  const [paramsError, setParamsError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setRawParams(step.params ? JSON.stringify(step.params) : '{}');
+    setParamsError(null);
+  }, [step.id]);
+
+  const handleParamsChange = (val: string) => {
+    setRawParams(val);
+    try {
+      const parsed = JSON.parse(val);
+      setParamsError(null);
+      onChange({ params: parsed });
+    } catch {
+      setParamsError('Invalid JSON format');
+    }
+  };
+
   return (
     <div className="space-y-4 p-4 rounded-xl border border-slate-800 bg-[#080C14]">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
@@ -112,20 +133,16 @@ export function VideoMediaForm({ step, onChange }: VideoMediaFormProps) {
               />
             </div>
             <div>
-              <label className="text-[11px] text-slate-400 block mb-1">Params (JSON Format)</label>
+              <label className="text-[11px] text-slate-400 block mb-1">
+                Params (JSON Format)
+                {paramsError && <span className="text-red-400 ml-1">({paramsError})</span>}
+              </label>
               <input
                 type="text"
-                value={step.params ? JSON.stringify(step.params) : '{}'}
-                onChange={(e) => {
-                  try {
-                    const parsed = JSON.parse(e.target.value);
-                    onChange({ params: parsed });
-                  } catch {
-                    // allow typing
-                  }
-                }}
+                value={rawParams}
+                onChange={(e) => handleParamsChange(e.target.value)}
                 placeholder='{"type": 1.0, "mode": 0.0}'
-                className="w-full text-xs font-mono bg-[#03050B] border border-slate-800 rounded-lg px-3 py-2 text-white focus:border-emerald-400 outline-none"
+                className={`w-full text-xs font-mono bg-[#03050B] border ${paramsError ? 'border-red-500/50' : 'border-slate-800'} rounded-lg px-3 py-2 text-white focus:border-emerald-400 outline-none`}
               />
             </div>
           </div>
