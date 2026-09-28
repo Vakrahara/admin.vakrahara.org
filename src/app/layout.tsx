@@ -27,6 +27,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://pb.vakrahara.org https://cdn.vakrahara.org; img-src 'self' https://cdn.vakrahara.org data: blob:; frame-src 'self' https://cdn.vakrahara.org; object-src 'none'; base-uri 'self';"
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

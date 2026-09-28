@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { pb } from '@/lib/pocketbase';
+import { isAuthorizedAdmin } from '@/lib/auth';
 import { useInstitutions } from '@/hooks/useInstitutions';
 import { 
   LayoutDashboard, Users, BookOpen, Building2, LogOut, ShieldAlert, 
@@ -46,8 +47,7 @@ export default function DashboardLayout({
       
       const record = (pb.authStore.record || pb.authStore.model) as any;
       const email = record?.email?.toLowerCase();
-      const adminEmails = ['vkarms.vk@gmail.com', 'vakrahara@gmail.com'];
-      const isSuperuser = pb.authStore.isSuperuser || pb.authStore.isAdmin || (email && adminEmails.includes(email));
+      const isSuperuser = pb.authStore.isSuperuser || pb.authStore.isAdmin || isAuthorizedAdmin(email);
 
       if (!isSuperuser) {
         pb.authStore.clear();

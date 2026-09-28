@@ -32,6 +32,7 @@ import {
 import { uploadToR2, R2Config } from '@/lib/r2-upload';
 import { ConcurrencyLockBadge } from './components/ConcurrencyLockBadge';
 import { DigitalTwinPreview } from './components/DigitalTwinPreview';
+import { SudoConfirmModal } from '@/components/ui/SudoConfirmModal';
 
 // TS interfaces for CBSE Science curriculum models
 interface Step {
@@ -102,6 +103,11 @@ export default function ContentCMSPage() {
   const [activeEditStepId, setActiveEditStepId] = useState<string | null>(null);
   const [isLoadingCbse, setIsLoadingCbse] = useState(false);
   const [cbseLoadError, setCbseLoadError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    type: 'chapter' | 'module' | 'step';
+    name: string;
+    onConfirm: () => void;
+  } | null>(null);
   
   // Settings Modal State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -427,6 +433,7 @@ export default function ContentCMSPage() {
   };
 
   return (
+    <>
     <div className="space-y-8 animate-fadeIn text-white pb-24">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -616,14 +623,19 @@ export default function ContentCMSPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm('Are you sure you want to delete this chapter?')) {
-                                  const updated = chapters.filter(c => c.id !== ch.id);
-                                  setChapters(updated);
-                                  if (selectedChapterId === ch.id) {
-                                    setSelectedChapterId(updated[0]?.id || null);
-                                    setSelectedModuleId(null);
-                                  }
-                                }
+                                setPendingDelete({
+                                  type: 'chapter',
+                                  name: ch.title || ch.id,
+                                  onConfirm: () => {
+                                    const updated = chapters.filter(c => c.id !== ch.id);
+                                    setChapters(updated);
+                                    if (selectedChapterId === ch.id) {
+                                      setSelectedChapterId(updated[0]?.id || null);
+                                      setSelectedModuleId(null);
+                                    }
+                                    setPendingDelete(null);
+                                  },
+                                });
                               }}
                               className="p-1 text-gray-500 hover:text-red-400"
                             >
@@ -805,21 +817,26 @@ export default function ContentCMSPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (confirm('Are you sure you want to delete this module?')) {
-                                        const updated = chapters.map(ch => {
-                                          if (ch.id === activeChapter.id) {
-                                            return {
-                                              ...ch,
-                                              modules: ch.modules.filter(m => m.id !== mod.id)
-                                            };
+                                      setPendingDelete({
+                                        type: 'module',
+                                        name: mod.title || mod.id,
+                                        onConfirm: () => {
+                                          const updated = chapters.map(ch => {
+                                            if (ch.id === activeChapter.id) {
+                                              return {
+                                                ...ch,
+                                                modules: ch.modules.filter(m => m.id !== mod.id)
+                                              };
+                                            }
+                                            return ch;
+                                          });
+                                          setChapters(updated);
+                                          if (selectedModuleId === mod.id) {
+                                            setSelectedModuleId(null);
                                           }
-                                          return ch;
-                                        });
-                                        setChapters(updated);
-                                        if (selectedModuleId === mod.id) {
-                                          setSelectedModuleId(null);
-                                        }
-                                      }
+                                          setPendingDelete(null);
+                                        },
+                                      });
                                     }}
                                     className="p-1 text-gray-500 hover:text-red-400"
                                   >
@@ -1728,5 +1745,19 @@ export default function ContentCMSPage() {
         </div>
       )}
     </div>
+
+      {/* Sudo Confirm Modal for dangerous delete operations */}
+      <SudoConfirmModal
+        isOpen={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => pendingDelete?.onConfirm()}
+        title={`Delete ${pendingDelete?.type === 'chapter' ? 'Chapter' : pendingDelete?.type === 'module' ? 'Module' : 'Step'}`}
+        description={`You are about to permanently delete "${pendingDelete?.name || ''}". This action cannot be undone. Type DELETE to confirm.`}
+        isDangerous={true}
+        requiredText="DELETE"
+        confirmText="Delete Permanently"
+        actionLabel="Delete Permanently"
+      />
+    </>
   );
 }

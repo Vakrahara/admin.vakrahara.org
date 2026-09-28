@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { pb } from '@/lib/pocketbase';
+import { isAuthorizedAdmin } from '@/lib/auth';
 import { ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 function LoginForm() {
@@ -20,8 +21,7 @@ function LoginForm() {
   useEffect(() => {
     if (pb.authStore.isValid) {
       const email = pb.authStore.record?.email?.toLowerCase();
-      const adminEmails = ["vkarms.vk@gmail.com", "vakrahara@gmail.com"];
-      if (email && adminEmails.includes(email)) {
+      if (isAuthorizedAdmin(email)) {
         router.push(redirectTarget);
       }
     }
@@ -45,10 +45,9 @@ function LoginForm() {
       pb.authStore.save(authData.token, authData.admin);
       
       const email = authData.admin?.email?.toLowerCase();
-      const adminEmails = ["vkarms.vk@gmail.com", "vakrahara@gmail.com"];
 
       // Hack resistance rule: Reject if not explicitly allowed
-      if (!email || !adminEmails.includes(email)) {
+      if (!isAuthorizedAdmin(email)) {
         pb.authStore.clear();
         document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         throw new Error('Access Denied: You do not have administrator permissions.');
