@@ -33,53 +33,16 @@ import { uploadToR2, R2Config } from '@/lib/r2-upload';
 import { ConcurrencyLockBadge } from './components/ConcurrencyLockBadge';
 import { DigitalTwinPreview } from './components/DigitalTwinPreview';
 import { SudoConfirmModal } from '@/components/ui/SudoConfirmModal';
-
-// TS interfaces for CBSE Science curriculum models
-interface Step {
-  type: 'concept' | 'simulation' | 'predict_quiz' | 'heritage_connection';
-  id: string;
-  textDeva?: string;
-  textEng?: string;
-  simulationId?: string;
-  params?: Record<string, any>;
-  questionText?: string;
-  question?: string;
-  options?: string[];
-  correctOptionIndex?: number;
-  explanation?: string;
-  hints?: string[];
-  targetModuleId?: string;
-  title?: string;
-  sutra?: string;
-  translation?: string;
-  significance?: string;
-}
-
-interface Module {
-  id: string;
-  title: string;
-  steps: Step[];
-}
-
-interface Pyq {
-  id: string;
-  year: string;
-  marks: string;
-  question: string;
-  options?: string[];
-  correctOptionIndex?: number;
-  sampleAnswer: string;
-  markingScheme: string;
-  relatedModuleIds: string[];
-}
-
-interface Chapter {
-  id: string;
-  title: string;
-  branchId: string;
-  modules: Module[];
-  pyqs: Pyq[];
-}
+import { Step, Module, Chapter, Pyq, StepType, MediaMode } from '@/types/curriculum';
+import { StepTypeSelector } from './components/StepTypeSelector';
+import { VideoMediaForm } from './components/VideoMediaForm';
+import { TranscriptEditor } from './components/TranscriptEditor';
+import { SaraswatiBuilderForm } from './components/SaraswatiBuilderForm';
+import { AnveshanaPoolManager } from './components/AnveshanaPoolManager';
+import { BulkImportModal } from './components/BulkImportModal';
+import { QuestionReadinessMatrix } from './components/QuestionReadinessMatrix';
+import { CurriculumVersionHistory } from './components/CurriculumVersionHistory';
+import { pb } from '@/lib/pocketbase';
 
 interface SutraItem {
   id: string;
@@ -137,6 +100,18 @@ export default function ContentCMSPage() {
   const [publishStatus, setPublishStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [publishErrorMessage, setPublishErrorMessage] = useState('');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [showReadinessMatrix, setShowReadinessMatrix] = useState(false);
+  const [publishCooldown, setPublishCooldown] = useState(0);
+
+  useEffect(() => {
+    if (publishCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setPublishCooldown(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [publishCooldown]);
 
   // Sutra Vault Mock Data
   const mockSutras: SutraItem[] = [
@@ -272,15 +247,13 @@ export default function ContentCMSPage() {
     return errors;
   };
 
-  // Compile and upload the JSON curriculum to R2
+  // Compile and upload the JSON curriculum via server-side proxy or client R2 fallback
   const handlePublishCbse = async () => {
     if (!chapters) return;
 
-    // Check credentials first
-    if (!r2Config.accountId || !r2Config.bucketName || !r2Config.accessKeyId || !r2Config.secretAccessKey) {
+    if (publishCooldown > 0) {
       setPublishStatus('error');
-      setPublishErrorMessage('Please configure Cloudflare R2 credentials in CDN Settings first.');
-      setIsSettingsOpen(true);
+      setPublishErrorMessage(`Publish cooldown active. Please wait ${publishCooldown}s.`);
       return;
     }
 
@@ -311,10 +284,49 @@ export default function ContentCMSPage() {
     setValidationErrors([]);
 
     try {
-      const payload = JSON.stringify(sanitizedChapters, null, 4);
-      await uploadToR2('v1/cbse/chapters_data.json', payload, 'application/json', r2Config);
+      let published = false;
+      let lastError = '';
+
+      // 1. First Priority: Server-Side R2 Upload Proxy (SEC-01 Fix)
+      try {
+        const token = pb.authStore.token;
+        const res = await fetch('https://pb.vakrahara.org/api/amritam/admin/curriculum/publish', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Admin ${token}` } : {})
+          },
+          body: JSON.stringify({
+            r2_key: 'v1/cbse/chapters_data.json',
+            payload: sanitizedChapters
+          })
+        });
+
+        if (res.ok) {
+          published = true;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          lastError = errData.error || `Server proxy returned status ${res.status}`;
+          console.warn('[Publish] Server proxy failed, trying fallback:', lastError);
+        }
+      } catch (proxyErr: any) {
+        lastError = proxyErr.message || 'Server proxy unreachable';
+        console.warn('[Publish] Server proxy request exception:', proxyErr);
+      }
+
+      // 2. Second Priority: Client-Side R2 direct upload fallback
+      if (!published) {
+        if (r2Config.accountId && r2Config.bucketName && r2Config.accessKeyId && r2Config.secretAccessKey) {
+          const payload = JSON.stringify(sanitizedChapters, null, 4);
+          await uploadToR2('v1/cbse/chapters_data.json', payload, 'application/json', r2Config);
+          published = true;
+        } else {
+          throw new Error(lastError || 'Publishing failed. Cloudflare R2 credentials not configured.');
+        }
+      }
       
       setPublishStatus('success');
+      setPublishCooldown(30); // Enforce 30-second cooldown
       // Save local memory state to match published
       setChapters(sanitizedChapters);
       setTimeout(() => setPublishStatus('idle'), 5000);
@@ -732,6 +744,51 @@ export default function ContentCMSPage() {
                             </button>
                           </div>
                         </div>
+
+                        {/* Chapter Toolkit: Readiness Matrix, Bulk Import, Version History */}
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/5">
+                          <button
+                            type="button"
+                            onClick={() => setShowReadinessMatrix(!showReadinessMatrix)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                              showReadinessMatrix
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                : 'bg-[#08080c] text-gray-400 hover:text-white border-white/5'
+                            }`}
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{showReadinessMatrix ? 'Hide' : 'Audit'} 30-Q Readiness</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setIsBulkImportOpen(true)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-white/5 bg-[#08080c] text-gray-400 hover:text-white transition-all cursor-pointer"
+                          >
+                            <UploadCloud className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Bulk Import</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setIsVersionHistoryOpen(true)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-white/5 bg-[#08080c] text-gray-400 hover:text-white transition-all cursor-pointer"
+                          >
+                            <BookOpenCheck className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Version History</span>
+                          </button>
+                        </div>
+
+                        {/* Collapsible Readiness Matrix */}
+                        {showReadinessMatrix && (
+                          <div className="pt-2 animate-fadeIn">
+                            <QuestionReadinessMatrix
+                              chapter={activeChapter}
+                              selectedModuleId={selectedModuleId}
+                              onSelectModule={(modId) => setSelectedModuleId(modId)}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1051,10 +1108,13 @@ export default function ContentCMSPage() {
                           <select
                             onChange={(e) => {
                               if (e.target.value === '') return;
-                              const type = e.target.value as Step['type'];
+                              const type = e.target.value as StepType;
                               const newStep: Step = {
                                 type,
                                 id: `${activeModule.id}_step_${activeModule.steps.length + 1}`,
+                                ...(type === 'video_simulation' ? { mediaMode: 'both' as MediaMode, subStepCount: 3, videoUrl: '', simulationId: 'what_is_a_wave', transcript: [] } : {}),
+                                ...(type === 'saraswati' ? { miniSteps: [], definitionEn: '' } : {}),
+                                ...(type === 'anveshana' ? { questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {}),
                                 ...(type === 'concept' ? { textDeva: '', textEng: '' } : {}),
                                 ...(type === 'simulation' ? { simulationId: 'what_is_a_wave', questionText: '' } : {}),
                                 ...(type === 'predict_quiz' ? { question: '', options: ['', ''], correctOptionIndex: 0, explanation: '', hints: [''] } : {}),
@@ -1067,10 +1127,17 @@ export default function ContentCMSPage() {
                             className="px-2 py-1 bg-[#08080c] border border-white/5 rounded-lg text-xs font-semibold text-[#d4af37] focus:outline-none focus:border-[#d4af37]/60 cursor-pointer"
                           >
                             <option value="">+ Add Step...</option>
-                            <option value="concept">Concept Description</option>
-                            <option value="simulation">Interactive Lab</option>
-                            <option value="predict_quiz">Predictive Quiz</option>
-                            <option value="heritage_connection">Vedic Heritage</option>
+                            <optgroup label="Modern Pedagogical Steps">
+                              <option value="video_simulation">Video & Simulation (Media Area)</option>
+                              <option value="saraswati">Saraswati सयुक्तिक Builder</option>
+                              <option value="anveshana">Anveshana Assessment (30-Q Pool)</option>
+                            </optgroup>
+                            <optgroup label="Legacy Steps">
+                              <option value="concept">Concept Description</option>
+                              <option value="simulation">Interactive Lab</option>
+                              <option value="predict_quiz">Predictive Quiz</option>
+                              <option value="heritage_connection">Vedic Heritage</option>
+                            </optgroup>
                           </select>
                         </div>
                       </div>
@@ -1135,7 +1202,97 @@ export default function ContentCMSPage() {
 
                               {/* Collapsible details depending on step.type */}
                               {isEditingStep && (
-                                <div className="space-y-3 border-t border-white/5 pt-3 animate-fadeIn">
+                                <div className="space-y-4 border-t border-white/5 pt-3 animate-fadeIn">
+                                  {/* Pedagogical Step Architecture Selector */}
+                                  <StepTypeSelector
+                                    currentType={step.type}
+                                    onTypeChange={(newType) => {
+                                      const updatedSteps = activeModule.steps.map(s => 
+                                        s.id === step.id ? { 
+                                          ...s, 
+                                          type: newType,
+                                          ...(newType === 'video_simulation' && !s.mediaMode ? { mediaMode: 'both' as MediaMode, subStepCount: 3 } : {}),
+                                          ...(newType === 'saraswati' && !s.miniSteps ? { miniSteps: [], definitionEn: '' } : {}),
+                                          ...(newType === 'anveshana' && !s.questionPool ? { questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {})
+                                        } : s
+                                      );
+                                      updateActiveModuleSteps(updatedSteps);
+                                    }}
+                                  />
+
+                                  {/* Video & Simulation Modern Step */}
+                                  {step.type === 'video_simulation' && (
+                                    <div className="space-y-4">
+                                      <VideoMediaForm
+                                        step={step}
+                                        onChange={(patch) => {
+                                          const updatedSteps = activeModule.steps.map(s => s.id === step.id ? { ...s, ...patch } : s);
+                                          updateActiveModuleSteps(updatedSteps);
+                                        }}
+                                      />
+
+                                      <TranscriptEditor
+                                        transcript={step.transcript || []}
+                                        onChange={(transcript) => {
+                                          const updatedSteps = activeModule.steps.map(s => s.id === step.id ? { ...s, transcript } : s);
+                                          updateActiveModuleSteps(updatedSteps);
+                                        }}
+                                      />
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-xl border border-slate-800 bg-[#080C14]">
+                                        <div>
+                                          <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Devanagari Subtitle (Deva)</label>
+                                          <input
+                                            type="text"
+                                            value={step.textDeva || ''}
+                                            onChange={(e) => {
+                                              const updatedSteps = activeModule.steps.map(s => s.id === step.id ? { ...s, textDeva: e.target.value } : s);
+                                              updateActiveModuleSteps(updatedSteps);
+                                            }}
+                                            placeholder="e.g. प्रकाश का परावर्तन"
+                                            className="w-full px-2.5 py-1.5 bg-[#03050B] border border-slate-800 rounded-lg text-white text-xs"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">English Subtitle (Eng)</label>
+                                          <input
+                                            type="text"
+                                            value={step.textEng || ''}
+                                            onChange={(e) => {
+                                              const updatedSteps = activeModule.steps.map(s => s.id === step.id ? { ...s, textEng: e.target.value } : s);
+                                              updateActiveModuleSteps(updatedSteps);
+                                            }}
+                                            placeholder="e.g. Reflection of Light"
+                                            className="w-full px-2.5 py-1.5 bg-[#03050B] border border-slate-800 rounded-lg text-white text-xs"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Saraswati सयुक्तिक Concept Builder Modern Step */}
+                                  {step.type === 'saraswati' && (
+                                    <SaraswatiBuilderForm
+                                      step={step}
+                                      onChange={(patch) => {
+                                        const updatedSteps = activeModule.steps.map(s => s.id === step.id ? { ...s, ...patch } : s);
+                                        updateActiveModuleSteps(updatedSteps);
+                                      }}
+                                    />
+                                  )}
+
+                                  {/* Anveshana Dynamic Assessment Modern Step */}
+                                  {step.type === 'anveshana' && (
+                                    <AnveshanaPoolManager
+                                      step={step}
+                                      onChange={(patch) => {
+                                        const updatedSteps = activeModule.steps.map(s => s.id === step.id ? { ...s, ...patch } : s);
+                                        updateActiveModuleSteps(updatedSteps);
+                                      }}
+                                      onOpenBulkImport={() => setIsBulkImportOpen(true)}
+                                    />
+                                  )}
+
                                   {/* Concept Editor */}
                                   {step.type === 'concept' && (
                                     <>
@@ -1472,13 +1629,18 @@ export default function ContentCMSPage() {
                 )}
                 <button
                   onClick={handlePublishCbse}
-                  disabled={isPublishing}
+                  disabled={isPublishing || publishCooldown > 0}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#b8860b] to-[#d4af37] text-[#050508] font-bold text-xs uppercase tracking-wider shadow-lg hover:brightness-110 active:scale-[0.98] disabled:opacity-40 transition-all cursor-pointer"
                 >
                   {isPublishing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Publishing to CDN...
+                    </>
+                  ) : publishCooldown > 0 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cooldown ({publishCooldown}s)
                     </>
                   ) : (
                     <>
@@ -1757,6 +1919,59 @@ export default function ContentCMSPage() {
         requiredText="DELETE"
         confirmText="Delete Permanently"
         actionLabel="Delete Permanently"
+      />
+      {/* Bulk Question Import Modal */}
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        onImport={(importedQuestions) => {
+          if (!activeModule) return;
+          if (activeEditStepId) {
+            const currentStep = activeModule.steps.find(s => s.id === activeEditStepId);
+            if (currentStep) {
+              const existingPool = currentStep.questionPool || [];
+              const updatedSteps = activeModule.steps.map(s => 
+                s.id === activeEditStepId ? { ...s, questionPool: [...existingPool, ...importedQuestions] } : s
+              );
+              updateActiveModuleSteps(updatedSteps);
+              setIsBulkImportOpen(false);
+              return;
+            }
+          }
+          const anveshanaStep = activeModule.steps.find(s => s.type === 'anveshana');
+          if (anveshanaStep) {
+            const updatedPool = [...(anveshanaStep.questionPool || []), ...importedQuestions];
+            const updatedSteps = activeModule.steps.map(s => 
+              s.id === anveshanaStep.id ? { ...s, questionPool: updatedPool } : s
+            );
+            updateActiveModuleSteps(updatedSteps);
+          } else {
+            const newStep: Step = {
+              id: `anveshana_${Date.now()}`,
+              type: 'anveshana',
+              questionPool: importedQuestions,
+              questionsPerAttempt: 5,
+              passingScore: 4
+            };
+            updateActiveModuleSteps([...activeModule.steps, newStep]);
+            setActiveEditStepId(newStep.id);
+          }
+          setIsBulkImportOpen(false);
+        }}
+      />
+
+      {/* Curriculum Version History Audit Modal */}
+      <CurriculumVersionHistory
+        isOpen={isVersionHistoryOpen}
+        onClose={() => setIsVersionHistoryOpen(false)}
+        onRollback={(version) => {
+          if (version.beforeData && confirm(`Roll back to version from ${version.timestamp}?`)) {
+            if (Array.isArray(version.beforeData)) {
+              setChapters(version.beforeData);
+            }
+            setIsVersionHistoryOpen(false);
+          }
+        }}
       />
     </>
   );

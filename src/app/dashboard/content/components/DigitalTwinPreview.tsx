@@ -1,22 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Smartphone, Play, Sparkles, HelpCircle, BookOpen } from 'lucide-react';
-
-interface Step {
-  type: 'concept' | 'simulation' | 'predict_quiz' | 'heritage_connection';
-  id?: string;
-  textDeva?: string;
-  textEng?: string;
-  simulationId?: string;
-  params?: Record<string, any>;
-  questionText?: string;
-  options?: string[];
-  correctOptionIndex?: number;
-  explanation?: string;
-  hints?: string[];
-  sutra?: string;
-}
+import { Smartphone, Play, Sparkles, HelpCircle, BookOpen, Video, Brain } from 'lucide-react';
+import { Step } from '@/types/curriculum';
 
 interface DigitalTwinPreviewProps {
   step: Step | null;
@@ -30,7 +16,7 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
         <Smartphone className="w-12 h-12 mb-3 text-amber-500/40 animate-pulse" />
         <h4 className="text-sm font-semibold text-slate-400">Digital Twin Live Preview</h4>
         <p className="text-xs text-slate-600 mt-1 max-w-xs">
-          Select a step to see how it renders inside the Amritam Android App in real-time.
+          Select a step to see how it renders inside the Amrtam Android App in real-time.
         </p>
       </div>
     );
@@ -44,13 +30,13 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
       <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-amber-500/10">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
-          <span className="text-[11px] font-bold tracking-wide uppercase text-amber-400">Amritam Live View</span>
+          <span className="text-[11px] font-bold tracking-wide uppercase text-amber-400">Amrtam Live View</span>
         </div>
         <span className="text-[10px] text-slate-400 font-mono">{step.type}</span>
       </div>
 
       {/* Main Canvas / Content Simulation Screen */}
-      <div className="relative flex-1 bg-[#0b0d17] overflow-hidden flex flex-col justify-between p-4">
+      <div className="relative flex-1 bg-[#0b0d17] overflow-hidden flex flex-col justify-between p-4 space-y-3">
         {/* Module Title Overlay */}
         <div className="z-10 flex items-center justify-between bg-slate-900/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/5">
           <span className="text-xs font-medium text-slate-300 truncate">{moduleTitle || 'Module Walkthrough'}</span>
@@ -59,20 +45,61 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
           </span>
         </div>
 
-        {/* Center Canvas / Simulation Frame */}
-        <div className="my-auto relative flex items-center justify-center min-h-[220px]">
-          {step.simulationId ? (
+        {/* Center Media / Simulation / Canvas */}
+        <div className="my-auto relative flex items-center justify-center min-h-[180px]">
+          {step.type === 'video_simulation' ? (
+            <div className="w-full rounded-xl overflow-hidden border border-amber-500/30 bg-black aspect-video flex flex-col items-center justify-center p-3 relative">
+              {step.videoUrl ? (
+                <div className="text-center space-y-1">
+                  <Play className="w-10 h-10 text-amber-400 mx-auto fill-amber-400/20" />
+                  <span className="text-[11px] text-slate-300 block truncate max-w-xs">{step.videoUrl}</span>
+                  <span className="text-[10px] text-amber-400 font-mono">16:9 Stream Active</span>
+                </div>
+              ) : step.simulationId ? (
+                <iframe
+                  src={`${cdnUrl}/cbse/simulations/${step.simulationId}.html`}
+                  className="w-full h-full border-0 rounded-lg"
+                  title="Simulation Preview"
+                />
+              ) : (
+                <div className="text-center text-slate-500 text-xs flex flex-col items-center">
+                  <Video className="w-8 h-8 mb-1 text-slate-600" />
+                  <span>Media Area (0dp Collapse if unconfigured)</span>
+                </div>
+              )}
+            </div>
+          ) : step.type === 'saraswati' ? (
+            <div className="w-full p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/5 space-y-2 text-center">
+              <Sparkles className="w-8 h-8 text-yellow-400 mx-auto" />
+              <div className="text-xs font-bold text-yellow-300">Progressive Definition Box</div>
+              <p className="text-[11px] text-slate-300 italic font-serif">
+                {step.definitionEn || 'Definition fragments will assemble here upon solving mini-steps...'}
+              </p>
+              <div className="text-[10px] text-yellow-400/80 font-mono">
+                {(step.miniSteps || []).length} Mini-Steps Configured
+              </div>
+            </div>
+          ) : step.type === 'anveshana' ? (
+            <div className="w-full p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2 text-center">
+              <Brain className="w-8 h-8 text-emerald-400 mx-auto" />
+              <div className="text-xs font-bold text-emerald-300">Anveshana Assessment Engine</div>
+              <div className="text-[11px] text-slate-300">
+                Pool Size: <span className="font-bold text-emerald-400">{(step.questionPool || []).length} Questions</span>
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                Attempt: {step.questionsPerAttempt || 5} Random MCQs • Pass: {step.passingScore || 4}/5
+              </div>
+            </div>
+          ) : step.simulationId ? (
             <iframe
               src={`${cdnUrl}/cbse/simulations/${step.simulationId}.html`}
-              className="w-full h-56 border-0 rounded-xl bg-black/40 shadow-inner"
+              className="w-full h-48 border-0 rounded-xl bg-black/40 shadow-inner"
               title="Simulation Preview"
             />
           ) : (
-            <div className="w-full h-44 rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-purple-500/5 flex flex-col items-center justify-center p-4 text-center">
+            <div className="w-full h-40 rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-purple-500/5 flex flex-col items-center justify-center p-4 text-center">
               {step.type === 'predict_quiz' ? (
                 <HelpCircle className="w-10 h-10 text-purple-400 mb-2" />
-              ) : step.type === 'heritage_connection' ? (
-                <Sparkles className="w-10 h-10 text-amber-400 mb-2" />
               ) : (
                 <BookOpen className="w-10 h-10 text-blue-400 mb-2" />
               )}
@@ -81,10 +108,10 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
           )}
         </div>
 
-        {/* Quiz View or Concept Insight Card */}
+        {/* Text Card or Quiz Preview */}
         {step.type === 'predict_quiz' ? (
           <div className="z-10 bg-slate-900/90 backdrop-blur-xl border border-amber-500/30 rounded-xl p-3 shadow-xl">
-            <h5 className="text-xs font-bold text-amber-300 mb-2">{step.questionText || 'Quiz Question'}</h5>
+            <h5 className="text-xs font-bold text-amber-300 mb-2">{step.questionText || step.question || 'Quiz Question'}</h5>
             <div className="space-y-1.5">
               {(step.options || ['Option A', 'Option B']).map((opt, idx) => (
                 <div
@@ -101,8 +128,7 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
             </div>
           </div>
         ) : (
-          /* Native Glassmorphic Insight Card */
-          <div className="z-10 bg-slate-900/90 backdrop-blur-xl border border-amber-500/30 rounded-xl p-3.5 shadow-xl">
+          <div className="z-10 bg-slate-900/90 backdrop-blur-xl border border-amber-500/30 rounded-xl p-3 shadow-xl">
             {step.textDeva && (
               <p className="text-sm font-semibold text-amber-200 font-serif leading-relaxed mb-1">
                 {step.textDeva}
@@ -113,10 +139,10 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
                 {step.textEng}
               </p>
             )}
-            {step.sutra && (
+            {step.gurutatva && (
               <div className="mt-2 pt-2 border-t border-amber-500/20 flex items-center gap-1.5 text-[10px] text-amber-400 font-mono">
                 <Sparkles className="w-3 h-3" />
-                <span>Paninian Sutra: {step.sutra}</span>
+                <span>Gurutatva: {step.gurutatva.titleEn}</span>
               </div>
             )}
           </div>
