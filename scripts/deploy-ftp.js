@@ -65,6 +65,7 @@ async function syncDirectory(client, localDir) {
     const stat = fs.statSync(localPath);
 
     if (stat.isDirectory()) {
+      console.log(`📂 Syncing directory: ${entry}`);
       await client.ensureDir(entry);
       await syncDirectory(client, localPath);
       await client.cdup();
@@ -96,7 +97,7 @@ async function deploy() {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const client = new ftp.Client();
     client.ftp.verbose = false;
-    client.timeout = 180000;
+    client.timeout = 45000;
 
     try {
       console.log(`🚀 Connecting to Hostinger (${host}) as ${user} (Attempt ${attempt}/${maxRetries})...`);

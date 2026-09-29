@@ -635,7 +635,7 @@ export default function PushNotificationsPage() {
               <div className="w-5 h-5 rounded bg-gradient-to-br from-[#b8860b] to-[#d4af37] flex items-center justify-center shadow-lg">
                 <Bell className="w-3 h-3 text-[#050508]" />
               </div>
-              <span className="text-[11px] font-medium text-gray-300 tracking-wide uppercase">Amritam • now</span>
+              <span className="text-[11px] font-medium text-gray-300 tracking-wide uppercase">Amrtam • now</span>
               {priority && <Zap className="w-3 h-3 text-red-400 ml-auto" />}
             </div>
             

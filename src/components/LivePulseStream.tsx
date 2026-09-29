@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { pb } from '@/lib/pocketbase';
@@ -26,7 +26,7 @@ export function LivePulseStream() {
               id: Math.random().toString(),
               type: 'user',
               title: 'New Student Signup',
-              detail: `${e.record.name || e.record.username || 'Student'} joined Amritam`,
+              detail: `${e.record.name || e.record.username || 'Student'} joined Amrtam`,
               time: new Date().toLocaleTimeString(),
             });
           }

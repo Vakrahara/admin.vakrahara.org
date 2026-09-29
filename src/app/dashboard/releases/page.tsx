@@ -244,7 +244,7 @@ export default function ReleasesPage() {
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <Package className="w-8 h-8 text-[#d4af37]" /> App Release Manager
           </h1>
-          <p className="text-gray-400 mt-2">Manage and publish Amritam Android updates</p>
+          <p className="text-gray-400 mt-2">Manage and publish Amrtam Android updates</p>
         </div>
         <button 
           onClick={fetchReleases}

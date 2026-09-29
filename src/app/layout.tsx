@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Vakrahara Admin Console",
-  description: "Secure administrative portal for the Vakrahara Gurukulam and Project Amritam.",
+  description: "Secure administrative portal for the Vakrahara Gurukulam and Project Amrtam.",
 };
 
 export default function RootLayout({
