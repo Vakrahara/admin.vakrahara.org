@@ -17,7 +17,7 @@ export async function executePublishCurriculum(chapters: Chapter[], r2Config: R2
 
   try {
     const token = pb.authStore.token;
-    const authHeader = token ? (token.startsWith('Admin ') || token.startsWith('Bearer ') ? token : `Admin ${token}`) : '';
+    const authHeader = token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '';
     const res = await fetch('https://pb.vakrahara.org/api/amritam/admin/curriculum/publish', {
       method: 'POST',
       headers: {
@@ -26,8 +26,18 @@ export async function executePublishCurriculum(chapters: Chapter[], r2Config: R2
       },
       body: JSON.stringify({ r2_key: 'v1/cbse/chapters_data.json', payload: payloadChapters })
     });
+
     if (res.ok) {
       published = true;
+      // Also publish to cbse/chapters_data.json for root path compatibility
+      fetch('https://pb.vakrahara.org/api/amritam/admin/curriculum/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authHeader ? { 'Authorization': authHeader } : {})
+        },
+        body: JSON.stringify({ r2_key: 'cbse/chapters_data.json', payload: payloadChapters })
+      }).catch(e => console.warn('[R2 Dual-Publish] root path update warning:', e));
     } else {
       const errData = await res.json().catch(() => ({}));
       lastError = errData.error || `Server proxy returned status ${res.status}`;
