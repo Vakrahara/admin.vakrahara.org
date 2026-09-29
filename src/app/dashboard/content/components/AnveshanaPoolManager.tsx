@@ -64,7 +64,8 @@ export function AnveshanaPoolManager({
     if (activeQuestionIdx === idx) setActiveQuestionIdx(null);
   };
 
-  const filteredPool = pool.filter((q) =>
+  const poolWithIndices = pool.map((q, originalIdx) => ({ q, originalIdx }));
+  const filteredPool = poolWithIndices.filter(({ q }) =>
     (q.questionEn || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -164,20 +165,20 @@ export function AnveshanaPoolManager({
         </div>
       ) : (
         <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-          {filteredPool.map((q, idx) => {
-            const isEditing = activeQuestionIdx === idx;
+          {filteredPool.map(({ q, originalIdx }) => {
+            const isEditing = activeQuestionIdx === originalIdx;
 
             return (
               <div
-                key={idx}
+                key={q.id || originalIdx}
                 className="p-3 rounded-lg border border-slate-800 bg-[#0B0F19] space-y-2 hover:border-slate-700 transition-colors"
               >
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-emerald-400 font-bold text-[11px]">#{idx + 1}</span>
+                    <span className="font-mono text-emerald-400 font-bold text-[11px]">#{originalIdx + 1}</span>
                     <button
                       type="button"
-                      onClick={() => setActiveQuestionIdx(isEditing ? null : idx)}
+                      onClick={() => setActiveQuestionIdx(isEditing ? null : originalIdx)}
                       className="text-left font-medium text-slate-200 hover:text-white line-clamp-1"
                     >
                       {q.questionEn || <span className="text-slate-500 italic">Untitled Question</span>}
@@ -195,7 +196,7 @@ export function AnveshanaPoolManager({
                     </span>
                     <button
                       type="button"
-                      onClick={() => removeQuestion(idx)}
+                      onClick={() => removeQuestion(originalIdx)}
                       className="p-1 hover:bg-red-500/20 text-slate-500 hover:text-red-400 rounded transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -207,8 +208,8 @@ export function AnveshanaPoolManager({
                 {isEditing && (
                   <AnveshanaQuestionEditor
                     question={q}
-                    index={idx}
-                    onUpdate={(patch) => updateQuestion(idx, patch)}
+                    index={originalIdx}
+                    onUpdate={(patch) => updateQuestion(originalIdx, patch)}
                   />
                 )}
               </div>

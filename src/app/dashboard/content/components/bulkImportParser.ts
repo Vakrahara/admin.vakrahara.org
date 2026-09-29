@@ -10,37 +10,59 @@ function stripCodeFences(text: string): string {
 }
 
 /**
- * Parses a CSV line handling quoted values with embedded commas or quotes.
+ * Parses full CSV text respecting quoted fields containing newlines, escaped quotes, and commas.
  */
-function parseCsvLine(line: string, delimiter: string): string[] {
-  const result: string[] = [];
-  let current = '';
+function parseCsvRows(text: string, delimiter: string): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = '';
   let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"' || char === "'") {
-      if (inQuotes && line[i + 1] === char) {
-        current += char;
+  let quoteChar = '';
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (!inQuotes && (char === '"' || char === "'")) {
+      inQuotes = true;
+      quoteChar = char;
+    } else if (inQuotes && char === quoteChar) {
+      if (text[i + 1] === quoteChar) {
+        currentCell += quoteChar;
         i++; // skip escaped quote
       } else {
-        inQuotes = !inQuotes;
+        inQuotes = false;
+        quoteChar = '';
       }
-    } else if (char === delimiter && !inQuotes) {
-      result.push(current.trim());
-      current = '';
+    } else if (!inQuotes && char === delimiter) {
+      currentRow.push(currentCell.trim());
+      currentCell = '';
+    } else if (!inQuotes && (char === '\n' || char === '\r')) {
+      if (char === '\r' && text[i + 1] === '\n') {
+        i++;
+      }
+      currentRow.push(currentCell.trim());
+      if (currentRow.some((c) => c.length > 0)) {
+        rows.push(currentRow);
+      }
+      currentRow = [];
+      currentCell = '';
     } else {
-      current += char;
+      currentCell += char;
     }
   }
-  result.push(current.trim());
-  return result.map((s) => s.replace(/^["']|["']$/g, '').trim());
+  if (currentCell.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentCell.trim());
+    if (currentRow.some((c) => c.length > 0)) {
+      rows.push(currentRow);
+    }
+  }
+  return rows.map((r) => r.map((c) => c.replace(/^["']|["']$/g, '').trim()));
 }
 
 /**
  * Multi-format parser for incremental question pool importing (§10).
  * Supports:
  * 1. JSON (array or { questions: [...] }) with full 3-locale preservation
- * 2. CSV / TSV (dynamic options 2-4 without column drift, header-aware)
+ * 2. CSV / TSV (dynamic options 2-4 without column drift, supports quoted multi-line questions)
  * 3. AI Markdown (supports multi-line Assertion-Reason and Statement I/II)
  */
 export function parseBulkQuestions(rawText: string): AnveshanaQuestion[] {
@@ -90,7 +112,7 @@ export function parseBulkQuestions(rawText: string): AnveshanaQuestion[] {
 
   // Check if input has explicit multi-line markdown markers (e.g. options A) / B) on new lines or Answer: prefix)
   const hasMarkdownMarkers = lines.some((l) =>
-    /^(?:[-*]?\s*(?:\([A-Da-d1-4]\)|\[[A-Da-d1-4]\]|[A-Da-d][\.\):])\s+|(?:Answer|Ans|Correct|Explanation|Exp|Rationale):)/i.test(l)
+    /^(?:[-*]?\s*(?:\([A-Da-d1-4]\)|\[[A-Da-d1-4]\]|[A-Da-d1-4][\.\):])\s+|(?:Answer|Ans|Correct|Explanation|Exp|Rationale):)/i.test(l)
   );
 
   // Helper: Markdown parser
@@ -98,6 +120,7 @@ export function parseBulkQuestions(rawText: string): AnveshanaQuestion[] {
     const questions: AnveshanaQuestion[] = [];
     let currentQ: Partial<AnveshanaQuestion> | null = null;
     const currentOpts: string[] = [];
+    let inExplanation = false;
 
     const flush = () => {
       if (currentQ && currentQ.questionEn && currentOpts.length >= 2) {
@@ -113,22 +136,33 @@ export function parseBulkQuestions(rawText: string): AnveshanaQuestion[] {
           questionEn: qEn,
           options: [...currentOpts],
           correctOptionIndex: currentQ.correctOptionIndex ?? 0,
-          explanationEn: currentQ.explanationEn || ''
+          explanationEn: (currentQ.explanationEn || '').trim()
         });
       }
     };
 
     for (const line of lines) {
+      // Question start match: "1. ", "1) ", "Q1: ", "Question 1: ", "### 1. "
+      const qMatch = line.match(/^(?:#{1,4}\s*)?(?:\*{0,2}(?:(?:Q(?:uestion)?\s*\d*[\.:]?|\d+[\.\)])\*{0,2}))\s*(.*)/i);
+      if (qMatch) {
+        flush();
+        currentQ = { questionEn: qMatch[1] || line };
+        currentOpts.length = 0;
+        inExplanation = false;
+        continue;
+      }
+
       // Option match (A, B, C, D or parenthesized (1), (2), [1], [2])
-      const optMatch = line.match(/^[-*]?\s*\*{0,2}(?:(?:\(([A-Da-d1-4])\)|\[([A-Da-d1-4])\]|([A-Da-d])[\.\):]))\*{0,2}\s+(.*)/i);
+      const optMatch = line.match(/^[-*]?\s*\*{0,2}(?:(?:\(([A-Da-d1-4])\)|\[([A-Da-d1-4])\]|([A-Da-d1-4])[\.\):]))\*{0,2}\s+(.*)/i);
       if (optMatch && currentQ) {
         const optText = (optMatch[4] || '').replace(/^\*{1,2}|\*{1,2}$/g, '').trim();
         currentOpts.push(optText);
+        inExplanation = false;
         continue;
       }
 
       // Answer match
-      const ansMatch = line.match(/(?:\*{0,2}(?:Answer|Correct Answer|Ans|Correct Option|Correct):?\*{0,2})\s*(?:Option\s*)?\(?\*{0,2}([A-Da-d]|[1-4])\*{0,2}\)?/i);
+      const ansMatch = line.match(/^[-*]?\s*(?:\*{0,2}(?:Answer|Correct Answer|Ans|Correct Option|Correct):?\*{0,2})\s*(?:Option\s*)?\(?\*{0,2}([A-Da-d]|[1-4])\*{0,2}\)?/i);
       if (ansMatch && currentQ) {
         const char = ansMatch[1].toUpperCase();
         if (/^[A-D]$/.test(char)) {
@@ -138,22 +172,21 @@ export function parseBulkQuestions(rawText: string): AnveshanaQuestion[] {
         } else {
           currentQ.correctOptionIndex = parseInt(char, 10) || 0;
         }
+        inExplanation = false;
         continue;
       }
 
       // Explanation match
-      const expMatch = line.match(/(?:\*{0,2}(?:Explanation|Exp|Rationale):?\*{0,2})\s*(.*)/i);
+      const expMatch = line.match(/^[-*]?\s*(?:\*{0,2}(?:Explanation|Exp|Rationale):?\*{0,2})\s*(.*)/i);
       if (expMatch && currentQ) {
         currentQ.explanationEn = expMatch[1].trim();
+        inExplanation = true;
         continue;
       }
 
-      // Question start match: "1. ", "1) ", "Q1: ", "Question 1: ", "### 1. "
-      const qMatch = line.match(/^(?:#{1,4}\s*)?(?:\*{0,2}(?:(?:Q(?:uestion)?\s*\d*[\.:]?|\d+[\.\)])\*{0,2}))\s*(.*)/i);
-      if (qMatch) {
-        flush();
-        currentQ = { questionEn: qMatch[1] || line };
-        currentOpts.length = 0;
+      // Multi-line explanation continuation
+      if (currentQ && inExplanation && line.length > 0) {
+        currentQ.explanationEn = (currentQ.explanationEn || '') + ' ' + line;
         continue;
       }
 
@@ -168,13 +201,13 @@ export function parseBulkQuestions(rawText: string): AnveshanaQuestion[] {
 
   // Helper: CSV / TSV Parser with dynamic option column detection
   const parseCsv = (): AnveshanaQuestion[] => {
-    const delimiter = lines.some((l) => l.includes('\t')) ? '\t' : ',';
-    const isDelimited = lines.some((l) => l.includes(delimiter));
-    if (!isDelimited || lines.length < 1) return [];
+    const delimiter = cleaned.includes('\t') ? '\t' : ',';
+    const rows = parseCsvRows(cleaned, delimiter);
+    if (rows.length < 1) return [];
 
     const questions: AnveshanaQuestion[] = [];
-    for (let i = 0; i < lines.length; i++) {
-      const parts = parseCsvLine(lines[i], delimiter);
+    for (let i = 0; i < rows.length; i++) {
+      const parts = rows[i];
       // Skip header row
       const isHeader = parts.some((p) => /^(module|question|prompt|q_text|option|opt[1-4]|answer|correct|explanation)/i.test(p));
       if (isHeader) continue;

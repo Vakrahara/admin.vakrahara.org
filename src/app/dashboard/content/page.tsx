@@ -42,6 +42,7 @@ import { AnveshanaPoolManager } from './components/AnveshanaPoolManager';
 import { BulkImportModal } from './components/BulkImportModal';
 import { QuestionReadinessMatrix } from './components/QuestionReadinessMatrix';
 import { CurriculumVersionHistory } from './components/CurriculumVersionHistory';
+import { computeAnveshanaHash } from './components/anveshanaCrypto';
 import { pb } from '@/lib/pocketbase';
 
 interface SutraItem {
@@ -324,6 +325,44 @@ export default function ContentCMSPage() {
 
     setValidationErrors([]);
 
+    // Auto-compute anti-tamper hashes and ensure Saraswati answer consistency before publish
+    for (const ch of sanitizedChapters) {
+      for (const mod of ch.modules) {
+        for (const step of mod.steps) {
+          if (step.type === 'anveshana') {
+            const pool = step.pool || step.questionPool || [];
+            for (const q of pool) {
+              if (!q.correctOptionHash) {
+                const cIdx = q.correctOptionIndex ?? 0;
+                const optText = q.options[cIdx] || '';
+                if (optText && q.questionEn) {
+                  q.correctOptionHash = await computeAnveshanaHash(optText, q.questionEn);
+                }
+              }
+            }
+            step.pool = pool;
+            step.questionPool = pool;
+          } else if (step.type === 'saraswati') {
+            if (step.miniSteps) {
+              step.miniSteps = step.miniSteps.map((ms) => {
+                const cIdx = Math.max(0, Math.min(ms.correctIndex ?? 0, (ms.options?.length || 1) - 1));
+                return {
+                  ...ms,
+                  answerEn: ms.answerEn || ms.options?.[cIdx] || '',
+                  answerHi: ms.answerHi || ms.optionsHi?.[cIdx] || '',
+                  answerHng: ms.answerHng || ms.optionsHng?.[cIdx] || ''
+                };
+              });
+            }
+          } else if (step.type === 'video_simulation' && !step.mediaMode) {
+            step.mediaMode = (step.videoUrl && step.simulationId) ? 'both' :
+              step.videoUrl ? 'video_only' :
+              step.simulationId ? 'simulation_only' : 'none';
+          }
+        }
+      }
+    }
+
     // Segregate modern polymorphic steps into learningSteps and build backward-compatible steps
     const payloadChapters = sanitizedChapters.map(ch => ({
       ...ch,
@@ -333,7 +372,12 @@ export default function ContentCMSPage() {
 
         mod.steps.forEach((step) => {
           if (step.type === 'video_simulation') {
-            learningSteps.push({ ...step });
+            const resolvedMediaMode = step.mediaMode || (
+              step.videoUrl && step.simulationId ? 'both' :
+              step.videoUrl ? 'video_only' :
+              step.simulationId ? 'simulation_only' : 'none'
+            );
+            learningSteps.push({ ...step, mediaMode: resolvedMediaMode });
             if (step.simulationId) {
               legacySteps.push({
                 id: step.id,
