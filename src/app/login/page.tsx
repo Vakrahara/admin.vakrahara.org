@@ -20,7 +20,7 @@ function LoginForm() {
   // If already logged in with appropriate credentials, redirect immediately
   useEffect(() => {
     if (pb.authStore.isValid) {
-      const email = pb.authStore.record?.email?.toLowerCase();
+      const email = (pb.authStore.record?.email || (pb.authStore.model as any)?.email)?.toLowerCase();
       if (isAuthorizedAdmin(email)) {
         router.push(redirectTarget);
       }

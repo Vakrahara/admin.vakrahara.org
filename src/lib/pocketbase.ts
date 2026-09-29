@@ -6,14 +6,9 @@ export const pb = new PocketBase(pbUrl);
 
 // Keep auth store synced with cookies for Middleware route protection
 if (typeof window !== 'undefined') {
-  // Load initial store from cookie or localStorage fallback
-  if (document.cookie.includes('pb_auth=')) {
+  // If LocalAuthStore didn't find anything in localStorage but cookie has pb_auth, load from cookie
+  if (!pb.authStore.isValid && document.cookie.includes('pb_auth=')) {
     pb.authStore.loadFromCookie(document.cookie);
-  } else {
-    try {
-      const stored = localStorage.getItem('pocketbase_auth');
-      if (stored) pb.authStore.loadFromCookie(stored);
-    } catch (e) {}
   }
   
   pb.authStore.onChange((token, record) => {
@@ -25,13 +20,9 @@ if (typeof window !== 'undefined') {
         sameSite: 'Lax', 
         path: '/' 
       });
-      try {
-        localStorage.setItem('pocketbase_auth', pb.authStore.exportToCookie({ httpOnly: false, secure: isHttps, path: '/' }));
-      } catch (e) {}
     } else {
       // Clear cookie on sign-out
       document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      try { localStorage.removeItem('pocketbase_auth'); } catch (e) {}
     }
   }, true);
 }
