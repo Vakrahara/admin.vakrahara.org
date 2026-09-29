@@ -186,8 +186,8 @@ export function useCurriculumManager(r2Config: R2Config) {
         localStorage.setItem('vakrahara_cbse_draft_v2', JSON.stringify(chapters));
       }
       const token = pb.authStore.token;
-      const authHeader = token ? (token.startsWith('Admin ') || token.startsWith('Bearer ') ? token : `Admin ${token}`) : '';
-      await fetch('https://pb.vakrahara.org/api/amritam/admin/curriculum/save-draft', {
+      const authHeader = token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '';
+      const res = await fetch('https://pb.vakrahara.org/api/amritam/admin/curriculum/save-draft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,13 +195,17 @@ export function useCurriculumManager(r2Config: R2Config) {
         },
         body: JSON.stringify({ payload: chapters })
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || errData.detail || `Server returned HTTP ${res.status}`);
+      }
       setHasUnsavedDraft(false);
       setPublishStatus('success');
       setTimeout(() => setPublishStatus('idle'), 4000);
     } catch (e: any) {
-      console.warn('Network issue saving draft to PB, saved to local draft:', e);
-      setPublishStatus('success');
-      setTimeout(() => setPublishStatus('idle'), 4000);
+      console.error('Failed to save draft to PocketBase:', e);
+      setPublishStatus('error');
+      setPublishErrorMessage(e.message || 'Failed to save draft to PocketBase.');
     } finally {
       setIsSavingDraft(false);
     }
