@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Smartphone, Sparkles, HelpCircle, BookOpen, Video, Brain, Layers } from 'lucide-react';
 import { Step } from '@/types/curriculum';
 
@@ -11,6 +11,11 @@ interface DigitalTwinPreviewProps {
 
 export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, moduleTitle }) => {
   const [dualModeTab, setDualModeTab] = useState<'video' | 'simulation'>('video');
+  const [videoError, setVideoError] = useState(false);
+
+  useEffect(() => {
+    setVideoError(false);
+  }, [step?.id, step?.videoUrl]);
 
   if (!step) {
     return (
@@ -100,11 +105,27 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
                     allowFullScreen
                     title="Video Stream"
                   />
+                ) : videoError ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-black/80 rounded-lg border border-amber-500/20 text-xs text-slate-400 space-y-1.5">
+                    <Video className="w-7 h-7 text-amber-500/60" />
+                    <span className="font-semibold text-amber-400 text-xs">Video Asset Pending</span>
+                    <span className="text-[10px] text-slate-500 font-mono break-all line-clamp-1 max-w-[200px]">{step.videoUrl}</span>
+                    {step.simulationId && (
+                      <button
+                        type="button"
+                        onClick={() => setDualModeTab('simulation')}
+                        className="mt-1 px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold border border-emerald-500/30 hover:bg-emerald-500/30 transition-all cursor-pointer"
+                      >
+                        Switch to Simulation
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <video
                     controls
                     src={step.videoUrl}
                     poster={step.imageUrl}
+                    onError={() => setVideoError(true)}
                     className="w-full h-full object-contain rounded-lg bg-black"
                   >
                     Your browser does not support HTML5 video.

@@ -205,6 +205,28 @@ export function CbseModuleEditorPanel({
                     />
                   </div>
 
+                  <div className="flex flex-col gap-2 pt-1 border-t border-white/5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSetActiveEditStepId(step.id);
+                        onOpenFocusedEditor(step.id);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 border border-[#d4af37]/30 hover:border-[#d4af37]/60 text-[#d4af37] text-xs font-semibold rounded-lg transition-all cursor-pointer shadow-sm"
+                      title="Open full-screen focused pedagogical editor"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>Edit Step (Focus Editor)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onSetActiveEditStepId(isEditingStep ? null : step.id)}
+                      className="text-[10px] text-gray-500 hover:text-gray-300 text-center transition-colors cursor-pointer"
+                    >
+                      {isEditingStep ? '▲ Collapse Quick View' : '▼ Expand Quick Inline View'}
+                    </button>
+                  </div>
+
                   {isEditingStep && (
                     <CbseInlineStepEditor
                       step={step}

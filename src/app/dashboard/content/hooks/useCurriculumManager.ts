@@ -39,8 +39,24 @@ export function useCurriculumManager(r2Config: R2Config) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('vakrahara_cbse_draft_v2');
-      if (saved) setHasUnsavedDraft(true);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const normalized = normalizeCurriculumData(parsed);
+          setChapters(normalized);
+          selectDefaults(normalized);
+          setHasUnsavedDraft(true);
+          setLastSyncTime(new Date().toLocaleTimeString());
+          return;
+        } catch (e) {
+          console.error('Failed to parse draft on mount', e);
+        }
+      }
     }
+    const normalizedData = normalizeCurriculumData(canonicalCurriculumData as any);
+    setChapters(normalizedData);
+    selectDefaults(normalizedData);
+    setLastSyncTime(new Date().toLocaleTimeString());
   }, []);
 
   useEffect(() => {

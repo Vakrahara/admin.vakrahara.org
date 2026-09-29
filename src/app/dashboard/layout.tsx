@@ -160,7 +160,7 @@ export default function DashboardLayout({
 
       {/* Sidebar Navigation */}
       <aside className={`
-        fixed inset-y-0 left-0 z-30 w-72 bg-[#08080c] border-r border-white/10 p-5 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 overflow-y-auto
+        fixed inset-y-0 left-0 z-30 md:z-10 w-72 bg-[#08080c] border-r border-white/10 p-5 flex flex-col justify-between transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 overflow-y-auto
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="space-y-6">
@@ -243,7 +243,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-10 z-10 relative overflow-y-auto max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-6 md:p-10 z-20 md:z-30 relative overflow-y-auto max-w-7xl mx-auto w-full">
         {children}
       </main>
 
