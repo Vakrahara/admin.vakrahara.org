@@ -1,1160 +1,1166 @@
 [
-    {
-        "id": "c10_physics_light",
-        "title": "Chapter 9: Light - Reflection and Refraction",
-        "branchId": "physics",
-        "modules": [
-            {
-                "id": "c10_physics_light_m1",
-                "title": "1. What is a Wave?",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "light_step1_sim",
-                        "simulationId": "what_is_a_wave",
-                        "params": {
-                            "mode": 0.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step1_def",
-                        "simulationId": "what_is_a_wave",
-                        "params": {
-                            "mode": 1.0
-                        }
-                    }
-                ],
-                "learningSteps": [
-                    {
-                        "type": "video_simulation",
-                        "id": "c10_light_m1_step1_media",
-                        "mediaMode": "both",
-                        "textEng": "A wave is a periodic disturbance that transfers energy through space or a medium without permanently transporting matter.",
-                        "textHng": "Wave ek periodic disturbance hai jo bina matter transport kiye space ya medium ke through energy transfer karta hai.",
-                        "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                        "transcript": [
-                            {
-                                "startMs": 0,
-                                "endMs": 15000,
-                                "textEn": "Welcome to Wave Optics. What exactly is a wave?",
-                                "textHi": "तरंग प्रकाशिकी में आपका स्वागत है। तरंग वास्तव में क्या है?",
-                                "textHng": "Wave Optics me aapka swagat hai. Wave asal me kya hai?"
-                            },
-                            {
-                                "startMs": 15000,
-                                "endMs": 30000,
-                                "textEn": "Notice how energy travels forward while the water particles only bob up and down.",
-                                "textHi": "ध्यान दें कि ऊर्जा कैसे आगे बढ़ती है जबकि पानी के कण केवल ऊपर और नीचे दोलन करते हैं।",
-                                "textHng": "Dhyan dijiye ki energy aage badhti hai jabki water particles sirf upar neeche move karte hain."
-                            }
-                        ],
-                        "simulationId": "what_is_a_wave",
-                        "params": {
-                            "mode": 0.0
-                        },
-                        "subStepCount": 2,
-                        "gurutatva": {
-                            "titleEn": "Kaṇāda on Wave Propagation (तरंग सञ्चार)",
-                            "titleHi": "कणाद तरंग सञ्चार सिद्धान्त",
-                            "titleHng": "Kaṇāda on Wave Propagation (Taranga Sanchāra)",
-                            "bodyEn": "In the Vaiśeṣika Sūtra, Maharṣi Kaṇāda explains that propagation occurs through successive adjacent disturbances (वीचीतरङ्गन्याय), anticipating modern mechanical wave motion.",
-                            "bodyHi": "वैशेषिक सूत्र में महर्षि कणाद बताते हैं कि तरंग सञ्चार निकटवर्ती विक्षोभों के क्रमिक प्रवाह से होता है (वीचीतरङ्गन्याय)।",
-                            "bodyHng": "Vaiśeṣika Sūtra me Maharṣi Kaṇāda batate hain ki wave propagation adjacent disturbances ke through hota hai (Vīcītaraṅganyāya).",
-                            "sutra": "वीचीतरङ्गन्यायेन तदुत्पत्तिस्तु कीर्तिता ॥",
-                            "sutraTranslation": "Sound and waves propagate in all directions like ripples produced in water by successive wave pulses."
-                        }
-                    },
-                    {
-                        "type": "saraswati",
-                        "id": "c10_light_m1_step2_saraswati",
-                        "titleEn": "Wave Definition Discovery",
-                        "titleHi": "तरंग परिभाषा अनुसंधान",
-                        "titleHng": "Wave Definition Discovery",
-                        "miniSteps": [
-                            {
-                                "questionEn": "When a stone is dropped into calm water, what is created at the surface?",
-                                "questionHi": "जब शांत पानी में पत्थर गिराया जाता है, तो सतह पर क्या बनता है?",
-                                "questionHng": "Jab shant pani me patthar giraya jata hai, toh surface par kya banta hai?",
-                                "options": [
-                                    "A permanent displacement of water",
-                                    "A periodic disturbance (wave)",
-                                    "A chemical reaction"
-                                ],
-                                "optionsHi": [
-                                    "पानी का स्थायी विस्थापन",
-                                    "एक आवर्ती विक्षोभ (तरंग)",
-                                    "एक रासायनिक प्रतिक्रिया"
-                                ],
-                                "optionsHng": [
-                                    "Pani ka permanent displacement",
-                                    "Ek periodic disturbance (wave)",
-                                    "Chemical reaction"
-                                ],
-                                "correctIndex": 1,
-                                "clue": "Notice the ripples that oscillate outward in concentric circles.",
-                                "feedback": "Correct! A wave is initiated by a sudden physical disturbance in the medium.",
-                                "definitionFragmentEn": "A wave is a periodic disturbance...",
-                                "definitionFragmentHi": "तरंग एक आवर्ती विक्षोभ है...",
-                                "definitionFragmentHng": "Wave ek periodic disturbance hai..."
-                            },
-                            {
-                                "questionEn": "What travels outward from the disturbance point to the edge of the pond?",
-                                "questionHi": "विक्षोभ बिंदु से तालाब के किनारे की ओर क्या गति करता है?",
-                                "questionHng": "Disturbance point se pond ke kinare tak kya travel karta hai?",
-                                "options": [
-                                    "Energy and momentum",
-                                    "The water molecules themselves",
-                                    "Heat energy only"
-                                ],
-                                "optionsHi": [
-                                    "ऊर्जा और संवेग",
-                                    "स्वयं जल के अणु",
-                                    "केवल ऊष्मीय ऊर्जा"
-                                ],
-                                "optionsHng": [
-                                    "Energy aur momentum",
-                                    "Water molecules khud",
-                                    "Sirf heat energy"
-                                ],
-                                "clue": "A floating leaf bobs up and down but does not travel with the ripples.",
-                                "feedback": "Correct! It is the energy and momentum that moves forward, not the water itself.",
-                                "definitionFragmentEn": "...that transfers energy through a medium...",
-                                "definitionFragmentHi": "...जो माध्यम से ऊर्जा स्थानांतरित करता है...",
-                                "definitionFragmentHng": "...jo medium ke through energy transfer karta hai..."
-                            },
-                            {
-                                "questionEn": "Do the particles of the medium permanently travel across space?",
-                                "questionHi": "क्या माध्यम के कण स्थायी रूप से स्थान परिवर्तित करते हैं?",
-                                "questionHng": "Kya medium ke particles permanently aage nikal jate hain?",
-                                "options": [
-                                    "Yes, they wash up on shore",
-                                    "No, they only oscillate around equilibrium",
-                                    "They turn into vapor"
-                                ],
-                                "optionsHi": [
-                                    "हाँ, वे किनारे तक बह जाते हैं",
-                                    "नहीं, वे केवल साम्यावस्था के चारों ओर दोलन करते हैं",
-                                    "वे वाष्प बन जाते हैं"
-                                ],
-                                "optionsHng": [
-                                    "Haan, wo shore tak chale jate hain",
-                                    "Nahi, wo sirf equilibrium ke around oscillate karte hain",
-                                    "Wo vapor ban jate hain"
-                                ],
-                                "correctIndex": 1,
-                                "clue": "Think about a stadium wave — fans stand up and sit down, but no one leaves their seat.",
-                                "feedback": "Correct! Medium particles only oscillate around their mean equilibrium position.",
-                                "definitionFragmentEn": "...without permanently transporting matter.",
-                                "definitionFragmentHi": "...पदार्थ का स्थायी परिवहन किए बिना।",
-                                "definitionFragmentHng": "...bina matter transport kiye."
-                            }
-                        ],
-                        "definitionEn": "A wave is a periodic disturbance that transfers energy through a medium without permanently transporting matter.",
-                        "definitionHi": "तरंग एक आवर्ती विक्षोभ है जो पदार्थ का स्थायी परिवहन किए बिना माध्यम से ऊर्जा स्थानांतरित करता है।",
-                        "definitionHng": "Wave ek periodic disturbance hai jo bina matter transport kiye energy transfer karta hai."
-                    },
-                    {
-                        "type": "anveshana",
-                        "id": "c10_light_m1_step3_anveshana",
-                        "titleEn": "Wave Optics Mastery Check",
-                        "titleHi": "तरंग प्रकाशिकी परीक्षा",
-                        "titleHng": "Wave Optics Pariksha",
-                        "pool": [
-                            {
-                                "questionEn": "What does a wave transport from one location to another?",
-                                "questionHi": "तरंग एक स्थान से दूसरे स्थान तक किसका परिवहन करती है?",
-                                "questionHng": "Wave ek jagah se doosri jagah kya transport karti hai?",
-                                "options": [
-                                    "Matter only",
-                                    "Energy without net transport of matter",
-                                    "Atoms of the medium",
-                                    "Gravitational mass"
-                                ],
-                                "optionsHi": [
-                                    "केवल पदार्थ",
-                                    "पदार्थ के शुद्ध परिवहन के बिना ऊर्जा",
-                                    "माध्यम के परमाणु",
-                                    "गुरुत्वाकर्षण द्रव्यमान"
-                                ],
-                                "optionsHng": [
-                                    "Sirf matter",
-                                    "Energy bina net transport of matter",
-                                    "Medium ke atoms",
-                                    "Gravitational mass"
-                                ],
-                                "correctOptionIndex": 1,
-                                "explanationEn": "Waves transfer energy and momentum through oscillations without net transfer of matter."
-                            },
-                            {
-                                "questionEn": "Which classical Indian philosophical school formulated the ripple propagation analogy (वीचीतरङ्गन्याय)?",
-                                "questionHi": "तरंग प्रसार के लिए वीचीतरङ्गन्याय का प्रतिपादन किस भारतीय दर्शन ने किया?",
-                                "questionHng": "Ripple propagation ke liye Vīcītaraṅganyāya kis Indian school ne formulate kiya?",
-                                "options": [
-                                    "Vaiśeṣika (Kaṇāda)",
-                                    "Nyāya (Gautama)",
-                                    "Sāṅkhya (Kapila)",
-                                    "Mīmāṃsā (Jaimini)"
-                                ],
-                                "optionsHi": [
-                                    "वैशेषिक (महर्षि कणाद)",
-                                    "न्याय (महर्षि गौतम)",
-                                    "सांख्य (महर्षि कपिल)",
-                                    "मीमांसा (महर्षि जैमिनि)"
-                                ],
-                                "optionsHng": [
-                                    "Vaiśeṣika (Kaṇāda)",
-                                    "Nyāya (Gautama)",
-                                    "Sāṅkhya (Kapila)",
-                                    "Mīmāṃsā (Jaimini)"
-                                ],
-                                "correctOptionIndex": 0,
-                                "explanationEn": "Maharṣi Kaṇāda's Vaiśeṣika system formulated the Vīcītaraṅga model of wave pulse propagation."
-                            },
-                            {
-                                "questionEn": "In a transverse wave, how do particles oscillate relative to wave propagation direction?",
-                                "questionHi": "अनुप्रस्थ तरंग में कण तरंग संचरण की दिशा के सापेक्ष कैसे दोलन करते हैं?",
-                                "questionHng": "Transverse wave me particles wave propagation direction ke relative kaise oscillate karte hain?",
-                                "options": [
-                                    "Parallel to propagation",
-                                    "Perpendicular (at 90 degrees)",
-                                    "In random chaotic circles",
-                                    "Opposite to propagation"
-                                ],
-                                "optionsHi": [
-                                    "संचरण के समानांतर",
-                                    "लंबवत (90 डिग्री पर)",
-                                    "यादृच्छिक वृत्तों में",
-                                    "संचरण के विपरीत"
-                                ],
-                                "optionsHng": [
-                                    "Propagation ke parallel",
-                                    "Perpendicular (90 degrees par)",
-                                    "Random circles me",
-                                    "Propagation ke opposite"
-                                ],
-                                "correctOptionIndex": 1,
-                                "explanationEn": "In transverse waves, particle displacement is perpendicular to wave propagation."
-                            },
-                            {
-                                "questionEn": "Why can electromagnetic waves (like light) travel through the vacuum of outer space?",
-                                "questionHi": "विद्युत चुम्बकीय तरंगें (जैसे प्रकाश) अंतरिक्ष के निर्वात में यात्रा क्यों कर सकती हैं?",
-                                "questionHng": "Electromagnetic waves (jaise light) vacuum me travel kyu kar sakti hain?",
-                                "options": [
-                                    "They carry microscopic air pockets",
-                                    "They require no material medium to propagate",
-                                    "Solar wind pulls them along",
-                                    "They have infinite mass"
-                                ],
-                                "optionsHi": [
-                                    "वे सूक्ष्म वायु जेबें ले जाते हैं",
-                                    "उन्हें संचरण के लिए किसी भौतिक माध्यम की आवश्यकता नहीं होती",
-                                    "सौर पवन उन्हें खींचती है",
-                                    "उनका द्रव्यमान अनंत होता है"
-                                ],
-                                "optionsHng": [
-                                    "Unme microscopic air hoti hai",
-                                    "Unhe propagate karne ke liye material medium ki zaroorat nahi hoti",
-                                    "Solar wind unhe kheenchti hai",
-                                    "Unka mass infinite hota hai"
-                                ],
-                                "correctOptionIndex": 1,
-                                "explanationEn": "EM waves consist of oscillating electric and magnetic fields and do not require a material medium."
-                            },
-                            {
-                                "questionEn": "If a floating cork bobs up and down 10 times in 5 seconds, what is its frequency?",
-                                "questionHi": "यदि एक तैरता हुआ कॉर्क 5 सेकंड में 10 बार ऊपर-नीचे होता है, तो इसकी आवृत्ति क्या है?",
-                                "questionHng": "Agar ek floating cork 5 seconds me 10 baar bob karta hai, toh uski frequency kya hai?",
-                                "options": [
-                                    "50 Hz",
-                                    "2 Hz",
-                                    "0.5 Hz",
-                                    "10 Hz"
-                                ],
-                                "optionsHi": [
-                                    "50 हर्ट्ज",
-                                    "2 हर्ट्ज",
-                                    "0.5 हर्ट्ज",
-                                    "10 हर्ट्ज"
-                                ],
-                                "optionsHng": [
-                                    "50 Hz",
-                                    "2 Hz",
-                                    "0.5 Hz",
-                                    "10 Hz"
-                                ],
-                                "correctOptionIndex": 1,
-                                "explanationEn": "Frequency = oscillations / time = 10 / 5 = 2 Hz."
-                            },
-                            {
-                                "questionEn": "What happens to the wavelength when the frequency of a wave doubles while wave speed remains constant?",
-                                "questionHi": "तरंग गति स्थिर रहने पर आवृत्ति दोगुनी होने पर तरंगदैर्घ्य पर क्या प्रभाव पड़ता है?",
-                                "questionHng": "Wave speed constant rehne par frequency double hone se wavelength par kya asar padega?",
-                                "options": [
-                                    "Wavelength doubles",
-                                    "Wavelength is halved",
-                                    "Wavelength remains unchanged",
-                                    "Wavelength quadruples"
-                                ],
-                                "optionsHi": [
-                                    "तरंगदैर्घ्य दोगुना हो जाता है",
-                                    "तरंगदैर्घ्य आधा हो जाता है",
-                                    "तरंगदैर्घ्य अपरिवर्तित रहता है",
-                                    "तरंगदैर्घ्य चार गुना हो जाता है"
-                                ],
-                                "optionsHng": [
-                                    "Wavelength double ho jati hai",
-                                    "Wavelength aadhi (halved) ho jati hai",
-                                    "Wavelength unchanged rehti hai",
-                                    "Wavelength 4x ho jati hai"
-                                ],
-                                "correctOptionIndex": 1,
-                                "explanationEn": "Since v = f * lambda, lambda = v / f. If f doubles at constant v, lambda is halved."
-                            }
-                        ],
-                        "passingScore": 4
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m2",
-                "title": "2. Types of Waves",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_mechanical_sim",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 0.0,
-                            "type": 3.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_mechanical_def",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 1.0,
-                            "type": 3.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_transverse_sim",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 0.0,
-                            "type": 0.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_transverse_def",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 1.0,
-                            "type": 0.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_longitudinal_sim",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 0.0,
-                            "type": 1.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_longitudinal_def",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 1.0,
-                            "type": 1.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_em_sim",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 0.0,
-                            "type": 2.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "light_step2_em_def",
-                        "simulationId": "types_of_waves",
-                        "params": {
-                            "mode": 1.0,
-                            "type": 2.0
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m3",
-                "title": "3. Wave Characteristics",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step4",
-                        "textDeva": "तरंगों के लक्षण (Wave Characteristics)",
-                        "textEng": "* **Wavelength (\\(\\lambda\\)):** The linear distance between two consecutive corresponding points on a wave (e.g., crest to crest).\n* **Frequency (f):** The number of complete wave cycles passing a fixed point per second. Measured in Hertz (Hz).\n* **Amplitude:** The maximum displacement from its resting position. Dictates **intensity** or brightness.\n* **Wave Speed (v):** The velocity at which the wave disturbance travels. Calculated via the wave equation:\n\n$$v = f \\times \\lambda$$",
-                        "textHng": "* **Wavelength (\\(\\lambda\\)):** Wave par do consecutive corresponding points (jaise crest se crest) ke beech ki linear distance.\n* **Frequency (f):** Ek fixed point se har second paas hone wali complete wave cycles ka number. Isse Hertz (Hz) mein measure karte hain.\n* **Amplitude:** Resting position se maximum displacement. Yeh **intensity** ya brightness decide karta hai.\n* **Wave Speed (v):** Woh velocity jis par wave disturbance travel karti hai. Isse wave equation se calculate karte hain:\n\n$$v = f \\times \\lambda$$"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m4",
-                "title": "4. Wave Oscillation Lab",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "light_step3",
-                        "simulationId": "wave_intro",
-                        "questionText": "Oscillate the wave frequencies. Notice how Transverse waves move perpendicular to the axis, while Longitudinal waves compress and dilate parallel to the propagation path. All EM waves travel as transverse fields."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m5",
-                "title": "5. Quiz: Wave Checkpoint",
-                "steps": [
-                    {
-                        "type": "predict_quiz",
-                        "id": "light_step5",
-                        "question": "Which of the following is a mechanical transverse wave?",
-                        "options": [
-                            "Sound wave in air",
-                            "Water ripples on a pond surface",
-                            "Radio waves",
-                            "X-rays"
-                        ],
-                        "correctOptionIndex": 1,
-                        "explanation": "Water waves are mechanical because they need water as a medium, and transverse because the water molecules vibrate perpendicular to the direction of wave travel.",
-                        "hints": [
-                            "Mechanical waves require a material medium to propagate.",
-                            "Transverse waves vibrate perpendicular to the direction of wave propagation, whereas longitudinal waves vibrate parallel."
-                        ],
-                        "targetModuleId": "c10_physics_light_m2",
-                        "questionHng": "Inme se kaunsa ek mechanical transverse wave hai?",
-                        "optionsHng": [
-                            "Hawa mein Sound wave",
-                            "Pond surface par Water ripples",
-                            "Radio waves",
-                            "X-rays"
-                        ],
-                        "explanationHng": "Water waves mechanical hoti hain kyunki unhe medium ke liye paani ki zaroorat hoti hai, aur transverse hoti hain kyunki paani ke molecules wave travel ki direction ke perpendicular vibrate karte hain.",
-                        "hintsHng": [
-                            "Mechanical waves ko propagate hone ke liye material medium ki zaroorat hoti hai.",
-                            "Transverse waves wave propagation ki direction ke perpendicular vibrate karti hain, jabki longitudinal waves parallel vibrate karti hain."
-                        ]
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m6",
-                "title": "6. Nature of Light",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step6",
-                        "textDeva": "प्रकाश का परिचय (Introduction to Light)",
-                        "textEng": "* **Definition:** Light is a form of electromagnetic radiation that creates the sensation of sight.\n* **Medium Independence:** As an EM wave, it travels through a vacuum without needing a physical medium.\n* **Visible Spectrum:** The human eye is sensitive to wavelengths ranging from approximately **400 nm (violet)** to **700 nm (red)**."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m7",
-                "title": "7. Speed of Light",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step7",
-                        "textDeva": "प्रकाश की गति (Speed of Light)",
-                        "textEng": "* **Speed in Vacuum (c):** denonated by \\(c\\):\n\n$$c \\approx 3 \\times 10^8 \\text{ m/s}$$\n\n* **Universal Speed Limit:** According to Einstein's theory of relativity, \\(c\\) is the absolute speed limit of the universe.\n* **Medium Dependence:** The speed of light decreases when entering an optically denser medium (like water or glass)."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m8",
-                "title": "8. Duality & Propagation",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step8",
-                        "textDeva": "द्वैत प्रकृति और सरल रेखीय संचरण (Duality & Rectilinear Propagation)",
-                        "textEng": "* **Dual Nature:** Light exhibits both wave-like behaviors (interference, diffraction) and particle-like behaviors (photons).\n* **Rectilinear Propagation:** The physical tendency of light to travel in perfectly straight lines within a homogeneous medium."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m9",
-                "title": "9. Vedic Light Speed",
-                "steps": [
-                    {
-                        "type": "heritage_connection",
-                        "id": "light_step9",
-                        "title": "Vedic Calculation of the Speed of Light",
-                        "sutra": "तरणिर्विश्वदर्शतो ज्योतिष्कृदसि सूर्य। विश्वमाभासि रोचनम्॥",
-                        "translation": "Swiftly traversing the heavens, creating light, illuminating the whole universe.",
-                        "significance": "### Sayana's Rig Veda Commentary (14th Century CE)\n* In his commentary on the *Rig Veda* (1.50.4), Sayana writes:\n  > \"Remembered is this: Sun (light) travels 2,202 yojanas in half a nimesha.\"\n* **Mathematical conversion**:\n  * \\(1 \\text{ yojana} \\approx 9 \\text{ miles}\\)\n  * \\(1 \\text{ nimesha} \\approx 16/75 \\text{ seconds} \\implies \\text{half nimesha} \\approx 8/75 \\text{ seconds}\\)\n  * Speed \\(= \\frac{2202 \\times 9}{8/75} \\approx 185,793 \\text{ miles/s}\\)\n* This matches modern measurements (\\(186,282 \\text{ miles/s}\\)) with astonishing accuracy!"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m10",
-                "title": "10. Tejas Atoms & Optics",
-                "steps": [
-                    {
-                        "type": "heritage_connection",
-                        "id": "light_step10",
-                        "title": "Nyaya-Vaisheshika Atomic Light Theory",
-                        "sutra": "तद्रूपवतोऽग्रिसंयोगात्...",
-                        "translation": "Light consists of high-velocity Tejas (energy) atoms.",
-                        "significance": "### Maharishi Kanada's Vaisheshika Sutras (c. 6th-2nd c. BCE)\n* Proposed that light (*Tejas*) consists of indivisible, high-velocity atoms in continuous motion, anticipating Newton's corpuscular theory.\n* **Light vs Sound**: The school explained sound propagation using *vīchī-taraṅga-nyāya* (ripples in water), but modeled light as direct corpuscular rays, explaining why lightning is seen before thunder."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m11",
-                "title": "11. Quiz: Light & History",
-                "steps": [
-                    {
-                        "type": "predict_quiz",
-                        "id": "light_step11",
-                        "question": "Sayana's Vedic speed commentary translates to which approximate speed in miles/second?",
-                        "options": [
-                            "100,000 miles/s",
-                            "186,000 miles/s",
-                            "300,000 miles/s",
-                            "150,000 miles/s"
-                        ],
-                        "correctOptionIndex": 1,
-                        "explanation": "Sayana's comment of '2,202 yojanas in half a nimesha' calculates to approximately 186,000 miles per second, which is extremely close to the modern speed of light.",
-                        "hints": [
-                            "Recall that 1 yojana is roughly 9 miles.",
-                            "Divide the converted distance by the half nimesha duration (8/75 seconds)."
-                        ],
-                        "targetModuleId": "c10_physics_light_m9"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m12",
-                "title": "12. Reflection of Light",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step12",
-                        "textDeva": "प्रकाश का परावर्तन (Reflection of Light)",
-                        "textEng": "* **Reflection:** The bouncing back of light rays into the same medium when they strike a polished surface.\n\n### Laws of Reflection\n1. The angle of incidence is equal to the angle of reflection:\n\n$$\\angle i = \\angle r$$\n\n2. The incident ray, the normal, and the reflected ray all lie in the same geometric plane."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m13",
-                "title": "13. Plane Mirrors",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step13",
-                        "textDeva": "समतल दर्पण द्वारा प्रतिबिम्ब (Images Formed by Plane Mirrors)",
-                        "textEng": "* **Virtual & Erect:** The image cannot be caught on a screen and stands upright.\n* **Equal Size:** Image size is identical to object size (\\(h_i = h_o\\)).\n* **Equidistant:** Image distance behind mirror equals object distance in front (\\(v = -u\\)).\n* **Lateral Inversion:** The right side appears as the left side. E.g., the reversed **\"AMBULANCE\"** text painted on emergency vehicles."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m14",
-                "title": "14. Spherical Mirrors",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step14",
-                        "textDeva": "गोलीय दर्पण का परिचय (Introduction to Spherical Mirrors)",
-                        "textEng": "* Spherical mirrors have reflective surfaces cut from a hollow glass sphere.\n* **Concave Mirror:** Curved inward, converging parallel light rays to a real focus.\n* **Convex Mirror:** Curved outward, diverging parallel rays away from a virtual focus."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m15",
-                "title": "15. Concave Mirrors",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step15",
-                        "textDeva": "अवतल दर्पण के उपयोग (Applications of Concave Mirrors)",
-                        "textEng": "* **Converging Action:** Concentrates light rays.\n* **Shaving/Dentist Mirrors:** Provides magnified erect images when placed close.\n* **Torches/Headlights:** Light bulb placed at focus produces powerful parallel beams.\n* **Solar Furnaces:** Concentrates sunlight to generate immense heat."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m16",
-                "title": "16. Convex Mirrors",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step16",
-                        "textDeva": "उत्तल दर्पण के उपयोग (Applications of Convex Mirrors)",
-                        "textEng": "* **Diverging Action:** Always forms virtual, erect, and diminished (smaller) images.\n* **Rear-View Mirrors:** Maintains upright images and provides a wider field of view for drivers.\n* **Security Mirrors:** Used in shops and blind curves to monitor wide areas."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m17",
-                "title": "17. Mirror Terminology",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step17",
-                        "textDeva": "पारिभाषिक शब्दावली (Terminology of Mirrors)",
-                        "textEng": "* **Pole (P):** The center of the reflecting surface.\n* **Center of Curvature (C):** Center of the hollow sphere.\n* **Principal Axis:** Line passing through Pole and Center of Curvature.\n* **Principal Focus (F):** Where parallel rays converge (concave) or appear to diverge from (convex).\n* **Focal Length (f):** Distance from Pole to Focus.\n\n$$R = 2f$$"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m18",
-                "title": "18. Ray Optics Lab",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "light_step18",
-                        "simulationId": "ray_optics",
-                        "questionText": "Drag the object. Notice how the parallel and pole-striking rays intersect to define the image. Feel the vibration pulse at Focus F (Infinity transition) and the double pulse at Curvature C (Equal-size equilibrium)."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m19",
-                "title": "19. Quiz: Mirrors & Reflection",
-                "steps": [
-                    {
-                        "type": "predict_quiz",
-                        "id": "light_step19",
-                        "question": "Why are convex mirrors preferred as rear-view mirrors in vehicles?",
-                        "options": [
-                            "They form real and magnified images",
-                            "They form virtual, erect and magnified images",
-                            "They form virtual, erect and diminished images, providing a wider field of view",
-                            "They converge light rays to a single focus"
-                        ],
-                        "correctOptionIndex": 2,
-                        "explanation": "Convex mirrors always form virtual, erect, and diminished images. Because the images are smaller, they allow the driver to see a much wider area behind the vehicle.",
-                        "hints": [
-                            "Consider whether a driver needs to see cars upright (erect) or upside down (inverted).",
-                            "Smaller (diminished) images allow more objects to fit inside the mirror surface."
-                        ],
-                        "targetModuleId": "c10_physics_light_m16"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m20",
-                "title": "20. Sign Conventions",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step20",
-                        "textDeva": "चिन्ह परिपाटी (New Cartesian Sign Convention)",
-                        "textEng": "* **Origin:** Pole (P) serves as origin (0,0).\n* **Object Placement:** Always placed on the left, so object distance \\(u\\) is always **negative**.\n* **Light Direction:** Distances measured in direction of incident light are positive (+); opposite are negative (-).\n* **Heights:** Vertically above axis are positive (+); downward are negative (-).\n* **Focal Lengths:** Concave mirror focal length is **negative** (-f); convex is **positive** (+f)."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m21",
-                "title": "21. The Mirror Formula",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step21",
-                        "textDeva": "दर्पण सूत्र (The Mirror Formula)",
-                        "textEng": "* Expresses the reciprocal relationship between focal length (f), object distance (u), and image distance (v):\n\n$$\\frac{1}{v} + \\frac{1}{u} = \\frac{1}{f}$$"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m22",
-                "title": "22. Mirror Magnification",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step22",
-                        "textDeva": "आवर्धन (Linear Magnification)",
-                        "textEng": "* **Magnification (m):** Ratio of image height to object height:\n\n$$m = \\frac{h_i}{h_o} = -\\frac{v}{u}$$\n\n* **Sign Decoding:** If \\(m < 0\\), the image is **Real & Inverted**. If \\(m > 0\\), it is **Virtual & Erect**.\n* **Magnitude Decoding:** \\(|m| > 1\\) is enlarged; \\(|m| < 1\\) is diminished; \\(|m| = 1\\) is same size."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m23",
-                "title": "23. Quiz: Mirror Numericals",
-                "steps": [
-                    {
-                        "type": "predict_quiz",
-                        "id": "light_step23",
-                        "question": "An object is placed 20 cm in front of a concave mirror of focal length 15 cm. What is the image position?",
-                        "options": [
-                            "v = -60 cm (in front)",
-                            "v = +60 cm (behind)",
-                            "v = -30 cm (in front)",
-                            "v = +30 cm (behind)"
-                        ],
-                        "correctOptionIndex": 0,
-                        "explanation": "Using mirror formula 1/v + 1/u = 1/f. u = -20 cm, f = -15 cm. 1/v = -1/15 + 1/20 = -1/60. Hence v = -60 cm.",
-                        "hints": [
-                            "Object distance (u) is always negative: u = -20 cm. Concave mirror means f = -15 cm.",
-                            "Apply 1/v + 1/u = 1/f and solve for 1/v."
-                        ],
-                        "targetModuleId": "c10_physics_light_m21"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m24",
-                "title": "24. Refraction of Light",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step24",
-                        "textDeva": "प्रकाश का अपवर्तन (Refraction of Light)",
-                        "textEng": "* **Refraction:** The bending of light rays when traveling obliquely from one transparent medium to another.\n* **Cause:** Velocity change between optical media.\n* **Rules:**\n  * *Rarer to Denser (e.g. Air to Glass):* Bends **towards** normal.\n  * *Denser to Rarer (e.g. Glass to Air):* Bends **away** from normal."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m25",
-                "title": "25. Laws of Refraction",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step25",
-                        "textDeva": "अपवर्तन के नियम (Laws of Refraction)",
-                        "textEng": "1. Incident ray, refracted ray, and normal at point of incidence lie in the same geometric plane.\n2. **Snell's Law:** The ratio of sine of angle of incidence to sine of refraction is constant:\n\n$$\\frac{\\sin i}{\\sin r} = n$$"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m26",
-                "title": "26. Refraction Slab Lab",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "light_step26",
-                        "simulationId": "refraction_slab",
-                        "questionText": "Vary the angle of incidence. Notice how the emergent ray is parallel to the incident path but is laterally displaced. Change the refractive index (n) to see its impact on the lateral shift."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m27",
-                "title": "27. Absolute Refractive Index",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step27",
-                        "textDeva": "निरपेक्ष अपवर्तनांक (Absolute Refractive Index)",
-                        "textEng": "* Refractive index indicates how much a medium slows down light.\n* **Absolute index (\\(n_m\\)):** Ratio of light speed in vacuum to speed in medium:\n\n$$n_m = \\frac{c}{v}$$\n\n* **Fact:** Diamond holds the highest absolute refractive index (**2.42**)."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m28",
-                "title": "28. Relative Refractive Index",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step28",
-                        "textDeva": "सापेक्ष अपवर्तनांक (Relative Refractive Index)",
-                        "textEng": "* **Relative Index (\\(n_{21}\\)):** Refractive index of Medium 2 with respect to Medium 1:\n\n$$n_{21} = \\frac{v_1}{v_2} = \\frac{n_2}{n_1}$$"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m29",
-                "title": "29. Total Internal Reflection",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step29",
-                        "textDeva": "पूर्ण आंतरिक परावर्तन (Total Internal Reflection)",
-                        "textEng": "* **Critical Angle (C):** Angle of incidence in denser medium for which angle of refraction is exactly \\(90^\\circ\\).\n\n$$n = \\frac{1}{\\sin C}$$\n\n* **TIR Conditions:**\n  1. Light travels from **denser to rarer** medium.\n  2. Angle of incidence exceeds critical angle (\\(\\angle i > C\\))."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m30",
-                "title": "30. TIR Lab",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "light_step30",
-                        "simulationId": "total_internal_reflection",
-                        "questionText": "Drag the incidence angle. Watch it cross the critical angle threshold. Beyond this boundary state, the light cannot refract and is reflected back inside."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m31",
-                "title": "31. Quiz: Refraction & TIR",
-                "steps": [
-                    {
-                        "type": "predict_quiz",
-                        "id": "light_step31",
-                        "question": "What is the relation between the critical angle (C) and the refractive index (n) for total internal reflection?",
-                        "options": [
-                            "n = sin C",
-                            "n = 1 / sin C",
-                            "n = cos C",
-                            "n = 1 / cos C"
-                        ],
-                        "correctOptionIndex": 1,
-                        "explanation": "By Snell's law, for refraction into air at critical angle C: n sin C = 1 * sin 90. Therefore, n = 1 / sin C.",
-                        "hints": [
-                            "Recall that at the critical angle, the angle of refraction (r) is exactly 90 degrees.",
-                            "Apply Snell's law: n * sin(i) = 1 * sin(r) where i = C and r = 90."
-                        ],
-                        "targetModuleId": "c10_physics_light_m29"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m32",
-                "title": "32. Refraction in Prisms",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step32",
-                        "textDeva": "प्रिज्म द्वारा प्रकाश का विक्षेपण (Dispersion through a Glass Prism)",
-                        "textEng": "* **Dispersion:** Splitting of white light into seven constituent colors (**VIBGYOR**) when passing through a prism.\n* **Cause:** Different wavelengths travel at different speeds in glass, bending by different angles.\n  * **Red:** Longest wavelength, slows least, **bends least**.\n  * **Violet:** Shortest wavelength, slows most, **bends most**."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m33",
-                "title": "33. Prism Dispersion Lab",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "light_step33",
-                        "simulationId": "prism_dispersion",
-                        "questionText": "Oscillate the incidence angle. Watch how white light splits into the seven VIBGYOR colors as they refract at different angles due to varying wavelengths."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m34",
-                "title": "34. Spherical Lenses",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step34",
-                        "textDeva": "गोलीय लेंस (Types of Spherical Lenses)",
-                        "textEng": "* **Convex Lens:** Thicker at center, converging parallel light rays to a real focus.\n* **Concave Lens:** Thinner at center, diverging parallel rays away from a virtual focus."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m35",
-                "title": "35. Lens Ray Diagrams",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step35",
-                        "textDeva": "किरण चित्र के नियम (Rules for Drawing Lens Ray Diagrams)",
-                        "textEng": "1. Ray entering parallel to principal axis refracts through focus on the far side (convex) or diverges in line with the near focus (concave).\n2. Ray passing through the optical center (O) goes straight without deviation.\n3. Ray passing through focus emerges parallel to principal axis."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m36",
-                "title": "36. The Lens Formula",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step36",
-                        "textDeva": "लेंस सूत्र (The Lens Formula)",
-                        "textEng": "* Expresses the reciprocal relationship between focal length (f), object distance (u), and image distance (v) for lenses:\n\n$$\\frac{1}{v} - \\frac{1}{u} = \\frac{1}{f}$$\n\n* **Linear Magnification (m):**\n\n$$m = \\frac{h_i}{h_o} = \\frac{v}{u}$$"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m37",
-                "title": "37. Power of a Lens",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step37",
-                        "textDeva": "लेंस की क्षमता (Power of a Lens)",
-                        "textEng": "* **Power (P):** Reciprocal of focal length measured in **meters**:\n\n$$P = \\frac{1}{f \\text (in meters)}$$\n\n* **SI Unit:** Diopter (D). \\(1\\text{ D} = 1\\text{ m}^{-1}\\).\n* **Signs:** Positive for convex (+P), negative for concave (-P).\n* **Combination:** Net power is the algebraic sum:\n\n$$P = P_1 + P_2 + P_3 + \\dots$$"
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m38",
-                "title": "38. Atmospheric Refraction",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step38",
-                        "textDeva": "वायुमंडलीय अपवर्तन (Atmospheric Refraction)",
-                        "textEng": "* Earth's atmosphere has layers of varying densities. Light passing through experience continuous bending.\n* **Twinkling of Stars:** Continuous path shifting of starlight due to turbulent atmospheric layers.\n* **Advanced Sunrise & Delayed Sunset:** Sun is visible **2 minutes before** actual sunrise and **2 minutes after** sunset due to atmospheric bending."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m39",
-                "title": "39. Scattering & Tyndall",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step39",
-                        "textDeva": "प्रकाश का प्रकीर्णन (Scattering of Light)",
-                        "textEng": "* **Tyndall Effect:** Scattering of a light beam by colloidal particles, rendering its path visible.\n* **Blue Sky:** Small gas molecules scatter shorter wavelengths (blue) more efficiently than longer wavelengths (red).\n* **Red Sunsets:** At horizon, light travels a thicker atmospheric path. Short blue light is scattered away, leaving only red wavelengths to reach our eyes."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m40",
-                "title": "40. Advanced Wave Optics",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step40",
-                        "textDeva": "तरंग प्रकाशिकी (Advanced Wave Optics)",
-                        "textEng": "* **Interference:** Overlapping of coherent light waves creating shifting color patterns (e.g. soap bubbles).\n* **Diffraction:** The bending of light waves around obstacles or spreading through tiny apertures."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m41",
-                "title": "41. Exam Pro-Tips",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "light_step41",
-                        "textDeva": "परीक्षा के लिए टिप्स (Class 10 Exam Pro-Tips)",
-                        "textEng": "1. **u is Always Negative**: Object sits on left.\n2. **Convex = Positive f, Concave = Negative f** (mirrors and lenses).\n3. **Power Calculations**: Always convert focal length from cm to meters first!\n4. **Magnification Signs**: Negative (Real & Inverted), Positive (Virtual & Erect).\n5. **Image Position (v)**:\n  * Mirrors: Real (-v, front), Virtual (+v, behind).\n  * Lenses: Real (+v, opposite side), Virtual (-v, same side)."
-                    }
-                ]
-            },
-            {
-                "id": "c10_physics_light_m42",
-                "title": "42. Final Quiz Checkpoint",
-                "steps": [
-                    {
-                        "type": "predict_quiz",
-                        "id": "light_step42",
-                        "question": "If the linear magnification of a spherical mirror is m = -2, what is the nature and size of the image?",
-                        "options": [
-                            "Virtual, Erect, and Enlarged",
-                            "Real, Inverted, and Enlarged",
-                            "Real, Inverted, and Diminished",
-                            "Virtual, Erect, and Diminished"
-                        ],
-                        "correctOptionIndex": 1,
-                        "explanation": "A negative sign of magnification m indicates that the image is Real and Inverted. Since the magnitude |m| = 2 is greater than 1, the image is Enlarged.",
-                        "hints": [
-                            "Look at the sign of the magnification. A negative sign indicates real and inverted.",
-                            "Look at the absolute value. Since |m| = 2 is greater than 1, the image is magnified (enlarged)."
-                        ],
-                        "targetModuleId": "c10_physics_light_m22"
-                    }
-                ]
+  {
+    "id": "c10_physics_light",
+    "title": "Chapter 9: Light - Reflection and Refraction",
+    "branchId": "physics",
+    "modules": [
+      {
+        "id": "c10_physics_light_m1",
+        "title": "1. What is a Wave?",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "light_step1_sim",
+            "simulationId": "what_is_a_wave",
+            "params": {
+              "mode": 0
             }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step1_def",
+            "simulationId": "what_is_a_wave",
+            "params": {
+              "mode": 1
+            }
+          }
         ],
-        "pyqs": [
-            {
-                "id": "light_pyq_1",
-                "year": "CBSE 2023",
-                "marks": "3 Marks",
-                "question": "A convex lens forms a real and inverted image of a needle at a distance of 50 cm from it. Where is the needle placed if the image is equal to the size of the object? Also find the power of the lens.",
-                "sampleAnswer": "1. Since the image is real, inverted, and equal in size, the needle must be placed at 2F_1 on the other side. Here, v = +50 cm. Since v = -u for equal size, object distance u = -50 cm.\n2. Apply Lens Formula: 1/f = 1/v - 1/u = 1/50 - (-1/50) = 2/50 = 1/25. Focal length f = +25 cm = +0.25 m.\n3. Power P = 1 / f(m) = 1 / 0.25 = +4 D.",
-                "markingScheme": "- Finding object distance u = -50 cm: 1 Mark\n- Applying lens formula to find f = +25 cm: 1 Mark\n- Correct power calculation P = +4 D: 1 Mark",
-                "relatedModuleIds": [
-                    "c10_physics_light_m36",
-                    "c10_physics_light_m37"
-                ]
+        "learningSteps": [
+          {
+            "type": "video_simulation",
+            "id": "c10_light_m1_step1_media",
+            "mediaMode": "both",
+            "textEng": "A wave is a periodic disturbance that transfers energy through space or a medium without permanently transporting matter.",
+            "textHng": "Wave ek periodic disturbance hai jo bina matter transport kiye space ya medium ke through energy transfer karta hai.",
+            "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            "transcript": [
+              {
+                "startMs": 0,
+                "endMs": 15000,
+                "textEn": "Welcome to Wave Optics. What exactly is a wave?",
+                "textHi": "तरंग प्रकाशिकी में आपका स्वागत है। तरंग वास्तव में क्या है?",
+                "textHng": "Wave Optics me aapka swagat hai. Wave asal me kya hai?"
+              },
+              {
+                "startMs": 15000,
+                "endMs": 30000,
+                "textEn": "Notice how energy travels forward while the water particles only bob up and down.",
+                "textHi": "ध्यान दें कि ऊर्जा कैसे आगे बढ़ती है जबकि पानी के कण केवल ऊपर और नीचे दोलन करते हैं।",
+                "textHng": "Dhyan dijiye ki energy aage badhti hai jabki water particles sirf upar neeche move karte hain."
+              }
+            ],
+            "simulationId": "what_is_a_wave",
+            "params": {
+              "mode": 0
             },
-            {
-                "id": "light_pyq_2",
-                "year": "CBSE 2020",
-                "marks": "2 Marks",
-                "question": "Why does the sun appear reddish early in the morning? Explain.",
-                "sampleAnswer": "Early in the morning, the sun is near the horizon. Sunlight has to travel the longest distance through the thickest layers of the Earth's atmosphere. Most of the shorter wavelengths (blue and violet light) are scattered away by the fine particles in the air. Only the longer wavelengths (red light), which scatter the least, reach our eyes, giving the sun a reddish appearance.",
-                "markingScheme": "- Stating horizontal distance is longer: 1 Mark\n- Stating blue light is scattered away and red light reaches the eye: 1 Mark",
-                "relatedModuleIds": [
-                    "c10_physics_light_m39"
-                ]
-            },
-            {
-                "id": "light_pyq_3",
-                "year": "CBSE 2019",
-                "marks": "1 Mark",
-                "question": "Which of the following materials cannot be used to make a lens?",
+            "subStepCount": 2,
+            "gurutatva": {
+              "titleEn": "Kaṇāda on Wave Propagation (तरंग सञ्चार)",
+              "titleHi": "कणाद तरंग सञ्चार सिद्धान्त",
+              "titleHng": "Kaṇāda on Wave Propagation (Taranga Sanchāra)",
+              "bodyEn": "In the Vaiśeṣika Sūtra, Maharṣi Kaṇāda explains that propagation occurs through successive adjacent disturbances (वीचीतरङ्गन्याय), anticipating modern mechanical wave motion.",
+              "bodyHi": "वैशेषिक सूत्र में महर्षि कणाद बताते हैं कि तरंग सञ्चार निकटवर्ती विक्षोभों के क्रमिक प्रवाह से होता है (वीचीतरङ्गन्याय)।",
+              "bodyHng": "Vaiśeṣika Sūtra me Maharṣi Kaṇāda batate hain ki wave propagation adjacent disturbances ke through hota hai (Vīcītaraṅganyāya).",
+              "sutra": "वीचीतरङ्गन्यायेन तदुत्पत्तिस्तु कीर्तिता ॥",
+              "sutraTranslation": "Sound and waves propagate in all directions like ripples produced in water by successive wave pulses."
+            }
+          },
+          {
+            "type": "saraswati",
+            "id": "c10_light_m1_step2_saraswati",
+            "titleEn": "Wave Definition Discovery",
+            "titleHi": "तरंग परिभाषा अनुसंधान",
+            "titleHng": "Wave Definition Discovery",
+            "miniSteps": [
+              {
+                "questionEn": "When a stone is dropped into calm water, what is created at the surface?",
+                "questionHi": "जब शांत पानी में पत्थर गिराया जाता है, तो सतह पर क्या बनता है?",
+                "questionHng": "Jab shant pani me patthar giraya jata hai, toh surface par kya banta hai?",
                 "options": [
-                    "Water",
-                    "Glass",
-                    "Plastic",
-                    "Clay"
+                  "A permanent displacement of water",
+                  "A periodic disturbance (wave)",
+                  "A chemical reaction"
                 ],
-                "correctOptionIndex": 3,
-                "sampleAnswer": "Clay\n\nExplanation: A lens must be made of a transparent material through which light can pass and refract. Clay is opaque and does not allow light to pass through.",
-                "markingScheme": "- Selecting Clay: 1 Mark",
-                "relatedModuleIds": [
-                    "c10_physics_light_m34"
-                ]
+                "optionsHi": [
+                  "पानी का स्थायी विस्थापन",
+                  "एक आवर्ती विक्षोभ (तरंग)",
+                  "एक रासायनिक प्रतिक्रिया"
+                ],
+                "optionsHng": [
+                  "Pani ka permanent displacement",
+                  "Ek periodic disturbance (wave)",
+                  "Chemical reaction"
+                ],
+                "correctIndex": 1,
+                "clue": "Notice the ripples that oscillate outward in concentric circles.",
+                "feedback": "Correct! A wave is initiated by a sudden physical disturbance in the medium.",
+                "definitionFragmentEn": "A wave is a periodic disturbance...",
+                "definitionFragmentHi": "तरंग एक आवर्ती विक्षोभ है...",
+                "definitionFragmentHng": "Wave ek periodic disturbance hai..."
+              },
+              {
+                "questionEn": "What travels outward from the disturbance point to the edge of the pond?",
+                "questionHi": "विक्षोभ बिंदु से तालाब के किनारे की ओर क्या गति करता है?",
+                "questionHng": "Disturbance point se pond ke kinare tak kya travel karta hai?",
+                "options": [
+                  "Energy and momentum",
+                  "The water molecules themselves",
+                  "Heat energy only"
+                ],
+                "optionsHi": [
+                  "ऊर्जा और संवेग",
+                  "स्वयं जल के अणु",
+                  "केवल ऊष्मीय ऊर्जा"
+                ],
+                "optionsHng": [
+                  "Energy aur momentum",
+                  "Water molecules khud",
+                  "Sirf heat energy"
+                ],
+                "clue": "A floating leaf bobs up and down but does not travel with the ripples.",
+                "feedback": "Correct! It is the energy and momentum that moves forward, not the water itself.",
+                "definitionFragmentEn": "...that transfers energy through a medium...",
+                "definitionFragmentHi": "...जो माध्यम से ऊर्जा स्थानांतरित करता है...",
+                "definitionFragmentHng": "...jo medium ke through energy transfer karta hai..."
+              },
+              {
+                "questionEn": "Do the particles of the medium permanently travel across space?",
+                "questionHi": "क्या माध्यम के कण स्थायी रूप से स्थान परिवर्तित करते हैं?",
+                "questionHng": "Kya medium ke particles permanently aage nikal jate hain?",
+                "options": [
+                  "Yes, they wash up on shore",
+                  "No, they only oscillate around equilibrium",
+                  "They turn into vapor"
+                ],
+                "optionsHi": [
+                  "हाँ, वे किनारे तक बह जाते हैं",
+                  "नहीं, वे केवल साम्यावस्था के चारों ओर दोलन करते हैं",
+                  "वे वाष्प बन जाते हैं"
+                ],
+                "optionsHng": [
+                  "Haan, wo shore tak chale jate hain",
+                  "Nahi, wo sirf equilibrium ke around oscillate karte hain",
+                  "Wo vapor ban jate hain"
+                ],
+                "correctIndex": 1,
+                "clue": "Think about a stadium wave — fans stand up and sit down, but no one leaves their seat.",
+                "feedback": "Correct! Medium particles only oscillate around their mean equilibrium position.",
+                "definitionFragmentEn": "...without permanently transporting matter.",
+                "definitionFragmentHi": "...पदार्थ का स्थायी परिवहन किए बिना।",
+                "definitionFragmentHng": "...bina matter transport kiye."
+              }
+            ],
+            "definitionEn": "A wave is a periodic disturbance that transfers energy through a medium without permanently transporting matter.",
+            "definitionHi": "तरंग एक आवर्ती विक्षोभ है जो पदार्थ का स्थायी परिवहन किए बिना माध्यम से ऊर्जा स्थानांतरित करता है।",
+            "definitionHng": "Wave ek periodic disturbance hai jo bina matter transport kiye energy transfer karta hai."
+          },
+          {
+            "type": "anveshana",
+            "id": "c10_light_m1_step3_anveshana",
+            "titleEn": "Wave Optics Mastery Check",
+            "titleHi": "तरंग प्रकाशिकी परीक्षा",
+            "titleHng": "Wave Optics Pariksha",
+            "pool": [
+              {
+                "questionEn": "What does a wave transport from one location to another?",
+                "questionHi": "तरंग एक स्थान से दूसरे स्थान तक किसका परिवहन करती है?",
+                "questionHng": "Wave ek jagah se doosri jagah kya transport karti hai?",
+                "options": [
+                  "Matter only",
+                  "Energy without net transport of matter",
+                  "Atoms of the medium",
+                  "Gravitational mass"
+                ],
+                "optionsHi": [
+                  "केवल पदार्थ",
+                  "पदार्थ के शुद्ध परिवहन के बिना ऊर्जा",
+                  "माध्यम के परमाणु",
+                  "गुरुत्वाकर्षण द्रव्यमान"
+                ],
+                "optionsHng": [
+                  "Sirf matter",
+                  "Energy bina net transport of matter",
+                  "Medium ke atoms",
+                  "Gravitational mass"
+                ],
+                "correctOptionIndex": 1,
+                "explanationEn": "Waves transfer energy and momentum through oscillations without net transfer of matter.",
+                "correctOptionHash": "fae5cfc2b67808cf2d92eb803237ce0c8becf897ecee834bddb04bb97ee74143"
+              },
+              {
+                "questionEn": "Which classical Indian philosophical school formulated the ripple propagation analogy (वीचीतरङ्गन्याय)?",
+                "questionHi": "तरंग प्रसार के लिए वीचीतरङ्गन्याय का प्रतिपादन किस भारतीय दर्शन ने किया?",
+                "questionHng": "Ripple propagation ke liye Vīcītaraṅganyāya kis Indian school ne formulate kiya?",
+                "options": [
+                  "Vaiśeṣika (Kaṇāda)",
+                  "Nyāya (Gautama)",
+                  "Sāṅkhya (Kapila)",
+                  "Mīmāṃsā (Jaimini)"
+                ],
+                "optionsHi": [
+                  "वैशेषिक (महर्षि कणाद)",
+                  "न्याय (महर्षि गौतम)",
+                  "सांख्य (महर्षि कपिल)",
+                  "मीमांसा (महर्षि जैमिनि)"
+                ],
+                "optionsHng": [
+                  "Vaiśeṣika (Kaṇāda)",
+                  "Nyāya (Gautama)",
+                  "Sāṅkhya (Kapila)",
+                  "Mīmāṃsā (Jaimini)"
+                ],
+                "correctOptionIndex": 0,
+                "explanationEn": "Maharṣi Kaṇāda's Vaiśeṣika system formulated the Vīcītaraṅga model of wave pulse propagation.",
+                "correctOptionHash": "1ffd521439de5df14ff5b277e08d063936910612e8d4ebc61514b67f5b359b1b"
+              },
+              {
+                "questionEn": "In a transverse wave, how do particles oscillate relative to wave propagation direction?",
+                "questionHi": "अनुप्रस्थ तरंग में कण तरंग संचरण की दिशा के सापेक्ष कैसे दोलन करते हैं?",
+                "questionHng": "Transverse wave me particles wave propagation direction ke relative kaise oscillate karte hain?",
+                "options": [
+                  "Parallel to propagation",
+                  "Perpendicular (at 90 degrees)",
+                  "In random chaotic circles",
+                  "Opposite to propagation"
+                ],
+                "optionsHi": [
+                  "संचरण के समानांतर",
+                  "लंबवत (90 डिग्री पर)",
+                  "यादृच्छिक वृत्तों में",
+                  "संचरण के विपरीत"
+                ],
+                "optionsHng": [
+                  "Propagation ke parallel",
+                  "Perpendicular (90 degrees par)",
+                  "Random circles me",
+                  "Propagation ke opposite"
+                ],
+                "correctOptionIndex": 1,
+                "explanationEn": "In transverse waves, particle displacement is perpendicular to wave propagation.",
+                "correctOptionHash": "25ce92e9f90f589a3439f97b04cb008dc72b617fdbbace3718f5b2a0131321a5"
+              },
+              {
+                "questionEn": "Why can electromagnetic waves (like light) travel through the vacuum of outer space?",
+                "questionHi": "विद्युत चुम्बकीय तरंगें (जैसे प्रकाश) अंतरिक्ष के निर्वात में यात्रा क्यों कर सकती हैं?",
+                "questionHng": "Electromagnetic waves (jaise light) vacuum me travel kyu kar sakti hain?",
+                "options": [
+                  "They carry microscopic air pockets",
+                  "They require no material medium to propagate",
+                  "Solar wind pulls them along",
+                  "They have infinite mass"
+                ],
+                "optionsHi": [
+                  "वे सूक्ष्म वायु जेबें ले जाते हैं",
+                  "उन्हें संचरण के लिए किसी भौतिक माध्यम की आवश्यकता नहीं होती",
+                  "सौर पवन उन्हें खींचती है",
+                  "उनका द्रव्यमान अनंत होता है"
+                ],
+                "optionsHng": [
+                  "Unme microscopic air hoti hai",
+                  "Unhe propagate karne ke liye material medium ki zaroorat nahi hoti",
+                  "Solar wind unhe kheenchti hai",
+                  "Unka mass infinite hota hai"
+                ],
+                "correctOptionIndex": 1,
+                "explanationEn": "EM waves consist of oscillating electric and magnetic fields and do not require a material medium.",
+                "correctOptionHash": "1ab691c58cf9498e0328db21053a8ab5ec0a84134e2c16277573b724a48a2ffe"
+              },
+              {
+                "questionEn": "If a floating cork bobs up and down 10 times in 5 seconds, what is its frequency?",
+                "questionHi": "यदि एक तैरता हुआ कॉर्क 5 सेकंड में 10 बार ऊपर-नीचे होता है, तो इसकी आवृत्ति क्या है?",
+                "questionHng": "Agar ek floating cork 5 seconds me 10 baar bob karta hai, toh uski frequency kya hai?",
+                "options": [
+                  "50 Hz",
+                  "2 Hz",
+                  "0.5 Hz",
+                  "10 Hz"
+                ],
+                "optionsHi": [
+                  "50 हर्ट्ज",
+                  "2 हर्ट्ज",
+                  "0.5 हर्ट्ज",
+                  "10 हर्ट्ज"
+                ],
+                "optionsHng": [
+                  "50 Hz",
+                  "2 Hz",
+                  "0.5 Hz",
+                  "10 Hz"
+                ],
+                "correctOptionIndex": 1,
+                "explanationEn": "Frequency = oscillations / time = 10 / 5 = 2 Hz.",
+                "correctOptionHash": "d4012b80f7ff3420f1bfa335f365b93dca420abff6d1053b3cdd989991047540"
+              },
+              {
+                "questionEn": "What happens to the wavelength when the frequency of a wave doubles while wave speed remains constant?",
+                "questionHi": "तरंग गति स्थिर रहने पर आवृत्ति दोगुनी होने पर तरंगदैर्घ्य पर क्या प्रभाव पड़ता है?",
+                "questionHng": "Wave speed constant rehne par frequency double hone se wavelength par kya asar padega?",
+                "options": [
+                  "Wavelength doubles",
+                  "Wavelength is halved",
+                  "Wavelength remains unchanged",
+                  "Wavelength quadruples"
+                ],
+                "optionsHi": [
+                  "तरंगदैर्घ्य दोगुना हो जाता है",
+                  "तरंगदैर्घ्य आधा हो जाता है",
+                  "तरंगदैर्घ्य अपरिवर्तित रहता है",
+                  "तरंगदैर्घ्य चार गुना हो जाता है"
+                ],
+                "optionsHng": [
+                  "Wavelength double ho jati hai",
+                  "Wavelength aadhi (halved) ho jati hai",
+                  "Wavelength unchanged rehti hai",
+                  "Wavelength 4x ho jati hai"
+                ],
+                "correctOptionIndex": 1,
+                "explanationEn": "Since v = f * lambda, lambda = v / f. If f doubles at constant v, lambda is halved.",
+                "correctOptionHash": "0435d10ca3e5295704baebf8b3c4919a60ac7c3a8155b3e22cc1056cc51efba2"
+              }
+            ],
+            "passingScore": 4
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m2",
+        "title": "2. Types of Waves",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "light_step2_mechanical_sim",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 0,
+              "type": 3
             }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step2_mechanical_def",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 1,
+              "type": 3
+            }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step2_transverse_sim",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 0,
+              "type": 0
+            }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step2_transverse_def",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 1,
+              "type": 0
+            }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step2_longitudinal_sim",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 0,
+              "type": 1
+            }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step2_longitudinal_def",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 1,
+              "type": 1
+            }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step2_em_sim",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 0,
+              "type": 2
+            }
+          },
+          {
+            "type": "simulation",
+            "id": "light_step2_em_def",
+            "simulationId": "types_of_waves",
+            "params": {
+              "mode": 1,
+              "type": 2
+            }
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m3",
+        "title": "3. Wave Characteristics",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step4",
+            "textDeva": "तरंगों के लक्षण (Wave Characteristics)",
+            "textEng": "* **Wavelength (\\(\\lambda\\)):** The linear distance between two consecutive corresponding points on a wave (e.g., crest to crest).\n* **Frequency (f):** The number of complete wave cycles passing a fixed point per second. Measured in Hertz (Hz).\n* **Amplitude:** The maximum displacement from its resting position. Dictates **intensity** or brightness.\n* **Wave Speed (v):** The velocity at which the wave disturbance travels. Calculated via the wave equation:\n\n$$v = f \\times \\lambda$$",
+            "textHng": "* **Wavelength (\\(\\lambda\\)):** Wave par do consecutive corresponding points (jaise crest se crest) ke beech ki linear distance.\n* **Frequency (f):** Ek fixed point se har second paas hone wali complete wave cycles ka number. Isse Hertz (Hz) mein measure karte hain.\n* **Amplitude:** Resting position se maximum displacement. Yeh **intensity** ya brightness decide karta hai.\n* **Wave Speed (v):** Woh velocity jis par wave disturbance travel karti hai. Isse wave equation se calculate karte hain:\n\n$$v = f \\times \\lambda$$"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m4",
+        "title": "4. Wave Oscillation Lab",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "light_step3",
+            "simulationId": "wave_intro",
+            "questionText": "Oscillate the wave frequencies. Notice how Transverse waves move perpendicular to the axis, while Longitudinal waves compress and dilate parallel to the propagation path. All EM waves travel as transverse fields."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m5",
+        "title": "5. Quiz: Wave Checkpoint",
+        "steps": [
+          {
+            "type": "predict_quiz",
+            "id": "light_step5",
+            "question": "Which of the following is a mechanical transverse wave?",
+            "options": [
+              "Sound wave in air",
+              "Water ripples on a pond surface",
+              "Radio waves",
+              "X-rays"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "Water waves are mechanical because they need water as a medium, and transverse because the water molecules vibrate perpendicular to the direction of wave travel.",
+            "hints": [
+              "Mechanical waves require a material medium to propagate.",
+              "Transverse waves vibrate perpendicular to the direction of wave propagation, whereas longitudinal waves vibrate parallel."
+            ],
+            "targetModuleId": "c10_physics_light_m2",
+            "questionHng": "Inme se kaunsa ek mechanical transverse wave hai?",
+            "optionsHng": [
+              "Hawa mein Sound wave",
+              "Pond surface par Water ripples",
+              "Radio waves",
+              "X-rays"
+            ],
+            "explanationHng": "Water waves mechanical hoti hain kyunki unhe medium ke liye paani ki zaroorat hoti hai, aur transverse hoti hain kyunki paani ke molecules wave travel ki direction ke perpendicular vibrate karte hain.",
+            "hintsHng": [
+              "Mechanical waves ko propagate hone ke liye material medium ki zaroorat hoti hai.",
+              "Transverse waves wave propagation ki direction ke perpendicular vibrate karti hain, jabki longitudinal waves parallel vibrate karti hain."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m6",
+        "title": "6. Nature of Light",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step6",
+            "textDeva": "प्रकाश का परिचय (Introduction to Light)",
+            "textEng": "* **Definition:** Light is a form of electromagnetic radiation that creates the sensation of sight.\n* **Medium Independence:** As an EM wave, it travels through a vacuum without needing a physical medium.\n* **Visible Spectrum:** The human eye is sensitive to wavelengths ranging from approximately **400 nm (violet)** to **700 nm (red)**."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m7",
+        "title": "7. Speed of Light",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step7",
+            "textDeva": "प्रकाश की गति (Speed of Light)",
+            "textEng": "* **Speed in Vacuum (c):** denonated by \\(c\\):\n\n$$c \\approx 3 \\times 10^8 \\text{ m/s}$$\n\n* **Universal Speed Limit:** According to Einstein's theory of relativity, \\(c\\) is the absolute speed limit of the universe.\n* **Medium Dependence:** The speed of light decreases when entering an optically denser medium (like water or glass)."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m8",
+        "title": "8. Duality & Propagation",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step8",
+            "textDeva": "द्वैत प्रकृति और सरल रेखीय संचरण (Duality & Rectilinear Propagation)",
+            "textEng": "* **Dual Nature:** Light exhibits both wave-like behaviors (interference, diffraction) and particle-like behaviors (photons).\n* **Rectilinear Propagation:** The physical tendency of light to travel in perfectly straight lines within a homogeneous medium."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m9",
+        "title": "9. Vedic Light Speed",
+        "steps": [
+          {
+            "type": "heritage_connection",
+            "id": "light_step9",
+            "title": "Vedic Calculation of the Speed of Light",
+            "sutra": "तरणिर्विश्वदर्शतो ज्योतिष्कृदसि सूर्य। विश्वमाभासि रोचनम्॥",
+            "translation": "Swiftly traversing the heavens, creating light, illuminating the whole universe.",
+            "significance": "### Sayana's Rig Veda Commentary (14th Century CE)\n* In his commentary on the *Rig Veda* (1.50.4), Sayana writes:\n  > \"Remembered is this: Sun (light) travels 2,202 yojanas in half a nimesha.\"\n* **Mathematical conversion**:\n  * \\(1 \\text{ yojana} \\approx 9 \\text{ miles}\\)\n  * \\(1 \\text{ nimesha} \\approx 16/75 \\text{ seconds} \\implies \\text{half nimesha} \\approx 8/75 \\text{ seconds}\\)\n  * Speed \\(= \\frac{2202 \\times 9}{8/75} \\approx 185,793 \\text{ miles/s}\\)\n* This matches modern measurements (\\(186,282 \\text{ miles/s}\\)) with astonishing accuracy!"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m10",
+        "title": "10. Tejas Atoms & Optics",
+        "steps": [
+          {
+            "type": "heritage_connection",
+            "id": "light_step10",
+            "title": "Nyaya-Vaisheshika Atomic Light Theory",
+            "sutra": "तद्रूपवतोऽग्रिसंयोगात्...",
+            "translation": "Light consists of high-velocity Tejas (energy) atoms.",
+            "significance": "### Maharishi Kanada's Vaisheshika Sutras (c. 6th-2nd c. BCE)\n* Proposed that light (*Tejas*) consists of indivisible, high-velocity atoms in continuous motion, anticipating Newton's corpuscular theory.\n* **Light vs Sound**: The school explained sound propagation using *vīchī-taraṅga-nyāya* (ripples in water), but modeled light as direct corpuscular rays, explaining why lightning is seen before thunder."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m11",
+        "title": "11. Quiz: Light & History",
+        "steps": [
+          {
+            "type": "predict_quiz",
+            "id": "light_step11",
+            "question": "Sayana's Vedic speed commentary translates to which approximate speed in miles/second?",
+            "options": [
+              "100,000 miles/s",
+              "186,000 miles/s",
+              "300,000 miles/s",
+              "150,000 miles/s"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "Sayana's comment of '2,202 yojanas in half a nimesha' calculates to approximately 186,000 miles per second, which is extremely close to the modern speed of light.",
+            "hints": [
+              "Recall that 1 yojana is roughly 9 miles.",
+              "Divide the converted distance by the half nimesha duration (8/75 seconds)."
+            ],
+            "targetModuleId": "c10_physics_light_m9"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m12",
+        "title": "12. Reflection of Light",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step12",
+            "textDeva": "प्रकाश का परावर्तन (Reflection of Light)",
+            "textEng": "* **Reflection:** The bouncing back of light rays into the same medium when they strike a polished surface.\n\n### Laws of Reflection\n1. The angle of incidence is equal to the angle of reflection:\n\n$$\\angle i = \\angle r$$\n\n2. The incident ray, the normal, and the reflected ray all lie in the same geometric plane."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m13",
+        "title": "13. Plane Mirrors",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step13",
+            "textDeva": "समतल दर्पण द्वारा प्रतिबिम्ब (Images Formed by Plane Mirrors)",
+            "textEng": "* **Virtual & Erect:** The image cannot be caught on a screen and stands upright.\n* **Equal Size:** Image size is identical to object size (\\(h_i = h_o\\)).\n* **Equidistant:** Image distance behind mirror equals object distance in front (\\(v = -u\\)).\n* **Lateral Inversion:** The right side appears as the left side. E.g., the reversed **\"AMBULANCE\"** text painted on emergency vehicles."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m14",
+        "title": "14. Spherical Mirrors",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step14",
+            "textDeva": "गोलीय दर्पण का परिचय (Introduction to Spherical Mirrors)",
+            "textEng": "* Spherical mirrors have reflective surfaces cut from a hollow glass sphere.\n* **Concave Mirror:** Curved inward, converging parallel light rays to a real focus.\n* **Convex Mirror:** Curved outward, diverging parallel rays away from a virtual focus."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m15",
+        "title": "15. Concave Mirrors",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step15",
+            "textDeva": "अवतल दर्पण के उपयोग (Applications of Concave Mirrors)",
+            "textEng": "* **Converging Action:** Concentrates light rays.\n* **Shaving/Dentist Mirrors:** Provides magnified erect images when placed close.\n* **Torches/Headlights:** Light bulb placed at focus produces powerful parallel beams.\n* **Solar Furnaces:** Concentrates sunlight to generate immense heat."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m16",
+        "title": "16. Convex Mirrors",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step16",
+            "textDeva": "उत्तल दर्पण के उपयोग (Applications of Convex Mirrors)",
+            "textEng": "* **Diverging Action:** Always forms virtual, erect, and diminished (smaller) images.\n* **Rear-View Mirrors:** Maintains upright images and provides a wider field of view for drivers.\n* **Security Mirrors:** Used in shops and blind curves to monitor wide areas."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m17",
+        "title": "17. Mirror Terminology",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step17",
+            "textDeva": "पारिभाषिक शब्दावली (Terminology of Mirrors)",
+            "textEng": "* **Pole (P):** The center of the reflecting surface.\n* **Center of Curvature (C):** Center of the hollow sphere.\n* **Principal Axis:** Line passing through Pole and Center of Curvature.\n* **Principal Focus (F):** Where parallel rays converge (concave) or appear to diverge from (convex).\n* **Focal Length (f):** Distance from Pole to Focus.\n\n$$R = 2f$$"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m18",
+        "title": "18. Ray Optics Lab",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "light_step18",
+            "simulationId": "ray_optics",
+            "questionText": "Drag the object. Notice how the parallel and pole-striking rays intersect to define the image. Feel the vibration pulse at Focus F (Infinity transition) and the double pulse at Curvature C (Equal-size equilibrium)."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m19",
+        "title": "19. Quiz: Mirrors & Reflection",
+        "steps": [
+          {
+            "type": "predict_quiz",
+            "id": "light_step19",
+            "question": "Why are convex mirrors preferred as rear-view mirrors in vehicles?",
+            "options": [
+              "They form real and magnified images",
+              "They form virtual, erect and magnified images",
+              "They form virtual, erect and diminished images, providing a wider field of view",
+              "They converge light rays to a single focus"
+            ],
+            "correctOptionIndex": 2,
+            "explanation": "Convex mirrors always form virtual, erect, and diminished images. Because the images are smaller, they allow the driver to see a much wider area behind the vehicle.",
+            "hints": [
+              "Consider whether a driver needs to see cars upright (erect) or upside down (inverted).",
+              "Smaller (diminished) images allow more objects to fit inside the mirror surface."
+            ],
+            "targetModuleId": "c10_physics_light_m16"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m20",
+        "title": "20. Sign Conventions",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step20",
+            "textDeva": "चिन्ह परिपाटी (New Cartesian Sign Convention)",
+            "textEng": "* **Origin:** Pole (P) serves as origin (0,0).\n* **Object Placement:** Always placed on the left, so object distance \\(u\\) is always **negative**.\n* **Light Direction:** Distances measured in direction of incident light are positive (+); opposite are negative (-).\n* **Heights:** Vertically above axis are positive (+); downward are negative (-).\n* **Focal Lengths:** Concave mirror focal length is **negative** (-f); convex is **positive** (+f)."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m21",
+        "title": "21. The Mirror Formula",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step21",
+            "textDeva": "दर्पण सूत्र (The Mirror Formula)",
+            "textEng": "* Expresses the reciprocal relationship between focal length (f), object distance (u), and image distance (v):\n\n$$\\frac{1}{v} + \\frac{1}{u} = \\frac{1}{f}$$"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m22",
+        "title": "22. Mirror Magnification",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step22",
+            "textDeva": "आवर्धन (Linear Magnification)",
+            "textEng": "* **Magnification (m):** Ratio of image height to object height:\n\n$$m = \\frac{h_i}{h_o} = -\\frac{v}{u}$$\n\n* **Sign Decoding:** If \\(m < 0\\), the image is **Real & Inverted**. If \\(m > 0\\), it is **Virtual & Erect**.\n* **Magnitude Decoding:** \\(|m| > 1\\) is enlarged; \\(|m| < 1\\) is diminished; \\(|m| = 1\\) is same size."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m23",
+        "title": "23. Quiz: Mirror Numericals",
+        "steps": [
+          {
+            "type": "predict_quiz",
+            "id": "light_step23",
+            "question": "An object is placed 20 cm in front of a concave mirror of focal length 15 cm. What is the image position?",
+            "options": [
+              "v = -60 cm (in front)",
+              "v = +60 cm (behind)",
+              "v = -30 cm (in front)",
+              "v = +30 cm (behind)"
+            ],
+            "correctOptionIndex": 0,
+            "explanation": "Using mirror formula 1/v + 1/u = 1/f. u = -20 cm, f = -15 cm. 1/v = -1/15 + 1/20 = -1/60. Hence v = -60 cm.",
+            "hints": [
+              "Object distance (u) is always negative: u = -20 cm. Concave mirror means f = -15 cm.",
+              "Apply 1/v + 1/u = 1/f and solve for 1/v."
+            ],
+            "targetModuleId": "c10_physics_light_m21"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m24",
+        "title": "24. Refraction of Light",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step24",
+            "textDeva": "प्रकाश का अपवर्तन (Refraction of Light)",
+            "textEng": "* **Refraction:** The bending of light rays when traveling obliquely from one transparent medium to another.\n* **Cause:** Velocity change between optical media.\n* **Rules:**\n  * *Rarer to Denser (e.g. Air to Glass):* Bends **towards** normal.\n  * *Denser to Rarer (e.g. Glass to Air):* Bends **away** from normal."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m25",
+        "title": "25. Laws of Refraction",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step25",
+            "textDeva": "अपवर्तन के नियम (Laws of Refraction)",
+            "textEng": "1. Incident ray, refracted ray, and normal at point of incidence lie in the same geometric plane.\n2. **Snell's Law:** The ratio of sine of angle of incidence to sine of refraction is constant:\n\n$$\\frac{\\sin i}{\\sin r} = n$$"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m26",
+        "title": "26. Refraction Slab Lab",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "light_step26",
+            "simulationId": "refraction_slab",
+            "questionText": "Vary the angle of incidence. Notice how the emergent ray is parallel to the incident path but is laterally displaced. Change the refractive index (n) to see its impact on the lateral shift."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m27",
+        "title": "27. Absolute Refractive Index",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step27",
+            "textDeva": "निरपेक्ष अपवर्तनांक (Absolute Refractive Index)",
+            "textEng": "* Refractive index indicates how much a medium slows down light.\n* **Absolute index (\\(n_m\\)):** Ratio of light speed in vacuum to speed in medium:\n\n$$n_m = \\frac{c}{v}$$\n\n* **Fact:** Diamond holds the highest absolute refractive index (**2.42**)."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m28",
+        "title": "28. Relative Refractive Index",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step28",
+            "textDeva": "सापेक्ष अपवर्तनांक (Relative Refractive Index)",
+            "textEng": "* **Relative Index (\\(n_{21}\\)):** Refractive index of Medium 2 with respect to Medium 1:\n\n$$n_{21} = \\frac{v_1}{v_2} = \\frac{n_2}{n_1}$$"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m29",
+        "title": "29. Total Internal Reflection",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step29",
+            "textDeva": "पूर्ण आंतरिक परावर्तन (Total Internal Reflection)",
+            "textEng": "* **Critical Angle (C):** Angle of incidence in denser medium for which angle of refraction is exactly \\(90^\\circ\\).\n\n$$n = \\frac{1}{\\sin C}$$\n\n* **TIR Conditions:**\n  1. Light travels from **denser to rarer** medium.\n  2. Angle of incidence exceeds critical angle (\\(\\angle i > C\\))."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m30",
+        "title": "30. TIR Lab",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "light_step30",
+            "simulationId": "total_internal_reflection",
+            "questionText": "Drag the incidence angle. Watch it cross the critical angle threshold. Beyond this boundary state, the light cannot refract and is reflected back inside."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m31",
+        "title": "31. Quiz: Refraction & TIR",
+        "steps": [
+          {
+            "type": "predict_quiz",
+            "id": "light_step31",
+            "question": "What is the relation between the critical angle (C) and the refractive index (n) for total internal reflection?",
+            "options": [
+              "n = sin C",
+              "n = 1 / sin C",
+              "n = cos C",
+              "n = 1 / cos C"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "By Snell's law, for refraction into air at critical angle C: n sin C = 1 * sin 90. Therefore, n = 1 / sin C.",
+            "hints": [
+              "Recall that at the critical angle, the angle of refraction (r) is exactly 90 degrees.",
+              "Apply Snell's law: n * sin(i) = 1 * sin(r) where i = C and r = 90."
+            ],
+            "targetModuleId": "c10_physics_light_m29"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m32",
+        "title": "32. Refraction in Prisms",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step32",
+            "textDeva": "प्रिज्म द्वारा प्रकाश का विक्षेपण (Dispersion through a Glass Prism)",
+            "textEng": "* **Dispersion:** Splitting of white light into seven constituent colors (**VIBGYOR**) when passing through a prism.\n* **Cause:** Different wavelengths travel at different speeds in glass, bending by different angles.\n  * **Red:** Longest wavelength, slows least, **bends least**.\n  * **Violet:** Shortest wavelength, slows most, **bends most**."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m33",
+        "title": "33. Prism Dispersion Lab",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "light_step33",
+            "simulationId": "prism_dispersion",
+            "questionText": "Oscillate the incidence angle. Watch how white light splits into the seven VIBGYOR colors as they refract at different angles due to varying wavelengths."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m34",
+        "title": "34. Spherical Lenses",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step34",
+            "textDeva": "गोलीय लेंस (Types of Spherical Lenses)",
+            "textEng": "* **Convex Lens:** Thicker at center, converging parallel light rays to a real focus.\n* **Concave Lens:** Thinner at center, diverging parallel rays away from a virtual focus."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m35",
+        "title": "35. Lens Ray Diagrams",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step35",
+            "textDeva": "किरण चित्र के नियम (Rules for Drawing Lens Ray Diagrams)",
+            "textEng": "1. Ray entering parallel to principal axis refracts through focus on the far side (convex) or diverges in line with the near focus (concave).\n2. Ray passing through the optical center (O) goes straight without deviation.\n3. Ray passing through focus emerges parallel to principal axis."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m36",
+        "title": "36. The Lens Formula",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step36",
+            "textDeva": "लेंस सूत्र (The Lens Formula)",
+            "textEng": "* Expresses the reciprocal relationship between focal length (f), object distance (u), and image distance (v) for lenses:\n\n$$\\frac{1}{v} - \\frac{1}{u} = \\frac{1}{f}$$\n\n* **Linear Magnification (m):**\n\n$$m = \\frac{h_i}{h_o} = \\frac{v}{u}$$"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m37",
+        "title": "37. Power of a Lens",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step37",
+            "textDeva": "लेंस की क्षमता (Power of a Lens)",
+            "textEng": "* **Power (P):** Reciprocal of focal length measured in **meters**:\n\n$$P = \\frac{1}{f \\text (in meters)}$$\n\n* **SI Unit:** Diopter (D). \\(1\\text{ D} = 1\\text{ m}^{-1}\\).\n* **Signs:** Positive for convex (+P), negative for concave (-P).\n* **Combination:** Net power is the algebraic sum:\n\n$$P = P_1 + P_2 + P_3 + \\dots$$"
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m38",
+        "title": "38. Atmospheric Refraction",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step38",
+            "textDeva": "वायुमंडलीय अपवर्तन (Atmospheric Refraction)",
+            "textEng": "* Earth's atmosphere has layers of varying densities. Light passing through experience continuous bending.\n* **Twinkling of Stars:** Continuous path shifting of starlight due to turbulent atmospheric layers.\n* **Advanced Sunrise & Delayed Sunset:** Sun is visible **2 minutes before** actual sunrise and **2 minutes after** sunset due to atmospheric bending."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m39",
+        "title": "39. Scattering & Tyndall",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step39",
+            "textDeva": "प्रकाश का प्रकीर्णन (Scattering of Light)",
+            "textEng": "* **Tyndall Effect:** Scattering of a light beam by colloidal particles, rendering its path visible.\n* **Blue Sky:** Small gas molecules scatter shorter wavelengths (blue) more efficiently than longer wavelengths (red).\n* **Red Sunsets:** At horizon, light travels a thicker atmospheric path. Short blue light is scattered away, leaving only red wavelengths to reach our eyes."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m40",
+        "title": "40. Advanced Wave Optics",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step40",
+            "textDeva": "तरंग प्रकाशिकी (Advanced Wave Optics)",
+            "textEng": "* **Interference:** Overlapping of coherent light waves creating shifting color patterns (e.g. soap bubbles).\n* **Diffraction:** The bending of light waves around obstacles or spreading through tiny apertures."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m41",
+        "title": "41. Exam Pro-Tips",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "light_step41",
+            "textDeva": "परीक्षा के लिए टिप्स (Class 10 Exam Pro-Tips)",
+            "textEng": "1. **u is Always Negative**: Object sits on left.\n2. **Convex = Positive f, Concave = Negative f** (mirrors and lenses).\n3. **Power Calculations**: Always convert focal length from cm to meters first!\n4. **Magnification Signs**: Negative (Real & Inverted), Positive (Virtual & Erect).\n5. **Image Position (v)**:\n  * Mirrors: Real (-v, front), Virtual (+v, behind).\n  * Lenses: Real (+v, opposite side), Virtual (-v, same side)."
+          }
+        ]
+      },
+      {
+        "id": "c10_physics_light_m42",
+        "title": "42. Final Quiz Checkpoint",
+        "steps": [
+          {
+            "type": "predict_quiz",
+            "id": "light_step42",
+            "question": "If the linear magnification of a spherical mirror is m = -2, what is the nature and size of the image?",
+            "options": [
+              "Virtual, Erect, and Enlarged",
+              "Real, Inverted, and Enlarged",
+              "Real, Inverted, and Diminished",
+              "Virtual, Erect, and Diminished"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "A negative sign of magnification m indicates that the image is Real and Inverted. Since the magnitude |m| = 2 is greater than 1, the image is Enlarged.",
+            "hints": [
+              "Look at the sign of the magnification. A negative sign indicates real and inverted.",
+              "Look at the absolute value. Since |m| = 2 is greater than 1, the image is magnified (enlarged)."
+            ],
+            "targetModuleId": "c10_physics_light_m22"
+          }
+        ]
+      }
+    ],
+    "pyqs": [
+      {
+        "id": "light_pyq_1",
+        "year": "CBSE 2023",
+        "marks": "3 Marks",
+        "question": "A convex lens forms a real and inverted image of a needle at a distance of 50 cm from it. Where is the needle placed if the image is equal to the size of the object? Also find the power of the lens.",
+        "sampleAnswer": "1. Since the image is real, inverted, and equal in size, the needle must be placed at 2F_1 on the other side. Here, v = +50 cm. Since v = -u for equal size, object distance u = -50 cm.\n2. Apply Lens Formula: 1/f = 1/v - 1/u = 1/50 - (-1/50) = 2/50 = 1/25. Focal length f = +25 cm = +0.25 m.\n3. Power P = 1 / f(m) = 1 / 0.25 = +4 D.",
+        "markingScheme": "- Finding object distance u = -50 cm: 1 Mark\n- Applying lens formula to find f = +25 cm: 1 Mark\n- Correct power calculation P = +4 D: 1 Mark",
+        "relatedModuleIds": [
+          "c10_physics_light_m36",
+          "c10_physics_light_m37"
+        ]
+      },
+      {
+        "id": "light_pyq_2",
+        "year": "CBSE 2020",
+        "marks": "2 Marks",
+        "question": "Why does the sun appear reddish early in the morning? Explain.",
+        "sampleAnswer": "Early in the morning, the sun is near the horizon. Sunlight has to travel the longest distance through the thickest layers of the Earth's atmosphere. Most of the shorter wavelengths (blue and violet light) are scattered away by the fine particles in the air. Only the longer wavelengths (red light), which scatter the least, reach our eyes, giving the sun a reddish appearance.",
+        "markingScheme": "- Stating horizontal distance is longer: 1 Mark\n- Stating blue light is scattered away and red light reaches the eye: 1 Mark",
+        "relatedModuleIds": [
+          "c10_physics_light_m39"
+        ]
+      },
+      {
+        "id": "light_pyq_3",
+        "year": "CBSE 2019",
+        "marks": "1 Mark",
+        "question": "Which of the following materials cannot be used to make a lens?",
+        "options": [
+          "Water",
+          "Glass",
+          "Plastic",
+          "Clay"
         ],
-        "resources": [
-            {
-                "id": "light_res_quick_notes",
-                "title": "Light: Reflection & Refraction Quick Notes",
-                "titleHng": "Light: Reflection & Refraction Quick Notes",
-                "description": "Concise 4-page mindmap and formula summary for quick revision before exams.",
-                "descriptionHng": "Paravartan aur Apavartan ke 4-page concise mindmaps aur formulas.",
-                "category": "quick_notes",
-                "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_quick_notes.pdf",
-                "fileSizeFormatted": "1.4 MB",
-                "isSample": true
-            },
-            {
-                "id": "light_res_formula_sheet",
-                "title": "Mirror & Lens Formula Cheat Sheet",
-                "titleHng": "Mirror & Lens Formula Cheat Sheet",
-                "description": "All sign conventions, mirror formula, lens formula, and power equations in one sheet.",
-                "descriptionHng": "Sabhi Sign Conventions aur Mirror/Lens formulas ek sheet mein.",
-                "category": "formula_sheet",
-                "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_formula_sheet.pdf",
-                "fileSizeFormatted": "650 KB",
-                "pageCount": 2,
-                "isSample": true
-            },
-            {
-                "id": "light_res_pyq_booklet",
-                "title": "10-Year Board PYQ Solution Booklet (2014-2024)",
-                "titleHng": "10-Year Board PYQ Solution Booklet (2014-2024)",
-                "description": "Year-wise solved CBSE board questions with marking scheme breakdown.",
-                "descriptionHng": "CBSE Board me puchte gaye pichle 10 saal ke solved prashna.",
-                "category": "pyq",
-                "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_10yr_pyq.pdf",
-                "fileSizeFormatted": "3.8 MB",
-                "pageCount": 18,
-                "isSample": true
-            },
-            {
-                "id": "light_res_ncert_solutions",
-                "title": "NCERT In-text & Exercise Complete Solutions",
-                "titleHng": "NCERT Complete Solutions",
-                "description": "Step-by-step verified solutions for all textbook activities and end-of-chapter exercises.",
-                "descriptionHng": "Sabhi NCERT abhyas prashno ke pramanit uttar.",
-                "category": "ncert_solutions",
-                "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_ncert_solutions.pdf",
-                "fileSizeFormatted": "2.1 MB",
-                "pageCount": 12,
-                "isSample": true
-            },
-            {
-                "id": "light_res_practice_worksheets",
-                "title": "Ray Diagram & Numerical Practice Worksheet",
-                "titleHng": "Ray Diagram & Numerical Practice Worksheet",
-                "description": "Hand-picked numerical problems with ray-diagram drawing templates.",
-                "descriptionHng": "Ray diagram aur numericals ki vishesh practice worksheet.",
-                "category": "practice",
-                "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_practice_worksheet.pdf",
-                "fileSizeFormatted": "1.8 MB",
-                "pageCount": 8,
-                "isSample": true
-            }
+        "correctOptionIndex": 3,
+        "sampleAnswer": "Clay\n\nExplanation: A lens must be made of a transparent material through which light can pass and refract. Clay is opaque and does not allow light to pass through.",
+        "markingScheme": "- Selecting Clay: 1 Mark",
+        "relatedModuleIds": [
+          "c10_physics_light_m34"
         ]
-    },
-    {
-        "id": "c9_physics_sound",
-        "title": "Chapter 11: Sound",
-        "branchId": "physics",
-        "modules": [
-            {
-                "id": "c9_physics_sound_m1",
-                "title": "1. What is a Wave?",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "sound_step1_sim",
-                        "simulationId": "what_is_a_wave",
-                        "params": {
-                            "mode": 0.0
-                        }
-                    },
-                    {
-                        "type": "simulation",
-                        "id": "sound_step1_def",
-                        "simulationId": "what_is_a_wave",
-                        "params": {
-                            "mode": 1.0
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "c9_physics_sound_m2",
-                "title": "2. Types of Waves",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "sound_step2",
-                        "simulationId": "types_of_waves"
-                    }
-                ]
-            },
-            {
-                "id": "c9_physics_sound_m3",
-                "title": "3. Wave Characteristics",
-                "steps": [
-                    {
-                        "type": "concept",
-                        "id": "sound_step4",
-                        "textDeva": "तरंगों के लक्षण (Wave Characteristics)",
-                        "textEng": "* **Wavelength (\\(\\lambda\\)):** The linear distance between two consecutive corresponding points on a wave (e.g., crest to crest).\n* **Frequency (f):** The number of complete wave cycles passing a fixed point per second. Measured in Hertz (Hz).\n* **Amplitude:** The maximum displacement from its resting position. Dictates **intensity** or brightness.\n* **Wave Speed (v):** The velocity at which the wave disturbance travels. Calculated via the wave equation:\n\n$$v = f \\times \\lambda$$"
-                    }
-                ]
-            },
-            {
-                "id": "c9_physics_sound_m4",
-                "title": "4. Wave Oscillation Lab",
-                "steps": [
-                    {
-                        "type": "simulation",
-                        "id": "sound_step3",
-                        "simulationId": "wave_intro",
-                        "questionText": "Oscillate the wave frequencies. Notice how Transverse waves move perpendicular to the axis, while Longitudinal waves compress and dilate parallel to the propagation path. All EM waves travel as transverse fields."
-                    }
-                ]
-            },
-            {
-                "id": "c9_physics_sound_m5",
-                "title": "5. Quiz: Wave Checkpoint",
-                "steps": [
-                    {
-                        "type": "predict_quiz",
-                        "id": "sound_step5",
-                        "question": "Which of the following is a mechanical transverse wave?",
-                        "options": [
-                            "Sound wave in air",
-                            "Water ripples on a pond surface",
-                            "Radio waves",
-                            "X-rays"
-                        ],
-                        "correctOptionIndex": 1,
-                        "explanation": "Water waves are mechanical because they need water as a medium, and transverse because the water molecules vibrate perpendicular to the direction of wave travel.",
-                        "hints": [
-                            "Mechanical waves require a material medium to propagate.",
-                            "Transverse waves vibrate perpendicular to the direction of wave propagation, whereas longitudinal waves vibrate parallel."
-                        ],
-                        "targetModuleId": "c9_physics_sound_m2"
-                    }
-                ]
+      }
+    ],
+    "resources": [
+      {
+        "id": "light_res_quick_notes",
+        "title": "Light: Reflection & Refraction Quick Notes",
+        "titleHng": "Light: Reflection & Refraction Quick Notes",
+        "description": "Concise 4-page mindmap and formula summary for quick revision before exams.",
+        "descriptionHng": "Paravartan aur Apavartan ke 4-page concise mindmaps aur formulas.",
+        "category": "quick_notes",
+        "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_quick_notes.pdf",
+        "fileSizeFormatted": "1.4 MB",
+        "isSample": true
+      },
+      {
+        "id": "light_res_formula_sheet",
+        "title": "Mirror & Lens Formula Cheat Sheet",
+        "titleHng": "Mirror & Lens Formula Cheat Sheet",
+        "description": "All sign conventions, mirror formula, lens formula, and power equations in one sheet.",
+        "descriptionHng": "Sabhi Sign Conventions aur Mirror/Lens formulas ek sheet mein.",
+        "category": "formula_sheet",
+        "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_formula_sheet.pdf",
+        "fileSizeFormatted": "650 KB",
+        "pageCount": 2,
+        "isSample": true
+      },
+      {
+        "id": "light_res_pyq_booklet",
+        "title": "10-Year Board PYQ Solution Booklet (2014-2024)",
+        "titleHng": "10-Year Board PYQ Solution Booklet (2014-2024)",
+        "description": "Year-wise solved CBSE board questions with marking scheme breakdown.",
+        "descriptionHng": "CBSE Board me puchte gaye pichle 10 saal ke solved prashna.",
+        "category": "pyq",
+        "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_10yr_pyq.pdf",
+        "fileSizeFormatted": "3.8 MB",
+        "pageCount": 18,
+        "isSample": true
+      },
+      {
+        "id": "light_res_ncert_solutions",
+        "title": "NCERT In-text & Exercise Complete Solutions",
+        "titleHng": "NCERT Complete Solutions",
+        "description": "Step-by-step verified solutions for all textbook activities and end-of-chapter exercises.",
+        "descriptionHng": "Sabhi NCERT abhyas prashno ke pramanit uttar.",
+        "category": "ncert_solutions",
+        "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_ncert_solutions.pdf",
+        "fileSizeFormatted": "2.1 MB",
+        "pageCount": 12,
+        "isSample": true
+      },
+      {
+        "id": "light_res_practice_worksheets",
+        "title": "Ray Diagram & Numerical Practice Worksheet",
+        "titleHng": "Ray Diagram & Numerical Practice Worksheet",
+        "description": "Hand-picked numerical problems with ray-diagram drawing templates.",
+        "descriptionHng": "Ray diagram aur numericals ki vishesh practice worksheet.",
+        "category": "practice",
+        "fileUrl": "https://cdn.vakrahara.org/v1/cbse/resources/class10/physics/light/light_practice_worksheet.pdf",
+        "fileSizeFormatted": "1.8 MB",
+        "pageCount": 8,
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "id": "c9_physics_sound",
+    "title": "Chapter 11: Sound",
+    "branchId": "physics",
+    "modules": [
+      {
+        "id": "c9_physics_sound_m1",
+        "title": "1. What is a Wave?",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "sound_step1_sim",
+            "simulationId": "what_is_a_wave",
+            "params": {
+              "mode": 0
             }
+          },
+          {
+            "type": "simulation",
+            "id": "sound_step1_def",
+            "simulationId": "what_is_a_wave",
+            "params": {
+              "mode": 1
+            }
+          }
         ]
-    }
+      },
+      {
+        "id": "c9_physics_sound_m2",
+        "title": "2. Types of Waves",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "sound_step2",
+            "simulationId": "types_of_waves"
+          }
+        ]
+      },
+      {
+        "id": "c9_physics_sound_m3",
+        "title": "3. Wave Characteristics",
+        "steps": [
+          {
+            "type": "concept",
+            "id": "sound_step4",
+            "textDeva": "तरंगों के लक्षण (Wave Characteristics)",
+            "textEng": "* **Wavelength (\\(\\lambda\\)):** The linear distance between two consecutive corresponding points on a wave (e.g., crest to crest).\n* **Frequency (f):** The number of complete wave cycles passing a fixed point per second. Measured in Hertz (Hz).\n* **Amplitude:** The maximum displacement from its resting position. Dictates **intensity** or brightness.\n* **Wave Speed (v):** The velocity at which the wave disturbance travels. Calculated via the wave equation:\n\n$$v = f \\times \\lambda$$"
+          }
+        ]
+      },
+      {
+        "id": "c9_physics_sound_m4",
+        "title": "4. Wave Oscillation Lab",
+        "steps": [
+          {
+            "type": "simulation",
+            "id": "sound_step3",
+            "simulationId": "wave_intro",
+            "questionText": "Oscillate the wave frequencies. Notice how Transverse waves move perpendicular to the axis, while Longitudinal waves compress and dilate parallel to the propagation path. All EM waves travel as transverse fields."
+          }
+        ]
+      },
+      {
+        "id": "c9_physics_sound_m5",
+        "title": "5. Quiz: Wave Checkpoint",
+        "steps": [
+          {
+            "type": "predict_quiz",
+            "id": "sound_step5",
+            "question": "Which of the following is a mechanical transverse wave?",
+            "options": [
+              "Sound wave in air",
+              "Water ripples on a pond surface",
+              "Radio waves",
+              "X-rays"
+            ],
+            "correctOptionIndex": 1,
+            "explanation": "Water waves are mechanical because they need water as a medium, and transverse because the water molecules vibrate perpendicular to the direction of wave travel.",
+            "hints": [
+              "Mechanical waves require a material medium to propagate.",
+              "Transverse waves vibrate perpendicular to the direction of wave propagation, whereas longitudinal waves vibrate parallel."
+            ],
+            "targetModuleId": "c9_physics_sound_m2"
+          }
+        ]
+      }
+    ]
+  }
 ]
