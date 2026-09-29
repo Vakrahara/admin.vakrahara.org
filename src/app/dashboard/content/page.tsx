@@ -33,7 +33,7 @@ import { uploadToR2, R2Config } from '@/lib/r2-upload';
 import { ConcurrencyLockBadge } from './components/ConcurrencyLockBadge';
 import { DigitalTwinPreview } from './components/DigitalTwinPreview';
 import { SudoConfirmModal } from '@/components/ui/SudoConfirmModal';
-import { Step, Module, Chapter, Pyq, StepType, MediaMode } from '@/types/curriculum';
+import { Step, Module, Chapter, Pyq, StepType, MediaMode, AnveshanaQuestion } from '@/types/curriculum';
 import { StepTypeSelector } from './components/StepTypeSelector';
 import { VideoMediaForm } from './components/VideoMediaForm';
 import { TranscriptEditor } from './components/TranscriptEditor';
@@ -144,9 +144,29 @@ export default function ContentCMSPage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setChapters(data);
-      if (data.length > 0) {
-        setSelectedChapterId(data[0].id);
+      const normalizedData = (Array.isArray(data) ? data : []).map((ch: any) => ({
+        ...ch,
+        modules: (ch.modules || []).map((mod: any) => {
+          const rawSteps = (mod.learningSteps && mod.learningSteps.length > 0)
+            ? mod.learningSteps
+            : (mod.steps || []);
+          const normalizedSteps = rawSteps.map((st: any) => {
+            if (st.type === 'anveshana') {
+              const qp = st.pool || st.questionPool || [];
+              return { ...st, pool: qp, questionPool: qp };
+            }
+            return st;
+          });
+          return {
+            ...mod,
+            steps: normalizedSteps,
+            learningSteps: mod.learningSteps || undefined
+          };
+        })
+      }));
+      setChapters(normalizedData);
+      if (normalizedData.length > 0) {
+        setSelectedChapterId(normalizedData[0].id);
       }
     } catch (e: any) {
       console.error(`Failed to fetch chapters:`, e);
@@ -225,7 +245,28 @@ export default function ContentCMSPage() {
             stepIds.add(step.id);
           }
 
-          if (step.type === 'predict_quiz') {
+          if (step.type === 'saraswati') {
+            if (!step.definitionEn || step.definitionEn.trim() === '') {
+              errors.push(`Saraswati step "${stepName}" has no assembled definition.`);
+            }
+            if (!step.miniSteps || step.miniSteps.length === 0) {
+              errors.push(`Saraswati step "${stepName}" must have at least 1 mini-step.`);
+            }
+          } else if (step.type === 'anveshana') {
+            const pool = step.pool || step.questionPool || [];
+            if (pool.length === 0) {
+              errors.push(`Anveshana step "${stepName}" must have at least 1 question in the pool.`);
+            } else {
+              pool.forEach((q, qIdx) => {
+                if (!q.questionEn || q.questionEn.trim() === '') {
+                  errors.push(`Question #${qIdx + 1} in Anveshana step "${stepName}" has no prompt.`);
+                }
+                if (!q.options || q.options.length < 2) {
+                  errors.push(`Question #${qIdx + 1} in Anveshana step "${stepName}" must have at least 2 options.`);
+                }
+              });
+            }
+          } else if (step.type === 'predict_quiz') {
             if (!step.question || step.question.trim() === '') {
               errors.push(`Quiz step "${stepName}" has no question.`);
             }
@@ -283,6 +324,163 @@ export default function ContentCMSPage() {
 
     setValidationErrors([]);
 
+    // Segregate modern polymorphic steps into learningSteps and build backward-compatible steps
+    const payloadChapters = sanitizedChapters.map(ch => ({
+      ...ch,
+      modules: ch.modules.map(mod => {
+        const learningSteps: Step[] = [];
+        const legacySteps: Step[] = [];
+
+        mod.steps.forEach((step) => {
+          if (step.type === 'video_simulation') {
+            learningSteps.push({ ...step });
+            if (step.simulationId) {
+              legacySteps.push({
+                id: step.id,
+                type: 'simulation',
+                simulationId: step.simulationId,
+                params: step.params || { mode: 0.0 },
+                questionText: step.textEng || step.title || '',
+                questionTextHng: step.textHng || ''
+              });
+            } else if (step.gurutatva && step.gurutatva.titleEn) {
+              legacySteps.push({
+                id: step.id,
+                type: 'heritage_connection',
+                title: step.gurutatva.titleEn,
+                sutra: step.gurutatva.sutra || '',
+                translation: step.gurutatva.sutraTranslation || '',
+                significance: step.gurutatva.bodyEn || step.textEng || '',
+                textHng: step.gurutatva.bodyHng || step.textHng || ''
+              });
+            } else {
+              legacySteps.push({
+                id: step.id,
+                type: 'concept',
+                textDeva: step.textDeva || '',
+                textEng: step.textEng || step.title || '',
+                textHng: step.textHng || '',
+                imageUrl: step.imageUrl || ''
+              });
+            }
+          } else if (step.type === 'saraswati') {
+            learningSteps.push({ ...step });
+            legacySteps.push({
+              id: step.id,
+              type: 'simulation',
+              simulationId: 'what_is_a_wave',
+              params: { mode: 1.0 },
+              questionText: step.title || step.miniSteps?.[0]?.questionEn || 'Concept Discovery',
+              questionTextHng: step.titleHng || ''
+            });
+          } else if (step.type === 'anveshana') {
+            const pool = step.pool || step.questionPool || [];
+            learningSteps.push({
+              ...step,
+              pool,
+              questionPool: pool
+            });
+            const firstQ = pool[0];
+            legacySteps.push({
+              id: step.id,
+              type: 'predict_quiz',
+              question: firstQ?.questionEn || step.title || 'Check Your Understanding',
+              options: firstQ?.options && firstQ.options.length >= 2 ? firstQ.options : ['Option A', 'Option B'],
+              correctOptionIndex: firstQ?.correctOptionIndex ?? 0,
+              explanation: firstQ?.explanationEn || '',
+              hints: firstQ?.hints || [],
+              targetModuleId: step.targetModuleId || mod.id,
+              questionHng: firstQ?.questionHng,
+              optionsHng: firstQ?.optionsHng,
+              explanationHng: firstQ?.explanationHng,
+              hintsHng: firstQ?.hintsHng
+            });
+          } else if (step.type === 'concept') {
+            legacySteps.push({ ...step });
+            learningSteps.push({
+              id: step.id,
+              type: 'video_simulation',
+              mediaMode: 'none',
+              textDeva: step.textDeva || '',
+              textEng: step.textEng || step.title || '',
+              textHng: step.textHng || '',
+              imageUrl: step.imageUrl || ''
+            });
+          } else if (step.type === 'simulation') {
+            legacySteps.push({ ...step });
+            const isSaraswati = step.params?.mode === 1.0 || step.params?.mode === 1;
+            if (isSaraswati) {
+              learningSteps.push({
+                id: step.id,
+                type: 'saraswati',
+                title: step.questionText || 'Concept Discovery',
+                titleHng: step.questionTextHng || '',
+                definitionEn: step.textEng || ''
+              });
+            } else {
+              learningSteps.push({
+                id: step.id,
+                type: 'video_simulation',
+                mediaMode: 'simulation_only',
+                simulationId: step.simulationId,
+                params: step.params || {},
+                subStepCount: step.subStepCount || 1,
+                textEng: step.questionText || ''
+              });
+            }
+          } else if (step.type === 'predict_quiz') {
+            legacySteps.push({ ...step });
+            const q: AnveshanaQuestion = {
+              id: `${step.id}_q0`,
+              questionType: 'mcq',
+              bloomsLevel: 'understand',
+              questionEn: step.question || step.questionText || '',
+              options: step.options || ['Option A', 'Option B'],
+              correctOptionIndex: step.correctOptionIndex ?? 0,
+              explanationEn: step.explanation || '',
+              hints: step.hints || []
+            };
+            learningSteps.push({
+              id: step.id,
+              type: 'anveshana',
+              title: 'Check Your Understanding',
+              targetModuleId: step.targetModuleId || mod.id,
+              pool: [q],
+              questionPool: [q],
+              questionsPerAttempt: 1,
+              passingScore: 1
+            });
+          } else if (step.type === 'heritage_connection') {
+            legacySteps.push({ ...step });
+            learningSteps.push({
+              id: step.id,
+              type: 'video_simulation',
+              mediaMode: 'none',
+              title: step.title,
+              textEng: step.significance || '',
+              textHng: step.textHng || '',
+              gurutatva: {
+                titleEn: step.title || '',
+                bodyEn: step.significance || '',
+                bodyHng: step.textHng || '',
+                sutra: step.sutra || '',
+                sutraTranslation: step.translation || ''
+              }
+            });
+          } else {
+            legacySteps.push({ ...step });
+            learningSteps.push({ ...step });
+          }
+        });
+
+        return {
+          ...mod,
+          steps: legacySteps,
+          learningSteps: learningSteps
+        };
+      })
+    }));
+
     try {
       let published = false;
       let lastError = '';
@@ -290,15 +488,16 @@ export default function ContentCMSPage() {
       // 1. First Priority: Server-Side R2 Upload Proxy (SEC-01 Fix)
       try {
         const token = pb.authStore.token;
+        const authHeader = token ? (token.startsWith('Admin ') || token.startsWith('Bearer ') ? token : `Admin ${token}`) : '';
         const res = await fetch('https://pb.vakrahara.org/api/amritam/admin/curriculum/publish', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Admin ${token}` } : {})
+            ...(authHeader ? { 'Authorization': authHeader } : {})
           },
           body: JSON.stringify({
             r2_key: 'v1/cbse/chapters_data.json',
-            payload: sanitizedChapters
+            payload: payloadChapters
           })
         });
 
@@ -317,7 +516,7 @@ export default function ContentCMSPage() {
       // 2. Second Priority: Client-Side R2 direct upload fallback
       if (!published) {
         if (r2Config.accountId && r2Config.bucketName && r2Config.accessKeyId && r2Config.secretAccessKey) {
-          const payload = JSON.stringify(sanitizedChapters, null, 4);
+          const payload = JSON.stringify(payloadChapters, null, 4);
           await uploadToR2('v1/cbse/chapters_data.json', payload, 'application/json', r2Config);
           published = true;
         } else {
@@ -328,7 +527,7 @@ export default function ContentCMSPage() {
       setPublishStatus('success');
       setPublishCooldown(30); // Enforce 30-second cooldown
       // Save local memory state to match published
-      setChapters(sanitizedChapters);
+      setChapters(payloadChapters);
       setTimeout(() => setPublishStatus('idle'), 5000);
     } catch (e: any) {
       console.error(e);
@@ -1114,7 +1313,7 @@ export default function ContentCMSPage() {
                                 id: `${activeModule.id}_step_${activeModule.steps.length + 1}`,
                                 ...(type === 'video_simulation' ? { mediaMode: 'both' as MediaMode, subStepCount: 3, videoUrl: '', simulationId: 'what_is_a_wave', transcript: [] } : {}),
                                 ...(type === 'saraswati' ? { miniSteps: [], definitionEn: '' } : {}),
-                                ...(type === 'anveshana' ? { questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {}),
+                                ...(type === 'anveshana' ? { pool: [], questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {}),
                                 ...(type === 'concept' ? { textDeva: '', textEng: '' } : {}),
                                 ...(type === 'simulation' ? { simulationId: 'what_is_a_wave', questionText: '' } : {}),
                                 ...(type === 'predict_quiz' ? { question: '', options: ['', ''], correctOptionIndex: 0, explanation: '', hints: [''] } : {}),
@@ -1213,7 +1412,7 @@ export default function ContentCMSPage() {
                                           type: newType,
                                           ...(newType === 'video_simulation' && !s.mediaMode ? { mediaMode: 'both' as MediaMode, subStepCount: 3 } : {}),
                                           ...(newType === 'saraswati' && !s.miniSteps ? { miniSteps: [], definitionEn: '' } : {}),
-                                          ...(newType === 'anveshana' && !s.questionPool ? { questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {})
+                                          ...(newType === 'anveshana' && !s.questionPool ? { pool: [], questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {})
                                         } : s
                                       );
                                       updateActiveModuleSteps(updatedSteps);
@@ -1589,7 +1788,7 @@ export default function ContentCMSPage() {
                 {/* Digital Twin Live Preview Panel */}
                 <div className="h-[480px]">
                   <DigitalTwinPreview
-                    step={activeModule && activeModule.steps && activeModule.steps.length > 0 ? activeModule.steps[0] : null}
+                    step={activeModule && activeModule.steps && activeModule.steps.length > 0 ? (activeModule.steps.find(s => s.id === activeEditStepId) || activeModule.steps[0]) : null}
                     moduleTitle={activeModule?.title}
                   />
                 </div>
@@ -1929,9 +2128,10 @@ export default function ContentCMSPage() {
           if (activeEditStepId) {
             const currentStep = activeModule.steps.find(s => s.id === activeEditStepId);
             if (currentStep) {
-              const existingPool = currentStep.questionPool || [];
+              const existingPool = currentStep.pool || currentStep.questionPool || [];
+              const combined = [...existingPool, ...importedQuestions];
               const updatedSteps = activeModule.steps.map(s => 
-                s.id === activeEditStepId ? { ...s, questionPool: [...existingPool, ...importedQuestions] } : s
+                s.id === activeEditStepId ? { ...s, pool: combined, questionPool: combined } : s
               );
               updateActiveModuleSteps(updatedSteps);
               setIsBulkImportOpen(false);
@@ -1940,15 +2140,16 @@ export default function ContentCMSPage() {
           }
           const anveshanaStep = activeModule.steps.find(s => s.type === 'anveshana');
           if (anveshanaStep) {
-            const updatedPool = [...(anveshanaStep.questionPool || []), ...importedQuestions];
+            const updatedPool = [...(anveshanaStep.pool || anveshanaStep.questionPool || []), ...importedQuestions];
             const updatedSteps = activeModule.steps.map(s => 
-              s.id === anveshanaStep.id ? { ...s, questionPool: updatedPool } : s
+              s.id === anveshanaStep.id ? { ...s, pool: updatedPool, questionPool: updatedPool } : s
             );
             updateActiveModuleSteps(updatedSteps);
           } else {
             const newStep: Step = {
               id: `anveshana_${Date.now()}`,
               type: 'anveshana',
+              pool: importedQuestions,
               questionPool: importedQuestions,
               questionsPerAttempt: 5,
               passingScore: 4

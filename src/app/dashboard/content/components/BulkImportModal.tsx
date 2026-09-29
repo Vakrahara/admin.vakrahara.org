@@ -55,7 +55,7 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
         }
       }
     };
-    reader.readAsText(file);
+    reader.readAsText(file, 'UTF-8');
   };
 
   const handleConfirm = () => {

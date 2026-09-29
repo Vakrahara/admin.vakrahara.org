@@ -48,13 +48,38 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
         {/* Center Media / Simulation / Canvas */}
         <div className="my-auto relative flex items-center justify-center min-h-[180px]">
           {step.type === 'video_simulation' ? (
-            <div className="w-full rounded-xl overflow-hidden border border-amber-500/30 bg-black aspect-video flex flex-col items-center justify-center p-3 relative">
-              {step.videoUrl ? (
-                <div className="text-center space-y-1">
-                  <Play className="w-10 h-10 text-amber-400 mx-auto fill-amber-400/20" />
-                  <span className="text-[11px] text-slate-300 block truncate max-w-xs">{step.videoUrl}</span>
-                  <span className="text-[10px] text-amber-400 font-mono">16:9 Stream Active</span>
-                </div>
+            <div className={`w-full rounded-xl overflow-hidden border border-amber-500/30 bg-black ${
+              step.aspectRatio === '9:16' ? 'aspect-[9/16] max-h-[280px]' :
+              step.aspectRatio === '4:3' ? 'aspect-[4/3] max-h-[240px]' :
+              'aspect-video'
+            } flex flex-col items-center justify-center p-1 relative`}>
+              {step.streamUid ? (
+                <iframe
+                  src={`https://iframe.videodelivery.net/${step.streamUid}`}
+                  className="w-full h-full border-0 rounded-lg"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                  allowFullScreen
+                  title="Cloudflare Stream"
+                />
+              ) : step.videoUrl ? (
+                step.videoUrl.includes('videodelivery.net') || step.videoUrl.includes('cloudflarestream.com') ? (
+                  <iframe
+                    src={step.videoUrl.startsWith('http') ? step.videoUrl : `https://iframe.videodelivery.net/${step.videoUrl}`}
+                    className="w-full h-full border-0 rounded-lg"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                    allowFullScreen
+                    title="Video Stream"
+                  />
+                ) : (
+                  <video
+                    controls
+                    src={step.videoUrl}
+                    poster={step.imageUrl}
+                    className="w-full h-full object-contain rounded-lg bg-black"
+                  >
+                    Your browser does not support HTML5 video.
+                  </video>
+                )
               ) : step.simulationId ? (
                 <iframe
                   src={`${cdnUrl}/cbse/simulations/${step.simulationId}.html`}
@@ -84,7 +109,7 @@ export const DigitalTwinPreview: React.FC<DigitalTwinPreviewProps> = ({ step, mo
               <Brain className="w-8 h-8 text-emerald-400 mx-auto" />
               <div className="text-xs font-bold text-emerald-300">Anveshana Assessment Engine</div>
               <div className="text-[11px] text-slate-300">
-                Pool Size: <span className="font-bold text-emerald-400">{(step.questionPool || []).length} Questions</span>
+                Pool Size: <span className="font-bold text-emerald-400">{(step.pool || step.questionPool || []).length} Questions</span>
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
                 Attempt: {step.questionsPerAttempt || 5} Random MCQs • Pass: {step.passingScore || 4}/5

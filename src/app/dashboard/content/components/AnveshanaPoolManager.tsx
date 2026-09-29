@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Brain, Plus, Upload, Trash2, Search, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Brain, Plus, Upload, Trash2, Search } from 'lucide-react';
 import { Step, AnveshanaQuestion } from '@/types/curriculum';
+import { AnveshanaQuestionEditor } from './AnveshanaQuestionEditor';
 
 interface AnveshanaPoolManagerProps {
   step: Step;
@@ -15,7 +16,7 @@ export function AnveshanaPoolManager({
   onChange,
   onOpenBulkImport
 }: AnveshanaPoolManagerProps) {
-  const pool = step.questionPool || [];
+  const pool = step.pool || step.questionPool || [];
   const [searchTerm, setSearchTerm] = useState('');
   const [activeQuestionIdx, setActiveQuestionIdx] = useState<number | null>(null);
 
@@ -23,32 +24,48 @@ export function AnveshanaPoolManager({
   const isReady = poolCount >= 30;
   const isPartial = poolCount >= 15 && poolCount < 30;
 
+  const emitPoolUpdate = (updated: AnveshanaQuestion[]) => {
+    onChange({
+      pool: updated,
+      questionPool: updated
+    });
+  };
+
   const addQuestion = () => {
     const newQ: AnveshanaQuestion = {
       id: `q_${Date.now()}`,
+      questionType: 'mcq',
+      bloomsLevel: 'understand',
       questionEn: '',
+      questionHi: '',
+      questionHng: '',
       options: ['Option A', 'Option B', 'Option C', 'Option D'],
+      optionsHi: ['', '', '', ''],
+      optionsHng: ['', '', '', ''],
       correctOptionIndex: 0,
-      explanationEn: ''
+      explanationEn: '',
+      explanationHi: '',
+      explanationHng: '',
+      hints: []
     };
     const updated = [...pool, newQ];
-    onChange({ questionPool: updated });
+    emitPoolUpdate(updated);
     setActiveQuestionIdx(updated.length - 1);
   };
 
   const updateQuestion = (idx: number, patch: Partial<AnveshanaQuestion>) => {
-    const updated = pool.map((q, i) => i === idx ? { ...q, ...patch } : q);
-    onChange({ questionPool: updated });
+    const updated = pool.map((q, i) => (i === idx ? { ...q, ...patch } : q));
+    emitPoolUpdate(updated);
   };
 
   const removeQuestion = (idx: number) => {
     const updated = pool.filter((_, i) => i !== idx);
-    onChange({ questionPool: updated });
+    emitPoolUpdate(updated);
     if (activeQuestionIdx === idx) setActiveQuestionIdx(null);
   };
 
-  const filteredPool = pool.filter(q =>
-    q.questionEn.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPool = pool.filter((q) =>
+    (q.questionEn || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -77,7 +94,7 @@ export function AnveshanaPoolManager({
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              5 randomized questions sampled per session with 80% passing threshold
+              Randomized sampling with anti-tamper answer hashing and 80% passing threshold
             </p>
           </div>
         </div>
@@ -146,7 +163,7 @@ export function AnveshanaPoolManager({
           {poolCount === 0 ? 'No questions in pool yet. Add one manually or use Bulk Import.' : 'No matching questions found.'}
         </div>
       ) : (
-        <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
           {filteredPool.map((q, idx) => {
             const isEditing = activeQuestionIdx === idx;
 
@@ -168,6 +185,11 @@ export function AnveshanaPoolManager({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {q.questionType && q.questionType !== 'mcq' && (
+                      <span className="text-[9px] uppercase font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                        {q.questionType.replace('_', ' ')}
+                      </span>
+                    )}
                     <span className="text-[10px] text-slate-400 bg-[#03050B] px-1.5 py-0.5 rounded border border-slate-800">
                       Answer: {String.fromCharCode(65 + (q.correctOptionIndex || 0))}
                     </span>
@@ -181,55 +203,13 @@ export function AnveshanaPoolManager({
                   </div>
                 </div>
 
-                {/* Inline Expanded Question Editor */}
+                {/* Inline Question Editor */}
                 {isEditing && (
-                  <div className="pt-2 border-t border-slate-800 space-y-2.5">
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Question Text</label>
-                      <input
-                        type="text"
-                        value={q.questionEn}
-                        onChange={(e) => updateQuestion(idx, { questionEn: e.target.value })}
-                        className="w-full text-xs bg-[#03050B] border border-slate-800 rounded px-2.5 py-1.5 text-white outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-400 block">Options (Select radio for correct answer)</label>
-                      {q.options.map((opt, optIdx) => (
-                        <div key={optIdx} className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={`correct_q_${idx}`}
-                            checked={(q.correctOptionIndex || 0) === optIdx}
-                            onChange={() => updateQuestion(idx, { correctOptionIndex: optIdx })}
-                            className="accent-emerald-400 cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={opt}
-                            onChange={(e) => {
-                              const newOpts = [...q.options];
-                              newOpts[optIdx] = e.target.value;
-                              updateQuestion(idx, { options: newOpts });
-                            }}
-                            className="flex-1 text-xs bg-[#03050B] border border-slate-800 rounded px-2 py-1 text-slate-200 outline-none"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] text-slate-400 block mb-1">Explanation</label>
-                      <input
-                        type="text"
-                        value={q.explanationEn || ''}
-                        onChange={(e) => updateQuestion(idx, { explanationEn: e.target.value })}
-                        placeholder="Why this answer is correct..."
-                        className="w-full text-xs bg-[#03050B] border border-slate-800 rounded px-2.5 py-1.5 text-slate-300 outline-none"
-                      />
-                    </div>
-                  </div>
+                  <AnveshanaQuestionEditor
+                    question={q}
+                    index={idx}
+                    onUpdate={(patch) => updateQuestion(idx, patch)}
+                  />
                 )}
               </div>
             );

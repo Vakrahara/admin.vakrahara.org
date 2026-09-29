@@ -46,8 +46,13 @@ export interface SaraswatiMiniStep {
   definitionFragmentHng?: string;
 }
 
+export type QuestionType = 'mcq' | 'assertion_reason' | 'statement_1_2';
+export type BloomsTaxonomy = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate';
+
 export interface AnveshanaQuestion {
   id?: string;
+  questionType?: QuestionType;
+  bloomsLevel?: BloomsTaxonomy;
   questionEn: string;
   questionHi?: string;
   questionHng?: string;
@@ -69,6 +74,7 @@ export interface Step {
   type: StepType;
   // Common / Text content
   title?: string;
+  titleHng?: string;
   textDeva?: string;
   textEng?: string;
   textHng?: string;
@@ -76,6 +82,8 @@ export interface Step {
   // Video Simulation fields (§7, §8)
   mediaMode?: MediaMode;
   videoUrl?: string;
+  streamUid?: string;
+  aspectRatio?: '16:9' | '9:16' | '4:3';
   videoDurationMs?: number;
   transcript?: TranscriptSegment[];
   simulationId?: string;
@@ -84,13 +92,19 @@ export interface Step {
   gurutatva?: Gurutatva;
   // Legacy quiz / Anveshana fields (§16)
   question?: string;
+  questionHng?: string;
   questionText?: string;
+  questionTextHng?: string;
   options?: string[];
+  optionsHng?: string[];
   correctOptionIndex?: number;
   explanation?: string;
+  explanationHng?: string;
   hints?: string[];
+  hintsHng?: string[];
   targetModuleId?: string;
   questionPool?: AnveshanaQuestion[];
+  pool?: AnveshanaQuestion[];
   questionsPerAttempt?: number;
   passingScore?: number;
   // Saraswati definition builder fields (§13–§15)
@@ -107,7 +121,9 @@ export interface Step {
 export interface Module {
   id: string;
   title: string;
+  subtitle?: string;
   steps: Step[];
+  learningSteps?: Step[];
 }
 
 export interface Pyq {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Video, Play, Layers } from 'lucide-react';
 import { Step, MediaMode } from '@/types/curriculum';
+import { GurutatvaEditor } from './GurutatvaEditor';
 
 interface VideoMediaFormProps {
   step: Step;
@@ -74,11 +75,11 @@ export function VideoMediaForm({ step, onChange }: VideoMediaFormProps) {
         <div className="space-y-3 p-3 rounded-lg border border-slate-800/60 bg-[#0B0F19]">
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
             <Play className="w-3.5 h-3.5" />
-            <span>Embedded Video Streaming (Cloudflare R2 / HLS)</span>
+            <span>Embedded Video Streaming (Cloudflare R2 / Stream / HLS)</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
               <label className="text-[11px] text-slate-400 block mb-1">Direct MP4 or HLS Stream URL</label>
               <input
                 type="text"
@@ -87,6 +88,31 @@ export function VideoMediaForm({ step, onChange }: VideoMediaFormProps) {
                 placeholder="https://cdn.vakrahara.org/v1/videos/light_reflection.mp4"
                 className="w-full text-xs font-mono bg-[#03050B] border border-slate-800 rounded-lg px-3 py-2 text-white focus:border-amber-400 outline-none"
               />
+            </div>
+            <div>
+              <label className="text-[11px] text-slate-400 block mb-1">Cloudflare Stream UID (Optional)</label>
+              <input
+                type="text"
+                value={step.streamUid || ''}
+                onChange={(e) => onChange({ streamUid: e.target.value })}
+                placeholder="e.g. 5d5380d4e654460d3e1a91da7645efd6"
+                className="w-full text-xs font-mono bg-[#03050B] border border-slate-800 rounded-lg px-3 py-2 text-white focus:border-amber-400 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] text-slate-400 block mb-1">Aspect Ratio</label>
+              <select
+                value={step.aspectRatio || '16:9'}
+                onChange={(e) => onChange({ aspectRatio: e.target.value as '16:9' | '9:16' | '4:3' })}
+                className="w-full text-xs bg-[#03050B] border border-slate-800 rounded-lg px-3 py-2 text-white focus:border-amber-400 outline-none"
+              >
+                <option value="16:9">16:9 Landscape (Standard)</option>
+                <option value="9:16">9:16 Portrait (Mobile Story)</option>
+                <option value="4:3">4:3 Classical Academy</option>
+              </select>
             </div>
             <div>
               <label className="text-[11px] text-slate-400 block mb-1">Duration (seconds)</label>
@@ -148,6 +174,12 @@ export function VideoMediaForm({ step, onChange }: VideoMediaFormProps) {
           </div>
         </div>
       )}
+
+      {/* Gurutatva IKS Insight Card Editor (§10) */}
+      <GurutatvaEditor
+        gurutatva={step.gurutatva}
+        onChange={(gurutatva) => onChange({ gurutatva })}
+      />
     </div>
   );
 }
