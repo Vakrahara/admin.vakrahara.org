@@ -19,6 +19,7 @@ interface CurriculumPublishFooterProps {
   isSavingDraft: boolean;
   publishCooldown: number;
   publishStatus: 'idle' | 'success' | 'error';
+  publishSuccessMessage?: string;
   publishErrorMessage: string;
   validationErrors: string[] | null;
   onSaveDraft: () => void;
@@ -31,6 +32,7 @@ export function CurriculumPublishFooter({
   isSavingDraft,
   publishCooldown,
   publishStatus,
+  publishSuccessMessage,
   publishErrorMessage,
   validationErrors = [],
   onSaveDraft,
@@ -142,7 +144,7 @@ export function CurriculumPublishFooter({
       {publishStatus === 'success' && (
         <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-lg text-xs flex items-center gap-2">
           <Check className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Curriculum successfully published to Cloudflare R2 and synced to PocketBase database!</span>
+          <span>{publishSuccessMessage || 'Curriculum successfully published to Cloudflare R2 and synced to PocketBase database!'}</span>
         </div>
       )}
 

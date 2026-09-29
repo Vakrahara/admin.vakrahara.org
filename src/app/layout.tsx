@@ -30,7 +30,7 @@ export default function RootLayout({
       <head>
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://pb.vakrahara.org https://cdn.vakrahara.org https://*.r2.cloudflarestorage.com; img-src 'self' https://cdn.vakrahara.org data: blob:; media-src 'self' https://cdn.vakrahara.org blob:; frame-src 'self' https://cdn.vakrahara.org https://iframe.videodelivery.net; object-src 'none'; base-uri 'self';"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://pb.vakrahara.org https://cdn.vakrahara.org https://*.r2.cloudflarestorage.com; img-src 'self' https://cdn.vakrahara.org data: blob:; media-src 'self' https://cdn.vakrahara.org https://commondatastorage.googleapis.com https://*.googleapis.com blob:; frame-src 'self' https://cdn.vakrahara.org https://iframe.videodelivery.net; object-src 'none'; base-uri 'self';"
         />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>

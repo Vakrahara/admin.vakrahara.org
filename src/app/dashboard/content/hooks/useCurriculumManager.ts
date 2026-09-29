@@ -30,6 +30,7 @@ export function useCurriculumManager(r2Config: R2Config) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [publishSuccessMessage, setPublishSuccessMessage] = useState('');
   const [publishErrorMessage, setPublishErrorMessage] = useState('');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [publishCooldown, setPublishCooldown] = useState(0);
@@ -200,6 +201,7 @@ export function useCurriculumManager(r2Config: R2Config) {
         throw new Error(errData.error || errData.detail || `Server returned HTTP ${res.status}`);
       }
       setHasUnsavedDraft(false);
+      setPublishSuccessMessage('Draft changes successfully saved to PocketBase database!');
       setPublishStatus('success');
       setTimeout(() => setPublishStatus('idle'), 4000);
     } catch (e: any) {
@@ -235,6 +237,7 @@ export function useCurriculumManager(r2Config: R2Config) {
 
     try {
       const payloadChapters = await executePublishCurriculum(chapters, r2Config);
+      setPublishSuccessMessage('Curriculum successfully published to Cloudflare R2 and synced to PocketBase database!');
       setPublishStatus('success');
       setPublishCooldown(30);
       setChapters(payloadChapters);
@@ -247,17 +250,9 @@ export function useCurriculumManager(r2Config: R2Config) {
     }
   };
 
-  const moveChapter = (index: number, dir: 'up' | 'down') => {
-    if (chapters) setChapters(reorderChapterList(chapters, index, dir));
-  };
-
-  const moveModule = (chapterId: string, index: number, dir: 'up' | 'down') => {
-    if (chapters) setChapters(reorderModuleList(chapters, chapterId, index, dir));
-  };
-
-  const moveStep = (chapterId: string, moduleId: string, index: number, dir: 'up' | 'down') => {
-    if (chapters) setChapters(reorderStepList(chapters, chapterId, moduleId, index, dir));
-  };
+  const moveChapter = (index: number, dir: 'up' | 'down') => chapters && setChapters(reorderChapterList(chapters, index, dir));
+  const moveModule = (chapterId: string, index: number, dir: 'up' | 'down') => chapters && setChapters(reorderModuleList(chapters, chapterId, index, dir));
+  const moveStep = (chapterId: string, moduleId: string, index: number, dir: 'up' | 'down') => chapters && setChapters(reorderStepList(chapters, chapterId, moduleId, index, dir));
 
   const activeChapter = chapters?.find(c => c.id === selectedChapterId) || null;
   const activeModule = activeChapter?.modules.find(m => m.id === selectedModuleId) || null;
@@ -265,19 +260,12 @@ export function useCurriculumManager(r2Config: R2Config) {
   const updateActiveChapter = (fields: Partial<Chapter>) => {
     if (chapters && activeChapter) setChapters(patchChapter(chapters, activeChapter.id, fields));
   };
-
   const updateActiveModule = (fields: Partial<Module>) => {
-    if (chapters && activeChapter && activeModule) {
-      setChapters(patchModule(chapters, activeChapter.id, activeModule.id, fields));
-    }
+    if (chapters && activeChapter && activeModule) setChapters(patchModule(chapters, activeChapter.id, activeModule.id, fields));
   };
-
   const updateActiveModuleSteps = (steps: Step[]) => {
-    if (chapters && activeChapter && activeModule) {
-      setChapters(patchModuleSteps(chapters, activeChapter.id, activeModule.id, steps));
-    }
+    if (chapters && activeChapter && activeModule) setChapters(patchModuleSteps(chapters, activeChapter.id, activeModule.id, steps));
   };
-
   const handleUpdateStep = (updatedStep: Step) => {
     if (!activeModule) return;
     updateActiveModuleSteps(activeModule.steps.map(s => s.id === updatedStep.id ? updatedStep : s));
@@ -288,7 +276,7 @@ export function useCurriculumManager(r2Config: R2Config) {
     selectedModuleId, setSelectedModuleId, editingPyqId, setEditingPyqId,
     activeEditStepId, setActiveEditStepId, isLoadingCbse, cbseLoadError,
     curriculumSource, setCurriculumSource, isPublishing, isSavingDraft,
-    publishStatus, publishErrorMessage, validationErrors, publishCooldown,
+    publishStatus, publishSuccessMessage, publishErrorMessage, validationErrors, publishCooldown,
     hasUnsavedDraft, lastSyncTime, activeChapter, activeModule,
     loadCbseData, handleSeedCanonical, handleRestoreDraft, handleDiscardDraft,
     handleExportJson, handleImportJson, handleSaveDraft, handlePublishCbse,

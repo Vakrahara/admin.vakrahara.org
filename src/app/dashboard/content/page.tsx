@@ -43,7 +43,7 @@ export default function ContentCMSPage() {
     selectedModuleId, setSelectedModuleId, editingPyqId, setEditingPyqId,
     activeEditStepId, setActiveEditStepId, isLoadingCbse, cbseLoadError,
     curriculumSource, isPublishing, isSavingDraft,
-    publishStatus, publishErrorMessage, validationErrors, publishCooldown,
+    publishStatus, publishSuccessMessage, publishErrorMessage, validationErrors, publishCooldown,
     hasUnsavedDraft, lastSyncTime, activeChapter, activeModule,
     loadCbseData, handleSeedCanonical, handleRestoreDraft, handleDiscardDraft,
     handleExportJson, handleImportJson, handleSaveDraft, handlePublishCbse,
@@ -259,6 +259,7 @@ export default function ContentCMSPage() {
                 isSavingDraft={isSavingDraft}
                 publishCooldown={publishCooldown}
                 publishStatus={publishStatus}
+                publishSuccessMessage={publishSuccessMessage}
                 publishErrorMessage={publishErrorMessage}
                 validationErrors={validationErrors}
                 onSaveDraft={handleSaveDraft}
