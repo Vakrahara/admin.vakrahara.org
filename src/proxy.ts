@@ -28,10 +28,10 @@ export function proxy(request: NextRequest) {
       const authData = JSON.parse(decodedCookie);
       
       const token = authData.token;
-      const model = authData.model;
+      const model = authData.model || authData.record || authData.admin;
 
-      if (!token || !model) {
-        throw new Error('Invalid auth cookie structure');
+      if (!token) {
+        throw new Error('Invalid auth cookie: missing token');
       }
 
       // Decode the JWT token payload (middle segment)
@@ -51,8 +51,8 @@ export function proxy(request: NextRequest) {
       }
 
       // Assert email verification (PocketBase users collection does not have a role column)
-      const userEmail = String(model.email || '').toLowerCase();
-      const isAdmin = ADMIN_EMAILS.includes(userEmail);
+      const userEmail = String(model?.email || jwtPayload.email || '').toLowerCase();
+      const isAdmin = ADMIN_EMAILS.includes(userEmail) || jwtPayload.type === 'admin';
       if (!isAdmin) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }

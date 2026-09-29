@@ -36,10 +36,16 @@ function LoginForm() {
 
     try {
       // Authenticate directly via REST API since the backend is v0.22.9 and the SDK is v0.27.0
-      const authData = await pb.send('/api/admins/auth-with-password', {
+      const res = await fetch(`${pb.baseUrl}/api/admins/auth-with-password`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identity: identifier, password: password })
       });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || 'Authentication failed. Please verify your credentials.');
+      }
+      const authData = await res.json();
       
       // Manually save the token and admin record into the auth store
       pb.authStore.save(authData.token, authData.admin);
