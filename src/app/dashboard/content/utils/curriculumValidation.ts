@@ -1,4 +1,21 @@
 import { Chapter } from '@/types/curriculum';
+import {
+  TriadValidationError,
+  validateTriadPayloads,
+  validateKeyTermsRecap,
+  validateAudioOverview,
+  validateTimelineReel,
+  validateTimelineMetadata,
+} from '@/types/curriculumValidation';
+
+export {
+  type TriadValidationError,
+  validateTriadPayloads,
+  validateKeyTermsRecap,
+  validateAudioOverview,
+  validateTimelineReel,
+  validateTimelineMetadata,
+};
 
 /**
  * Validates the CBSE curriculum JSON structure before saving or publishing.
@@ -92,6 +109,12 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
             errors.push(`Simulation step "${stepName}" has no simulationId.`);
           }
         }
+      });
+
+      // Vidyāpīṭha Pedagogical Triad Validation (§2, Step 0.3)
+      const triadErrors = validateTriadPayloads(mod);
+      triadErrors.forEach((tErr) => {
+        errors.push(`[Triad: ${modName}] ${tErr.field}: ${tErr.message}`);
       });
     });
   });
