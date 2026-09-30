@@ -118,108 +118,12 @@ export interface Step {
   significance?: string;
 }
 
-export interface VyutpattiBreakdown {
-  dhatu?: string;
-  pratyaya?: string;
-  etymologyTextEn: string;
-  etymologyTextHi?: string;
-  etymologyTextHng?: string;
-}
-
-export interface KeyTerm {
-  id: string;
-  termDeva: string;
-  termIast: string;
-  termEn: string;
-  termHng: string;
-  definitionEn: string;
-  definitionHi: string;
-  definitionHng: string;
-  vyutpatti?: VyutpattiBreakdown;
-  audioPronunciationUrl?: string;
-  sutraReference?: string;
-  tags?: string[];
-}
-
-export interface KeyTermsRecap {
-  enabled: boolean;
-  titleEn: string;
-  titleHi: string;
-  titleHng: string;
-  terms: KeyTerm[];
-}
-
-export interface TranscriptCue {
-  id: string;
-  startMs: number;
-  endMs: number;
-  textEn: string;
-  textHi?: string;
-  textHng?: string;
-}
-
-export interface AudioOverview {
-  enabled: boolean;
-  durationMs: number;
-  audioUrlEn: string;
-  audioUrlHi?: string;
-  audioUrlHng?: string;
-  vttUrlEn?: string;
-  vttUrlHi?: string;
-  vttUrlHng?: string;
-  waveformPeaks: number[];
-  cues: TranscriptCue[];
-}
-
-export interface TimelineEvent {
-  id: string;
-  yearAstro: number;
-  displayYearBceCe: string;
-  displayVikramSamvat?: string;
-  displaySakaSamvat?: string;
-  displayKaliYuga?: string;
-  titleEn: string;
-  titleHi?: string;
-  titleHng?: string;
-  summaryEn: string;
-  summaryHi?: string;
-  summaryHng?: string;
-  targetModuleId?: string;
-  isCurrentModuleAnchor?: boolean;
-}
-
-export interface TimelineEpoch {
-  id: string;
-  nameEn: string;
-  nameHi: string;
-  nameHng: string;
-  startYearAstro: number;
-  endYearAstro: number;
-  displayRangeBceCe: string;
-  colorHex: string;
-  events: TimelineEvent[];
-}
-
-export interface TimelineReel {
-  enabled: boolean;
-  reelId: string;
-  titleEn: string;
-  titleHi: string;
-  titleHng: string;
-  activeEpochId: string;
-  activeEventId?: string;
-  epochs: TimelineEpoch[];
-}
-
 export interface Module {
   id: string;
   title: string;
   subtitle?: string;
   steps: Step[];
   learningSteps?: Step[];
-  keyTermsRecap?: KeyTermsRecap;
-  audioOverview?: AudioOverview;
-  timelineReel?: TimelineReel;
 }
 
 export interface Pyq {
