@@ -12,6 +12,7 @@ import {
 import { Module, Step, StepType, MediaMode, Chapter } from '@/types/curriculum';
 import { CbseInlineStepEditor } from './CbseInlineStepEditor';
 import { DigitalTwinPreview } from './DigitalTwinPreview';
+import { ModuleTriadDeck } from './ModuleTriadDeck';
 
 interface CbseModuleEditorPanelProps {
   activeChapter: Chapter;
@@ -247,6 +248,12 @@ export function CbseModuleEditorPanel({
           </div>
         </div>
       </div>
+
+      {/* Vidyāpīṭha Pedagogical Triad (Shabdakosha, Audio Revisit, Kālachakra Timeline) */}
+      <ModuleTriadDeck
+        module={activeModule}
+        onUpdateModule={onUpdateModule}
+      />
 
       {/* Digital Twin Live Preview Panel */}
       <div className="h-[480px]">
