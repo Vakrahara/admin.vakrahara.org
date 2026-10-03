@@ -3,6 +3,8 @@
  * Supports both legacy 4-step structure and modern 3-type polymorphic hierarchy.
  */
 
+import type { StepSlotsConfig, StepTriggerMode, StepSlotKey } from './stepSlots';
+
 export type LegacyStepType = 'concept' | 'simulation' | 'predict_quiz' | 'heritage_connection';
 export type ModernStepType = 'video_simulation' | 'saraswati' | 'anveshana';
 export type StepType = LegacyStepType | ModernStepType;
@@ -25,6 +27,60 @@ export interface Gurutatva {
   bodyHng?: string;
   sutra?: string;
   sutraTranslation?: string;
+}
+
+export type TextHotspotAction =
+  | 'inline_card'
+  | 'launch_simulation'
+  | 'open_gurutatva'
+  | 'open_lexicon_term'
+  | 'link_module';
+
+export interface HotspotInlineCardPayload {
+  titleEn: string;
+  titleHi?: string;
+  titleHng?: string;
+  bodyEn: string;
+  bodyHi?: string;
+  bodyHng?: string;
+  imageUrl?: string;
+}
+
+export interface TextHotspot {
+  id: string; // prefixed with hot_ per semantic ID rules
+  targetWordOrPhrase: string;
+  action: TextHotspotAction;
+  inlineCardPayload?: HotspotInlineCardPayload;
+  targetSimulationId?: string;
+  targetSimulationParams?: Record<string, any>;
+  targetGurutatva?: Gurutatva;
+  targetTermId?: string;
+  targetModuleId?: string;
+}
+
+export type VideoCheckpointType = 'question' | 'simulation_prompt' | 'gurutatva_pause' | 'explorable_note';
+export type VideoCheckpointResumeAction = 'on_answer' | 'manual_continue' | 'auto_after_sec';
+
+export interface VideoCheckpoint {
+  id: string; // prefixed with chk_ per semantic ID rules
+  timestampMs: number;
+  type: VideoCheckpointType;
+  title?: string;
+  questionEn?: string;
+  questionHi?: string;
+  questionHng?: string;
+  options?: string[];
+  optionsHi?: string[];
+  optionsHng?: string[];
+  correctOptionIndex?: number;
+  explanationEn?: string;
+  explanationHi?: string;
+  explanationHng?: string;
+  simulationId?: string;
+  simulationParams?: Record<string, any>;
+  gurutatva?: Gurutatva;
+  resumeAction?: VideoCheckpointResumeAction;
+  autoResumeSeconds?: number;
 }
 
 export interface SaraswatiMiniStep {
@@ -85,6 +141,7 @@ export interface Step {
   aspectRatio?: '16:9' | '9:16' | '4:3';
   videoDurationMs?: number;
   transcript?: TranscriptSegment[];
+  checkpoints?: VideoCheckpoint[];
   simulationId?: string;
   params?: Record<string, any>;
   subStepCount?: number;
@@ -115,7 +172,15 @@ export interface Step {
   sutra?: string;
   translation?: string;
   significance?: string;
+  // Composable Step Slots & Orchestration (§R1, TICKET-03)
+  slots?: StepSlotsConfig;
+  triggerMode?: StepTriggerMode;
+  slotOrder?: StepSlotKey[];
+  // Interactive Explorable Text & Hotspots (§TICKET-05)
+  hotspots?: TextHotspot[];
 }
+
+export * from './stepSlots';
 
 // ─── TRIAD EXTENSION: SHABDAKOSHA, AUDIO & KALACHAKRA (curriculumTriad.ts) ──
 export type {
@@ -129,20 +194,40 @@ export type {
   TimelineCluster,
   TimelineEpoch,
   TimelineReel,
-  ModuleTimelineMetadata
+  ModuleTimelineMetadata,
+  DisciplineRegistryEntry,
+  ModuleDisciplineMetadata
 } from './curriculumTriad';
+
+export * from '@/lib/semanticId';
+export * from '@/lib/disciplinesRegistry';
 
 import type {
   KeyTermsRecap,
   AudioOverview,
   TimelineReel,
-  ModuleTimelineMetadata
+  ModuleTimelineMetadata,
+  ModuleDisciplineMetadata
 } from './curriculumTriad';
 
-export interface Module {
+export interface Module extends ModuleDisciplineMetadata {
   id: string;
-  title: string;
+  // Trilingual Title fields (§R3)
+  title: string;                    // Backward-compatible accessor
+  titleEn?: string;
+  titleHi?: string;
+  titleHng?: string;
+  shortTitleEn?: string;            // Strictly <= 24 chars
+  shortTitleHi?: string;            // Strictly <= 24 chars
+  shortTitleHng?: string;           // Strictly <= 24 chars
   subtitle?: string;
+  subtitleEn?: string;
+  subtitleHi?: string;
+  subtitleHng?: string;
+  // Multi-discipline tagging & grade targeting (§R2)
+  disciplineIds?: string[];         // e.g. ["disc_rasayan", "disc_itihasa"]
+  primaryDisciplineId?: string;     // Default chromatic styling (e.g. "disc_rasayan")
+  applicableGrades?: number[];      // e.g. [9, 10, 11]
   steps: Step[];
   learningSteps?: Step[];
   // Vidyāpīṭha Pedagogical Triad Extensions (§3, Step 0.1)
@@ -153,6 +238,17 @@ export interface Module {
 }
 
 export type InteractiveModule = Module;
+
+/** Backward-compatible accessor: resolves titleEn or falls back to legacy title (or id) */
+export function getModuleTitle(mod: { id?: string; title?: string; titleEn?: string }): string {
+  return mod.titleEn?.trim() || mod.title?.trim() || mod.id?.trim() || '';
+}
+
+/** Backward-compatible accessor: resolves subtitleEn or falls back to legacy subtitle */
+export function getModuleSubtitle(mod: { subtitle?: string; subtitleEn?: string }): string | undefined {
+  return mod.subtitleEn?.trim() || mod.subtitle?.trim() || undefined;
+}
+
 
 export interface Pyq {
   id: string;
@@ -174,6 +270,11 @@ export interface Chapter {
   branchId: string;
   modules: Module[];
   pyqs: Pyq[];
+  board?: string;
+  grade?: number;
+  applicableGrades?: number[];
+  disciplineIds?: string[];
+  [key: string]: any;
 }
 
 export interface CurriculumIndexSummary {

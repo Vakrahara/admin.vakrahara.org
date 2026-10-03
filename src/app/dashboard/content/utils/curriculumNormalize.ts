@@ -1,4 +1,5 @@
 import { Chapter } from '@/types/curriculum';
+import { resolveBranchDisciplineId } from './curriculumFilterUtils';
 
 /**
  * Normalizes raw curriculum data into fully-typed Chapter array with resilient steps.
@@ -17,8 +18,19 @@ export function normalizeCurriculumData(data: any[]): Chapter[] {
         }
         return st;
       });
+      const resolvedTitleEn = mod.titleEn?.trim() || mod.title?.trim() || mod.id || '';
+      const resolvedSubtitle = mod.subtitleEn?.trim() || mod.subtitle?.trim() || undefined;
+      const fallbackBranch = mod.branchId || ch.branchId;
+      const fallbackDisc = resolveBranchDisciplineId(fallbackBranch);
       return {
         ...mod,
+        title: resolvedTitleEn,
+        titleEn: resolvedTitleEn,
+        subtitle: resolvedSubtitle,
+        subtitleEn: resolvedSubtitle,
+        disciplineIds: mod.disciplineIds || (fallbackDisc ? [fallbackDisc] : undefined),
+        primaryDisciplineId: mod.primaryDisciplineId || fallbackDisc,
+        applicableGrades: mod.applicableGrades || undefined,
         steps: normalizedSteps,
         learningSteps: mod.learningSteps || undefined
       };

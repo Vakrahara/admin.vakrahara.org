@@ -4,6 +4,7 @@ import React from 'react';
 import { Video, Play, Layers } from 'lucide-react';
 import { Step, MediaMode } from '@/types/curriculum';
 import { GurutatvaEditor } from './GurutatvaEditor';
+import { VideoCheckpointsManager } from './VideoCheckpointsManager';
 
 interface VideoMediaFormProps {
   step: Step;
@@ -126,6 +127,15 @@ export function VideoMediaForm({ step, onChange }: VideoMediaFormProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* In-Video Interactive Checkpoints (§8.4) */}
+      {(mediaMode === 'video_only' || mediaMode === 'both') && (
+        <VideoCheckpointsManager
+          checkpoints={step.checkpoints || []}
+          videoDurationMs={step.videoDurationMs || 0}
+          onChange={(checkpoints) => onChange({ checkpoints })}
+        />
       )}
 
       {/* Simulation Settings */}

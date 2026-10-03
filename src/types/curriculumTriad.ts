@@ -125,3 +125,22 @@ export interface ModuleTimelineMetadata {
   applicableGrades: number[];      // [10]
   clusterSortOrder?: number;       // Sort order in collision cluster deck
 }
+
+// ─── TRIAD EXTENSION: MULTI-DISCIPLINE & DUAL-ENGINE REGISTRY ─────────────
+export interface DisciplineRegistryEntry {
+  id: string;                      // e.g. "disc_rasayan"
+  nameEn: string;                  // Standard academic English name
+  nameHi: string;                  // Formal Devanagari Hindi name
+  icon: string;                    // Discipline icon emoji or symbol
+  colorHex: string;                // Hex chromatic identifier
+  order: number;                   // Display sequence order
+}
+
+export interface ModuleDisciplineMetadata {
+  disciplineIds?: string[];        // Multi-discipline tagging (e.g. ["disc_rasayan", "disc_itihasa"])
+  primaryDisciplineId?: string;    // Default chromatic styling
+  applicableGrades?: number[];     // e.g. [9, 10, 11]
+}
+
+export type { Module, InteractiveModule } from './curriculum';
+

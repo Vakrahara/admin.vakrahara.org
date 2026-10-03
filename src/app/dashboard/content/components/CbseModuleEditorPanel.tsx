@@ -138,9 +138,16 @@ export function CbseModuleEditorPanel({
               return (
                 <div key={step.id} className="p-4 bg-[#08080c] border border-white/5 rounded-xl space-y-4 relative group">
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 bg-[#d4af37]/5 border border-[#d4af37]/20 text-[9px] font-bold text-[#d4af37] rounded-md uppercase tracking-wider">
-                      {step.type.replace('_', ' ')}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 bg-[#d4af37]/5 border border-[#d4af37]/20 text-[9px] font-bold text-[#d4af37] rounded-md uppercase tracking-wider">
+                        {step.type.replace('_', ' ')}
+                      </span>
+                      {step.triggerMode && (
+                        <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-[8px] font-mono text-amber-300 rounded uppercase">
+                          {step.triggerMode}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"

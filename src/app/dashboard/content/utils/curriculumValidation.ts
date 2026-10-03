@@ -50,7 +50,7 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
     }
 
     chapter.modules.forEach((mod, mIndex) => {
-      const modName = mod.title || mod.id || `Module ${mIndex + 1}`;
+      const modName = mod.titleEn?.trim() || mod.title?.trim() || mod.id || `Module ${mIndex + 1}`;
       if (!mod.id || mod.id.trim() === '') {
         errors.push(`Module ${mIndex + 1} in chapter "${chName}" has no ID.`);
       } else if (moduleIds.has(mod.id)) {
@@ -59,7 +59,8 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
         moduleIds.add(mod.id);
       }
 
-      if (!mod.title || mod.title.trim() === '') {
+      const modTitle = mod.titleEn?.trim() || mod.title?.trim();
+      if (!modTitle) {
         errors.push(`Module ID "${mod.id}" in chapter "${chName}" has no Title.`);
       }
 
@@ -108,6 +109,38 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
           if (!step.simulationId || step.simulationId.trim() === '') {
             errors.push(`Simulation step "${stepName}" has no simulationId.`);
           }
+        }
+
+        if (step.checkpoints && Array.isArray(step.checkpoints)) {
+          const seenCheckpointIds = new Set<string>();
+          step.checkpoints.forEach((chk, chkIdx) => {
+            if (!chk.id || !chk.id.startsWith('chk_')) {
+              errors.push(`Checkpoint #${chkIdx + 1} in step "${stepName}" has invalid ID "${chk.id}". Must start with "chk_".`);
+            } else if (seenCheckpointIds.has(chk.id)) {
+              errors.push(`Duplicate Checkpoint ID: "${chk.id}" in step "${stepName}".`);
+            } else {
+              seenCheckpointIds.add(chk.id);
+            }
+            if (chk.timestampMs < 0) {
+              errors.push(`Checkpoint "${chk.id}" in step "${stepName}" has negative timestamp.`);
+            }
+            if (chk.type === 'question') {
+              const hasPrompt = Boolean(chk.questionEn?.trim() || chk.questionHi?.trim() || chk.questionHng?.trim());
+              if (!hasPrompt) {
+                errors.push(`Question checkpoint "${chk.id}" in step "${stepName}" has no prompt in any language.`);
+              }
+              if (!chk.options || chk.options.length < 2) {
+                errors.push(`Question checkpoint "${chk.id}" in step "${stepName}" must have at least 2 options.`);
+              }
+              if (chk.correctOptionIndex === undefined || chk.correctOptionIndex < 0 || (chk.options && chk.correctOptionIndex >= chk.options.length)) {
+                errors.push(`Question checkpoint "${chk.id}" in step "${stepName}" has invalid correctOptionIndex (${chk.correctOptionIndex}).`);
+              }
+            } else if (chk.type === 'simulation_prompt') {
+              if (!chk.simulationId || chk.simulationId.trim() === '') {
+                errors.push(`Simulation checkpoint "${chk.id}" in step "${stepName}" has no simulationId.`);
+              }
+            }
+          });
         }
       });
 

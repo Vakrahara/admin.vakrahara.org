@@ -9,6 +9,7 @@ import {
   TimelineReel,
   ModuleTimelineMetadata,
   InteractiveModule,
+  isValidSemanticId,
 } from './curriculum';
 
 export interface TriadValidationError {
@@ -28,15 +29,9 @@ export function validateKeyTermsRecap(
   const errors: TriadValidationError[] = [];
   if (!recap.enabled) return errors;
 
-  if (!recap.titleEn?.trim()) {
-    errors.push({ moduleTitle, field: 'keyTermsRecap.titleEn', message: 'English title is required.' });
-  }
-  if (!recap.titleHi?.trim()) {
-    errors.push({ moduleTitle, field: 'keyTermsRecap.titleHi', message: 'Hindi title is required.' });
-  }
-  if (!recap.titleHng?.trim()) {
-    errors.push({ moduleTitle, field: 'keyTermsRecap.titleHng', message: 'Hinglish title is required.' });
-  }
+  if (!recap.titleEn?.trim()) errors.push({ moduleTitle, field: 'keyTermsRecap.titleEn', message: 'English title is required.' });
+  if (!recap.titleHi?.trim()) errors.push({ moduleTitle, field: 'keyTermsRecap.titleHi', message: 'Hindi title is required.' });
+  if (!recap.titleHng?.trim()) errors.push({ moduleTitle, field: 'keyTermsRecap.titleHng', message: 'Hinglish title is required.' });
 
   if (!recap.terms || recap.terms.length === 0) {
     errors.push({ moduleTitle, field: 'keyTermsRecap.terms', message: 'At least one key term must be defined when Shabdakosha is enabled.' });
@@ -45,27 +40,13 @@ export function validateKeyTermsRecap(
 
   recap.terms.forEach((term, i) => {
     const prefix = `keyTermsRecap.terms[${i}]`;
-    if (!term.id?.trim()) {
-      errors.push({ moduleTitle, field: `${prefix}.id`, message: 'Key term ID is required.' });
-    }
-    if (!term.termEn?.trim()) {
-      errors.push({ moduleTitle, field: `${prefix}.termEn`, message: 'English term name is required.' });
-    }
-    if (!term.termHi?.trim()) {
-      errors.push({ moduleTitle, field: `${prefix}.termHi`, message: 'Hindi term name is required.' });
-    }
-    if (!term.termHng?.trim()) {
-      errors.push({ moduleTitle, field: `${prefix}.termHng`, message: 'Hinglish term name is required.' });
-    }
-    if (!term.definitionEn?.trim()) {
-      errors.push({ moduleTitle, field: `${prefix}.definitionEn`, message: 'English definition is required.' });
-    }
-    if (!term.definitionHi?.trim()) {
-      errors.push({ moduleTitle, field: `${prefix}.definitionHi`, message: 'Hindi definition is required.' });
-    }
-    if (!term.definitionHng?.trim()) {
-      errors.push({ moduleTitle, field: `${prefix}.definitionHng`, message: 'Hinglish definition is required.' });
-    }
+    if (!term.id?.trim()) errors.push({ moduleTitle, field: `${prefix}.id`, message: 'Key term ID is required.' });
+    if (!term.termEn?.trim()) errors.push({ moduleTitle, field: `${prefix}.termEn`, message: 'English term name is required.' });
+    if (!term.termHi?.trim()) errors.push({ moduleTitle, field: `${prefix}.termHi`, message: 'Hindi term name is required.' });
+    if (!term.termHng?.trim()) errors.push({ moduleTitle, field: `${prefix}.termHng`, message: 'Hinglish term name is required.' });
+    if (!term.definitionEn?.trim()) errors.push({ moduleTitle, field: `${prefix}.definitionEn`, message: 'English definition is required.' });
+    if (!term.definitionHi?.trim()) errors.push({ moduleTitle, field: `${prefix}.definitionHi`, message: 'Hindi definition is required.' });
+    if (!term.definitionHng?.trim()) errors.push({ moduleTitle, field: `${prefix}.definitionHng`, message: 'Hinglish definition is required.' });
   });
 
   return errors;
@@ -234,7 +215,7 @@ export function validateTimelineMetadata(
  */
 export function validateTriadPayloads(module: InteractiveModule): TriadValidationError[] {
   const errors: TriadValidationError[] = [];
-  const title = module.title || module.id || 'Untitled Module';
+  const title = module.titleEn?.trim() || module.title?.trim() || module.id || 'Untitled Module';
 
   if (module.keyTermsRecap?.enabled) {
     errors.push(...validateKeyTermsRecap(module.keyTermsRecap, title));
@@ -249,5 +230,45 @@ export function validateTriadPayloads(module: InteractiveModule): TriadValidatio
     errors.push(...validateTimelineMetadata(module.timelineMetadata, title));
   }
 
+  // Short titles strictly <= 24 chars (§R3)
+  (['shortTitleEn', 'shortTitleHi', 'shortTitleHng'] as const).forEach((field) => {
+    const val = module[field];
+    if (val && val.length > 24) {
+      errors.push({ moduleTitle: title, field, message: `${field} strictly must not exceed 24 characters (current: ${val.length}).` });
+    }
+  });
+
+  // Multi-discipline tagging consistency & semantic ID format (§R1, §R2)
+  if (module.primaryDisciplineId) {
+    if (!isValidSemanticId(module.primaryDisciplineId, 'disc')) {
+      errors.push({ moduleTitle: title, field: 'primaryDisciplineId', message: `primaryDisciplineId "${module.primaryDisciplineId}" must be a valid semantic ID starting with "disc_".` });
+    }
+    if (!module.disciplineIds || !module.disciplineIds.includes(module.primaryDisciplineId)) {
+      errors.push({ moduleTitle: title, field: 'primaryDisciplineId', message: `primaryDisciplineId "${module.primaryDisciplineId}" must be included within disciplineIds.` });
+    }
+  }
+  if (module.disciplineIds) {
+    const seenDisc = new Set<string>();
+    module.disciplineIds.forEach((discId) => {
+      if (!isValidSemanticId(discId, 'disc')) {
+        errors.push({ moduleTitle: title, field: 'disciplineIds', message: `Discipline ID "${discId}" must be a valid semantic ID starting with "disc_".` });
+      } else if (seenDisc.has(discId)) {
+        errors.push({ moduleTitle: title, field: 'disciplineIds', message: `Duplicate Discipline ID "${discId}" in disciplineIds.` });
+      } else {
+        seenDisc.add(discId);
+      }
+    });
+  }
+
+  // Grade range validation
+  if (module.applicableGrades) {
+    module.applicableGrades.forEach((g) => {
+      if (!Number.isInteger(g) || g < 1 || g > 12) {
+        errors.push({ moduleTitle: title, field: 'applicableGrades', message: `Applicable grade (${g}) must be an integer between 1 and 12.` });
+      }
+    });
+  }
+
   return errors;
 }
+

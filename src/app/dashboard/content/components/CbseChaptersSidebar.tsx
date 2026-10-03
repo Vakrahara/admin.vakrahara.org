@@ -6,6 +6,7 @@ import { Chapter } from '@/types/curriculum';
 
 interface CbseChaptersSidebarProps {
   chapters: Chapter[];
+  allChapters?: Chapter[];
   selectedChapterId: string | null;
   onSelectChapter: (chapterId: string) => void;
   onAddChapter: () => void;
@@ -15,6 +16,7 @@ interface CbseChaptersSidebarProps {
 
 export function CbseChaptersSidebar({
   chapters,
+  allChapters,
   selectedChapterId,
   onSelectChapter,
   onAddChapter,
@@ -29,6 +31,8 @@ export function CbseChaptersSidebar({
     (c.branchId || '').toLowerCase().includes(filterQuery.toLowerCase())
   );
 
+  const totalCount = allChapters && allChapters.length !== chapters.length ? allChapters.length : null;
+
   return (
     <div className="xl:col-span-3 space-y-4">
       {/* Header and Add Button */}
@@ -36,7 +40,7 @@ export function CbseChaptersSidebar({
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-[#d4af37]" />
           <h3 className="font-bold text-sm text-gray-300 uppercase tracking-wider">
-            Chapters ({chapters.length})
+            Chapters ({chapters.length}{totalCount !== null ? ` of ${totalCount}` : ''})
           </h3>
         </div>
         <button
@@ -50,14 +54,14 @@ export function CbseChaptersSidebar({
       </div>
 
       {/* Quick Search */}
-      {chapters.length > 4 && (
+      {(chapters.length > 4 || filterQuery) && (
         <div className="relative">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
-            placeholder="Filter chapters..."
+            placeholder="Search chapters..."
             className="w-full pl-8 pr-3 py-1.5 bg-[#08080c] border border-white/5 rounded-xl text-white text-xs placeholder:text-gray-600 focus:outline-none focus:border-[#d4af37]/60"
           />
         </div>
@@ -65,9 +69,10 @@ export function CbseChaptersSidebar({
 
       {/* Chapter Cards List */}
       <div className="space-y-2.5 max-h-[650px] overflow-y-auto pr-1">
-        {filteredChapters.map((ch, index) => {
+        {filteredChapters.map((ch) => {
           const isSelected = ch.id === selectedChapterId;
-          const realIndex = chapters.findIndex(c => c.id === ch.id);
+          const sourceList = allChapters && allChapters.length > 0 ? allChapters : chapters;
+          const realIndex = sourceList.findIndex(c => c.id === ch.id);
 
           return (
             <div
@@ -95,9 +100,9 @@ export function CbseChaptersSidebar({
                       e.stopPropagation();
                       onMoveChapter(realIndex, 'up');
                     }}
-                    disabled={realIndex === 0}
+                    disabled={totalCount !== null || filterQuery.trim().length > 0 || realIndex <= 0}
                     className="p-1 text-gray-500 hover:text-white disabled:opacity-20 cursor-pointer"
-                    title="Move Chapter Up"
+                    title={totalCount !== null || filterQuery.trim().length > 0 ? 'Clear filters to reorder chapters' : 'Move Chapter Up'}
                   >
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
@@ -107,9 +112,9 @@ export function CbseChaptersSidebar({
                       e.stopPropagation();
                       onMoveChapter(realIndex, 'down');
                     }}
-                    disabled={realIndex === chapters.length - 1}
+                    disabled={totalCount !== null || filterQuery.trim().length > 0 || realIndex < 0 || realIndex >= sourceList.length - 1}
                     className="p-1 text-gray-500 hover:text-white disabled:opacity-20 cursor-pointer"
-                    title="Move Chapter Down"
+                    title={totalCount !== null || filterQuery.trim().length > 0 ? 'Clear filters to reorder chapters' : 'Move Chapter Down'}
                   >
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
@@ -132,7 +137,7 @@ export function CbseChaptersSidebar({
 
         {filteredChapters.length === 0 && (
           <div className="p-6 border border-dashed border-white/5 rounded-xl text-center text-gray-500 text-xs">
-            {filterQuery ? 'No chapters match filter' : 'No chapters created yet'}
+            {filterQuery ? 'No chapters match search query' : 'No chapters match current filter criteria'}
           </div>
         )}
       </div>

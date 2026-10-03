@@ -1,14 +1,12 @@
 'use client';
 
 import React from 'react';
-import { X, ChevronLeft, ChevronRight, Maximize2, Layers, Check, Eye } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Layers, Check } from 'lucide-react';
 import { Step, StepType, MediaMode } from '@/types/curriculum';
 import { StepTypeSelector } from './StepTypeSelector';
-import { VideoMediaForm } from './VideoMediaForm';
-import { TranscriptEditor } from './TranscriptEditor';
-import { GurutatvaEditor } from './GurutatvaEditor';
-import { SaraswatiBuilderForm } from './SaraswatiBuilderForm';
-import { AnveshanaPoolManager } from './AnveshanaPoolManager';
+import { StepSlotSwitchboard } from './StepSlotSwitchboard';
+import { SlotSubEditorsRenderer } from './SlotSubEditorsRenderer';
+import { CbseLegacyStepEditor } from './CbseLegacyStepEditor';
 
 interface FocusedStepEditorModalProps {
   isOpen: boolean;
@@ -38,6 +36,8 @@ export function FocusedStepEditorModal({
   const currentIndex = allSteps.findIndex(s => s.id === step.id);
   const prevStep = currentIndex > 0 ? allSteps[currentIndex - 1] : null;
   const nextStep = currentIndex < allSteps.length - 1 ? allSteps[currentIndex + 1] : null;
+
+  const isLegacy = ['concept', 'simulation', 'predict_quiz', 'heritage_connection'].includes(step.type);
 
   const handlePatch = (patch: Partial<Step>) => {
     onUpdateStep({ ...step, ...patch });
@@ -135,139 +135,25 @@ export function FocusedStepEditorModal({
             </div>
           </div>
 
-          {/* Form per Step Type */}
-          {step.type === 'video_simulation' && (
-            <div className="space-y-6">
-              <VideoMediaForm step={step} onChange={handlePatch} />
-              <TranscriptEditor transcript={step.transcript || []} onChange={(transcript) => handlePatch({ transcript })} />
-              <GurutatvaEditor gurutatva={step.gurutatva} onChange={(gurutatva) => handlePatch({ gurutatva })} />
-            </div>
-          )}
+          {/* Visual Step Slot Switchboard (§R2, TICKET-03) */}
+          <StepSlotSwitchboard
+            step={step}
+            onUpdateStep={handlePatch}
+          />
 
-          {step.type === 'saraswati' && (
-            <SaraswatiBuilderForm step={step} onChange={handlePatch} />
-          )}
-
-          {step.type === 'anveshana' && (
-            <AnveshanaPoolManager step={step} onChange={handlePatch} onOpenBulkImport={onOpenBulkImport} />
-          )}
-
-          {step.type === 'concept' && (
-            <div className="space-y-4 p-4 rounded-xl border border-white/5 bg-[#0d0f17]">
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Devanagari Title (Deva)
-                </label>
-                <input
-                  type="text"
-                  value={step.textDeva || ''}
-                  onChange={(e) => handlePatch({ textDeva: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  English Concept Text (Eng)
-                </label>
-                <textarea
-                  value={step.textEng || ''}
-                  rows={6}
-                  onChange={(e) => handlePatch({ textEng: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs font-mono"
-                />
-              </div>
-            </div>
-          )}
-
-          {step.type === 'simulation' && (
-            <div className="space-y-4 p-4 rounded-xl border border-white/5 bg-[#0d0f17]">
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Simulation ID
-                </label>
-                <input
-                  type="text"
-                  value={step.simulationId || ''}
-                  onChange={(e) => handlePatch({ simulationId: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Prompt Question / Text
-                </label>
-                <textarea
-                  value={step.questionText || ''}
-                  rows={3}
-                  onChange={(e) => handlePatch({ questionText: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs"
-                />
-              </div>
-            </div>
-          )}
-
-          {step.type === 'predict_quiz' && (
-            <div className="space-y-4 p-4 rounded-xl border border-white/5 bg-[#0d0f17]">
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Question
-                </label>
-                <input
-                  type="text"
-                  value={step.question || step.questionText || ''}
-                  onChange={(e) => handlePatch({ question: e.target.value, questionText: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Explanation
-                </label>
-                <textarea
-                  value={step.explanation || ''}
-                  rows={3}
-                  onChange={(e) => handlePatch({ explanation: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs"
-                />
-              </div>
-            </div>
-          )}
-
-          {step.type === 'heritage_connection' && (
-            <div className="space-y-4 p-4 rounded-xl border border-white/5 bg-[#0d0f17]">
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Heritage Title
-                </label>
-                <input
-                  type="text"
-                  value={step.title || ''}
-                  onChange={(e) => handlePatch({ title: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Sutra / Classical Citation
-                </label>
-                <input
-                  type="text"
-                  value={step.sutra || ''}
-                  onChange={(e) => handlePatch({ sutra: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs font-serif"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">
-                  Significance & Scientific Mapping
-                </label>
-                <textarea
-                  value={step.significance || ''}
-                  rows={4}
-                  onChange={(e) => handlePatch({ significance: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#05070d] border border-white/10 rounded-xl text-white text-xs"
-                />
-              </div>
+          {/* Sub-Editors conditionally rendered based on toggled slots or legacy fallback (§R3) */}
+          {step.slots || !isLegacy ? (
+            <SlotSubEditorsRenderer
+              step={step}
+              onUpdateStep={handlePatch}
+              onOpenBulkImport={onOpenBulkImport}
+            />
+          ) : (
+            <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]">
+              <CbseLegacyStepEditor
+                step={step}
+                onUpdateStep={handlePatch}
+              />
             </div>
           )}
         </div>

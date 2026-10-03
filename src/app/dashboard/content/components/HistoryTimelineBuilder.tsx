@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layers, Plus, Trash2, ChevronDown, ChevronUp, Clock, Calendar } from 'lucide-react';
+import { Layers, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { TimelineReel, TimelineEpoch, TimelineEvent } from '@/types/curriculumTriad';
-import { calculateQuadCalendar, parseYearToAstro } from '../utils/quadCalendarUtils';
+import { calculateQuadCalendar } from '../utils/quadCalendarUtils';
+import { TimelineEventItem } from './TimelineEventItem';
 
 interface HistoryTimelineBuilderProps {
   timelineReel?: TimelineReel;
@@ -248,46 +249,13 @@ export function HistoryTimelineBuilder({ timelineReel, onChange, activeModuleId 
                         </div>
 
                         {epoch.events.map((ev) => (
-                          <div key={ev.id} className="p-2 bg-black/60 border border-white/5 rounded-lg space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 flex-1">
-                                <Calendar className="w-3 h-3 text-[#d4af37]" />
-                                <input
-                                  type="text"
-                                  value={ev.titleEn}
-                                  onChange={(e) => handleUpdateEvent(epoch.id, ev.id, { titleEn: e.target.value })}
-                                  placeholder="Event Title..."
-                                  className="flex-1 px-2 py-0.5 bg-[#0d0d15] border border-white/5 rounded text-white text-xs"
-                                />
-                                <input
-                                  type="text"
-                                  value={ev.yearAstro}
-                                  onChange={(e) => {
-                                    const parsed = parseYearToAstro(e.target.value);
-                                    if (parsed !== null) handleUpdateEvent(epoch.id, ev.id, { yearAstro: parsed });
-                                  }}
-                                  placeholder="AstroYear"
-                                  className="w-20 px-1 py-0.5 bg-[#0d0d15] border border-white/5 rounded text-white text-[10px] font-mono text-center"
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteEvent(epoch.id, ev.id)}
-                                className="p-1 text-gray-500 hover:text-red-400 ml-2"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                            <div className="flex items-center gap-2 text-[9px] text-gray-500 font-mono">
-                              <span>Greg: {ev.displayYearBceCe}</span>
-                              {ev.displayVikramSamvat && <span>• {ev.displayVikramSamvat}</span>}
-                              {ev.isCurrentModuleAnchor && (
-                                <span className="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded font-bold">
-                                  ANCHOR
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                          <TimelineEventItem
+                            key={ev.id}
+                            event={ev}
+                            epochId={epoch.id}
+                            onUpdateEvent={handleUpdateEvent}
+                            onDeleteEvent={handleDeleteEvent}
+                          />
                         ))}
                       </div>
                     </div>

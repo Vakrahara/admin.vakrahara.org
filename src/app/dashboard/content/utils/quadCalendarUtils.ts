@@ -38,20 +38,20 @@ export function calculateQuadCalendar(yearAstro: number): QuadCalendarResult {
   // 3. Śaka Samvat (Epoch: 78 CE -> astroYear = 78)
   const sakaYear = yearAstro - 78;
   let sakaSamvat: string;
-  if (sakaYear > 0) {
+  if (sakaYear >= 0) {
     sakaSamvat = `${sakaYear} Śaka`;
   } else {
-    const preSaka = 1 - sakaYear;
+    const preSaka = -sakaYear;
     sakaSamvat = `${preSaka} Pre-Śaka`;
   }
 
   // 4. Kali Yuga (Epoch: 3102 BCE -> astroYear = -3101)
   const kaliYear = yearAstro + 3101;
   let kaliYuga: string;
-  if (kaliYear > 0) {
+  if (kaliYear >= 0) {
     kaliYuga = `${kaliYear} Kali`;
   } else {
-    const preKali = 1 - kaliYear;
+    const preKali = -kaliYear;
     kaliYuga = `${preKali} Pre-Kali`;
   }
 
@@ -65,29 +65,40 @@ export function calculateQuadCalendar(yearAstro: number): QuadCalendarResult {
 }
 
 /**
- * Converts human input string (e.g. "1200 BCE", "530 CE", "-1199", "2026") into yearAstro.
+ * Converts human input string (e.g. "1200 BCE", "1200 BC", "1200 B.C.", "1200 B.C.E.", "c. 1200 BCE", "530 CE", "530 AD", "AD 530", "-1199", "2026") into yearAstro.
  */
 export function parseYearToAstro(input: string): number | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  // Direct number
-  const directNum = parseInt(trimmed, 10);
-  if (!isNaN(directNum) && !trimmed.toLowerCase().includes('bce') && !trimmed.toLowerCase().includes('ce')) {
-    return directNum;
-  }
+  // Strip optional historical approximation prefix (e.g. "c.", "ca.", "approx.")
+  const clean = trimmed.replace(/^(?:c\.|ca\.|approx\.?)\s*/i, '').trim();
+  if (!clean) return null;
 
-  // "1200 BCE" or "1200 BC"
-  const bceMatch = trimmed.match(/^(\d+)\s*(?:bce|bc)$/i);
+  // 1. BCE / BC formats evaluated BEFORE direct number parsing
+  // Handles suffix: "1200 BCE", "1200 BC", "1200 B.C.", "1200 B.C.E."
+  const bceSuffixMatch = clean.match(/^(\d+)\s*(?:b\.?c\.?e\.?|b\.?c\.?)$/i);
+  // Handles prefix: "BC 1200", "BCE 1200", "B.C. 1200"
+  const bcePrefixMatch = clean.match(/^(?:b\.?c\.?e\.?|b\.?c\.?)\s*(\d+)$/i);
+  const bceMatch = bceSuffixMatch || bcePrefixMatch;
   if (bceMatch) {
     const bceYear = parseInt(bceMatch[1], 10);
-    return 1 - bceYear;
+    return bceYear === 0 ? 0 : 1 - bceYear;
   }
 
-  // "530 CE" or "530 AD"
-  const ceMatch = trimmed.match(/^(\d+)\s*(?:ce|ad)$/i);
+  // 2. CE / AD formats
+  // Handles suffix: "530 CE", "530 C.E.", "530 AD", "530 A.D."
+  const ceSuffixMatch = clean.match(/^(\d+)\s*(?:c\.?e\.?|a\.?d\.?)$/i);
+  // Handles prefix: "AD 530", "CE 530", "A.D. 530"
+  const cePrefixMatch = clean.match(/^(?:c\.?e\.?|a\.?d\.?)\s*(\d+)$/i);
+  const ceMatch = ceSuffixMatch || cePrefixMatch;
   if (ceMatch) {
     return parseInt(ceMatch[1], 10);
+  }
+
+  // 3. Direct number (e.g. "-1199", "2026", "0", "+500")
+  if (/^[+-]?\s*\d+$/.test(clean)) {
+    return parseInt(clean.replace(/\s+/g, ''), 10);
   }
 
   return null;
