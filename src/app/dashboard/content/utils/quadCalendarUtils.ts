@@ -103,3 +103,23 @@ export function parseYearToAstro(input: string): number | null {
 
   return null;
 }
+
+/**
+ * Automatically calculates formatted display string when both yearAstro and endYearAstro are present.
+ * Formats ranges e.g. "c. 2600–1900 BCE", "320–550 CE", "50 BCE – 50 CE".
+ */
+export function formatDisplayRange(startAstro: number, endAstro: number, isApprox = false): string {
+  const prefix = isApprox ? 'c. ' : '';
+  if (startAstro <= 0 && endAstro <= 0) {
+    const startBce = 1 - startAstro;
+    const endBce = 1 - endAstro;
+    return `${prefix}${startBce}–${endBce} BCE`;
+  }
+  if (startAstro > 0 && endAstro > 0) {
+    return `${prefix}${startAstro}–${endAstro} CE`;
+  }
+  const startStr = startAstro <= 0 ? `${1 - startAstro} BCE` : `${startAstro} CE`;
+  const endStr = endAstro <= 0 ? `${1 - endAstro} BCE` : `${endAstro} CE`;
+  return `${prefix}${startStr} – ${endStr}`;
+}
+

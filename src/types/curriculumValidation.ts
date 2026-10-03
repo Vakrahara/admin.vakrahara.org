@@ -168,6 +168,13 @@ export function validateTimelineReel(
       if (ev.yearAstro < epoch.startYearAstro || ev.yearAstro > epoch.endYearAstro) {
         errors.push({ moduleTitle, field: evPrefix, message: `Event year (${ev.yearAstro}) falls outside epoch range [${epoch.startYearAstro}, ${epoch.endYearAstro}].` });
       }
+      if (ev.isDateRange || (ev.endYearAstro !== undefined && ev.endYearAstro !== null)) {
+        if (ev.endYearAstro === undefined || ev.endYearAstro === null) {
+          errors.push({ moduleTitle, field: `${evPrefix}.endYearAstro`, message: `Date-range event "${ev.titleEn}" requires an end year (endYearAstro).` });
+        } else if (ev.endYearAstro <= ev.yearAstro) {
+          errors.push({ moduleTitle, field: `${evPrefix}.endYearAstro`, message: `Date-range event "${ev.titleEn}" end year (${ev.endYearAstro}) must be strictly greater than start year (${ev.yearAstro}).` });
+        }
+      }
       if (!ev.titleEn?.trim()) {
         errors.push({ moduleTitle, field: `${evPrefix}.titleEn`, message: 'Event English title is required.' });
       }

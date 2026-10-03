@@ -58,6 +58,9 @@ export interface TimelineEvent {
   id: string;                      // e.g. "ev_iron_atranjikhera"
   yearAstro: number;               // Continuous astronomical year (-1199 for 1200 BCE)
   displayYearBceCe: string;        // "c. 1200 BCE"
+  endYearAstro?: number;           // Continuous astronomical year for period end, e.g. -1900 for 1900 BCE
+  isDateRange?: boolean;
+  displayRange?: string;           // e.g. "c. 2600–1900 BCE"
   displayVikramSamvat?: string;    // "1143 Pre-VS"
   displaySakaSamvat?: string;      // "1277 Pre-Śaka"
   displayKaliYuga?: string;        // "1902 Kali"
