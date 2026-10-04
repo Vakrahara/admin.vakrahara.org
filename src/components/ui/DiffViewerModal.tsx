@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { X, ArrowRight } from "lucide-react";
 
 interface DiffViewerModalProps {
@@ -20,6 +20,15 @@ export function DiffViewerModal({
   afterState,
   actionName,
 }: DiffViewerModalProps) {
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const formatJSON = (val: any) => {
@@ -35,13 +44,19 @@ export function DiffViewerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="diff-viewer-modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
       <div className="relative w-full max-w-4xl bg-[#0d0d15] border border-white/10 rounded-2xl p-6 shadow-2xl shadow-black/90 max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-white tracking-tight">{title}</h3>
+              <h3 id="diff-viewer-modal-title" className="text-base font-bold text-white tracking-tight">{title}</h3>
               {actionName && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20">
                   {actionName}
@@ -54,7 +69,7 @@ export function DiffViewerModal({
           </div>
           <button
             onClick={onClose}
-            className="text-white/40 hover:text-white transition-colors p-1"
+            className="text-white/40 hover:text-white transition-colors p-1 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,8 +105,9 @@ export function DiffViewerModal({
         {/* Footer */}
         <div className="mt-4 pt-4 border-t border-white/5 flex justify-end">
           <button
+            type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/15 text-white transition-all"
+            className="px-5 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/15 text-white transition-all cursor-pointer"
           >
             Close Diff View
           </button>

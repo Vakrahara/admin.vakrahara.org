@@ -23,6 +23,15 @@ export function R2SettingsModal({
     setFormConfig(r2Config);
   }, [r2Config]);
 
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,7 +40,13 @@ export function R2SettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="r2-settings-modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
+    >
       <div className="glass-panel bg-[#0d0d15] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl relative animate-scaleUp">
         <button
           type="button"
@@ -41,7 +56,7 @@ export function R2SettingsModal({
           <X className="w-5 h-5" />
         </button>
 
-        <h3 className="text-lg font-bold text-white tracking-wide mb-2 flex items-center gap-2">
+        <h3 id="r2-settings-modal-title" className="text-lg font-bold text-white tracking-wide mb-2 flex items-center gap-2">
           <Settings className="w-5 h-5 text-[#d4af37]" />
           Cloudflare R2 Credentials
         </h3>

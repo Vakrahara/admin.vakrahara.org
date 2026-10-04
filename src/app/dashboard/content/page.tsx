@@ -5,6 +5,7 @@ import { Settings, Loader2 } from 'lucide-react';
 import { R2Config } from '@/lib/r2-upload';
 import { Chapter, Step, Pyq } from '@/types/curriculum';
 import { useCurriculumManager } from './hooks/useCurriculumManager';
+import { patchModuleSteps, createChildModule } from './utils/curriculumMutations';
 import { CbseCurriculumTab } from './components/CbseCurriculumTab';
 import { PaninianSutraVaultTab } from './components/PaninianSutraVaultTab';
 import { ShabdakoshTab } from './components/ShabdakoshTab';
@@ -101,15 +102,44 @@ export default function ContentCMSPage() {
   };
 
   const handleBulkImport = (importedQuestions: any[]) => {
-    if (!activeModule) return;
-    const anveshanaStep = activeModule.steps.find(s => s.type === 'anveshana');
+    if (!chapters) return;
+    let targetChapter = activeChapter;
+    if (!targetChapter && chapters.length > 0) {
+      targetChapter = chapters[0];
+      setSelectedChapterId(targetChapter.id);
+    }
+    if (!targetChapter) return;
+
+    let targetModule = activeModule;
+    if (!targetModule && targetChapter.modules && targetChapter.modules.length > 0) {
+      targetModule = targetChapter.modules[0];
+    }
+
+    if (!targetModule) {
+      const newMod = createChildModule(targetChapter, { discipline: 'all', grade: 'all' });
+      const newStep: Step = { id: `anveshana_${Date.now()}`, type: 'anveshana', pool: importedQuestions, questionPool: importedQuestions, questionsPerAttempt: 5, passingScore: 4 };
+      newMod.steps = [newStep];
+      setChapters(chapters.map(c => c.id === targetChapter!.id ? {
+        ...c,
+        modules: [...(c.modules || []), newMod]
+      } : c));
+      setSelectedModuleId(newMod.id);
+      setIsBulkImportOpen(false);
+      return;
+    }
+
+    const anveshanaStep = (targetModule.steps || []).find(s => s.type === 'anveshana');
+    let nextSteps: Step[];
     if (anveshanaStep) {
       const combined = [...(anveshanaStep.pool || []), ...importedQuestions];
-      updateActiveModuleSteps(activeModule.steps.map(s => s.id === anveshanaStep.id ? { ...s, pool: combined, questionPool: combined } : s));
+      nextSteps = (targetModule.steps || []).map(s => s.id === anveshanaStep.id ? { ...s, pool: combined, questionPool: combined } : s);
     } else {
       const newStep: Step = { id: `anveshana_${Date.now()}`, type: 'anveshana', pool: importedQuestions, questionPool: importedQuestions, questionsPerAttempt: 5, passingScore: 4 };
-      updateActiveModuleSteps([...activeModule.steps, newStep]);
+      nextSteps = [...(targetModule.steps || []), newStep];
     }
+
+    setChapters(patchModuleSteps(chapters, targetChapter.id, targetModule.id, nextSteps));
+    setSelectedModuleId(targetModule.id);
     setIsBulkImportOpen(false);
   };
 
@@ -200,7 +230,7 @@ export default function ContentCMSPage() {
           }
         }}
         isFocusedEditorOpen={isFocusedEditorOpen} onCloseFocusedEditor={() => setIsFocusedEditorOpen(false)}
-        activeStep={activeModule?.steps.find(s => s.id === activeEditStepId) || null}
+        activeStep={activeModule?.steps?.find(s => s.id === activeEditStepId) || null}
         activeModuleTitle={activeModule?.title} activeChapterTitle={activeChapter?.title}
         allSteps={activeModule?.steps || []} onUpdateStep={handleUpdateStep}
         onSelectStepId={setActiveEditStepId} onOpenBulkImport={() => setIsBulkImportOpen(true)}

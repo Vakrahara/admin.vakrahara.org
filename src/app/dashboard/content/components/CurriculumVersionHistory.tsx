@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { History, Eye, RotateCcw, X, ShieldAlert, Check } from 'lucide-react';
 import { DiffViewerModal } from '@/components/ui/DiffViewerModal';
 
@@ -27,6 +27,15 @@ export function CurriculumVersionHistory({
   onRollback
 }: CurriculumVersionHistoryProps) {
   const [selectedRecordForDiff, setSelectedRecordForDiff] = useState<ChangelogRecord | null>(null);
+
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Mock baseline history for demonstration when collection is empty
   const mockChangelogs: ChangelogRecord[] = [
@@ -63,7 +72,13 @@ export function CurriculumVersionHistory({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="curriculum-version-history-title"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      >
         <div className="w-full max-w-3xl bg-[#080C14] border border-slate-800 rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-slate-800">
@@ -72,7 +87,7 @@ export function CurriculumVersionHistory({
                 <History className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h3 id="curriculum-version-history-title" className="text-sm font-bold text-white uppercase tracking-wider">
                   Curriculum Version History &amp; Changelog (§5, SEC-04)
                 </h3>
                 <p className="text-[11px] text-slate-400">
@@ -80,7 +95,7 @@ export function CurriculumVersionHistory({
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-1 text-slate-400 hover:text-white">
+            <button type="button" onClick={onClose} className="p-1 text-slate-400 hover:text-white cursor-pointer" title="Close">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -140,8 +155,9 @@ export function CurriculumVersionHistory({
           {/* Footer */}
           <div className="p-3 border-t border-slate-800 bg-[#03050B] flex justify-end">
             <button
+              type="button"
               onClick={onClose}
-              className="px-4 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-semibold rounded-lg"
+              className="px-4 py-1.5 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-semibold rounded-lg cursor-pointer transition-all"
             >
               Close
             </button>

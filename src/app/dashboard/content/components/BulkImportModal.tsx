@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Upload, FileText, Check, AlertCircle } from 'lucide-react';
 import { AnveshanaQuestion } from '@/types/curriculum';
 import { parseBulkQuestions } from './bulkImportParser';
@@ -16,6 +16,15 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
   const [parsedPreview, setParsedPreview] = useState<AnveshanaQuestion[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -64,17 +73,23 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bulk-import-modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+    >
       <div className="w-full max-w-2xl bg-[#080C14] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <Upload className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <h3 id="bulk-import-modal-title" className="text-sm font-bold text-white uppercase tracking-wider">
               Incremental Question Pool Importer
             </h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-white p-1 cursor-pointer" title="Close modal">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -166,15 +181,17 @@ export function BulkImportModal({ isOpen, onClose, onImport }: BulkImportModalPr
         {/* Footer */}
         <div className="flex items-center justify-end gap-2 p-3 border-t border-slate-800 bg-[#03050B]">
           <button
+            type="button"
             onClick={onClose}
-            className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white"
+            className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer"
           >
             Cancel
           </button>
           <button
+            type="button"
             disabled={parsedPreview.length === 0}
             onClick={handleConfirm}
-            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all"
+            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
           >
             Import {parsedPreview.length} Questions
           </button>

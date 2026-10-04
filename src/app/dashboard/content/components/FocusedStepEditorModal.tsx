@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Layers, Check } from 'lucide-react';
 import { Step, StepType, MediaMode } from '@/types/curriculum';
 import { StepTypeSelector } from './StepTypeSelector';
@@ -31,6 +31,15 @@ export function FocusedStepEditorModal({
   onSelectStep,
   onOpenBulkImport
 }: FocusedStepEditorModalProps) {
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !step) return null;
 
   const currentIndex = allSteps.findIndex(s => s.id === step.id);
@@ -44,7 +53,13 @@ export function FocusedStepEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="focused-step-editor-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+    >
       <div className="glass-panel bg-[#090b12] border border-amber-500/20 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Top Header */}
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between gap-4 bg-[#05070d]">
@@ -58,7 +73,7 @@ export function FocusedStepEditorModal({
                 <span>›</span>
                 <span className="text-gray-300">{moduleTitle || 'Module'}</span>
               </div>
-              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <h2 id="focused-step-editor-title" className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                 <span>Step Focus Editor:</span>
                 <span className="font-mono text-[#d4af37] text-xs sm:text-sm">{step.id}</span>
               </h2>

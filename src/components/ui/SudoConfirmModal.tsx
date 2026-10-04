@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AlertTriangle, Lock, X, Key } from "lucide-react";
 
 interface SudoConfirmModalProps {
@@ -33,6 +33,15 @@ export function SudoConfirmModal({
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Close on Escape key press (unless actively submitting)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen && !isSubmitting) onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isSubmitting, onClose]);
+
   if (!isOpen) return null;
 
   const targetKeyword = requiredText || (isDangerous && !requirePassword ? "CONFIRM" : "");
@@ -61,13 +70,19 @@ export function SudoConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sudo-confirm-modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
       <div className="relative w-full max-w-md bg-[#0e0e17] border border-white/10 rounded-2xl p-6 shadow-2xl shadow-black/80">
         {/* Close Button */}
         <button
           onClick={onClose}
           disabled={isSubmitting}
-          className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors disabled:opacity-50"
+          className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors disabled:opacity-50 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -90,7 +105,7 @@ export function SudoConfirmModal({
             )}
           </div>
           <div>
-            <h3 className="text-base font-bold text-white tracking-tight">{title}</h3>
+            <h3 id="sudo-confirm-modal-title" className="text-base font-bold text-white tracking-tight">{title}</h3>
             <span className="text-[11px] text-white/40 uppercase tracking-widest font-mono">
               Sudo Verification Required
             </span>

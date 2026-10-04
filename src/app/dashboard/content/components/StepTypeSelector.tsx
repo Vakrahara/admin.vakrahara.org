@@ -1,75 +1,33 @@
 'use client';
 
 import React from 'react';
-import { Video, Sparkles, Brain, FileText, Play, HelpCircle, Landmark } from 'lucide-react';
+import { 
+  Video, 
+  Sparkles, 
+  Brain, 
+  FileText, 
+  Play, 
+  HelpCircle, 
+  Landmark 
+} from 'lucide-react';
 import { StepType } from '@/types/curriculum';
 
 interface StepTypeOption {
   type: StepType;
   label: string;
+  shortLabel: string;
   badge: 'MODERN' | 'LEGACY';
-  description: string;
   icon: React.ElementType;
-  accent: string;
 }
 
 const STEP_OPTIONS: StepTypeOption[] = [
-  {
-    type: 'video_simulation',
-    label: 'Video & Simulation',
-    badge: 'MODERN',
-    description: 'Content-aware media area with R2 video streaming, WebGL simulation, 3-locale transcripts, and Gurutatva IKS insights.',
-    icon: Video,
-    accent: 'border-amber-500/50 text-amber-400 bg-amber-500/10'
-  },
-  {
-    type: 'saraswati',
-    label: 'Saraswati सयुक्तिक Builder',
-    badge: 'MODERN',
-    description: 'Native Compose progressive definition assembler with socratic mini-steps, clues, and gold shimmer reveal.',
-    icon: Sparkles,
-    accent: 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10'
-  },
-  {
-    type: 'anveshana',
-    label: 'Anveshana Assessment',
-    badge: 'MODERN',
-    description: '30-question pool sampling, randomized MCQs, 80% passing gate, option permutations, and offline validation.',
-    icon: Brain,
-    accent: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
-  },
-  {
-    type: 'concept',
-    label: 'Concept Note (Legacy)',
-    badge: 'LEGACY',
-    description: 'Static bilingual reading text card with optional image illustration.',
-    icon: FileText,
-    accent: 'border-slate-700 text-slate-400 bg-slate-900/40'
-  },
-  {
-    type: 'simulation',
-    label: 'Simulation Canvas (Legacy)',
-    badge: 'LEGACY',
-    description: 'ACE simulation iframe without embedded video player or transcript.',
-    icon: Play,
-    accent: 'border-slate-700 text-slate-400 bg-slate-900/40'
-  },
-  {
-    type: 'predict_quiz',
-    label: 'Predict Quiz (Legacy)',
-    badge: 'LEGACY',
-    description: 'Single-question MCQ check with formative hint sheet.',
-    icon: HelpCircle,
-    accent: 'border-slate-700 text-slate-400 bg-slate-900/40'
-  },
-  {
-    type: 'heritage_connection',
-    label: 'Heritage Connection (Legacy)',
-    badge: 'LEGACY',
-    description: 'Sanskrit sutra card linking modern science to ancient Indian scientific insights.',
-    icon: Landmark,
-    accent: 'border-slate-700 text-slate-400 bg-slate-900/40'
-  }
+  { type: 'video_simulation', label: 'Video & Simulation', shortLabel: 'Video & Sim', badge: 'MODERN', icon: Video },
+  { type: 'saraswati', label: 'Saraswati सयुक्तिक', shortLabel: 'Saraswati', badge: 'MODERN', icon: Sparkles },
+  { type: 'anveshana', label: 'Anveshana (30-Q)', shortLabel: 'Anveshana', badge: 'MODERN', icon: Brain },
+  { type: 'concept', label: 'Concept Note', shortLabel: 'Concept', badge: 'LEGACY', icon: FileText },
+  { type: 'simulation', label: 'Lab Simulation', shortLabel: 'Lab Sim', badge: 'LEGACY', icon: Play },
+  { type: 'predict_quiz', label: 'Predict Quiz', shortLabel: 'Quiz', badge: 'LEGACY', icon: HelpCircle },
+  { type: 'heritage_connection', label: 'Heritage Sutra', shortLabel: 'Heritage', badge: 'LEGACY', icon: Landmark }
 ];
 
 interface StepTypeSelectorProps {
@@ -79,56 +37,76 @@ interface StepTypeSelectorProps {
 }
 
 export function StepTypeSelector({ currentType, onTypeChange, disabled = false }: StepTypeSelectorProps) {
+  const modernOptions = STEP_OPTIONS.filter(o => o.badge === 'MODERN');
+  const legacyOptions = STEP_OPTIONS.filter(o => o.badge === 'LEGACY');
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Pedagogical Step Architecture
+        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-mono">
+          Pedagogical Architecture
         </label>
-        <span className="text-[11px] text-amber-400/80 font-mono">
+        <span className="text-[10px] text-[#d4af37] font-mono">
           Canonical Specification (§6)
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
-        {STEP_OPTIONS.map((opt) => {
+      {/* Segmented Pill Selector Strip */}
+      <div role="group" aria-label="Pedagogical Architecture" className="flex flex-wrap items-center gap-1.5 p-1 bg-[#05070d] border border-white/5 rounded-xl">
+        {/* Modern Segment */}
+        <span className="text-[9px] uppercase font-bold text-amber-400/80 px-1.5 font-mono">
+          Modern:
+        </span>
+        {modernOptions.map((opt) => {
           const isSelected = currentType === opt.type;
-          const IconComponent = opt.icon;
+          const IconComp = opt.icon;
 
           return (
             <button
               key={opt.type}
               type="button"
               disabled={disabled}
+              aria-pressed={isSelected}
               onClick={() => onTypeChange(opt.type)}
-              className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 isSelected
-                  ? 'border-amber-400 bg-amber-500/10 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/50'
-                  : 'border-slate-800 bg-[#0B0F19] hover:border-slate-700 hover:bg-[#0E1424]'
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm ring-1 ring-amber-500/30'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+              } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+              title={opt.label}
             >
-              <div className="flex items-start justify-between mb-1.5">
-                <div className={`p-1.5 rounded-lg border ${opt.accent}`}>
-                  <IconComponent className="w-4 h-4" />
-                </div>
-                <span
-                  className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-bold tracking-wide ${
-                    opt.badge === 'MODERN'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      : 'bg-slate-800 text-slate-400 border border-slate-700'
-                  }`}
-                >
-                  {opt.badge}
-                </span>
-              </div>
+              <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-gray-500'}`} />
+              <span>{opt.shortLabel}</span>
+            </button>
+          );
+        })}
 
-              <div className="font-semibold text-xs text-white mb-1">
-                {opt.label}
-              </div>
+        <div className="h-4 w-[1px] bg-white/10 mx-1 hidden sm:block" />
 
-              <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
-                {opt.description}
-              </p>
+        {/* Legacy Segment */}
+        <span className="text-[9px] uppercase font-bold text-gray-500 px-1.5 font-mono">
+          Legacy:
+        </span>
+        {legacyOptions.map((opt) => {
+          const isSelected = currentType === opt.type;
+          const IconComp = opt.icon;
+
+          return (
+            <button
+              key={opt.type}
+              type="button"
+              disabled={disabled}
+              aria-pressed={isSelected}
+              onClick={() => onTypeChange(opt.type)}
+              className={`px-2 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                isSelected
+                  ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent'
+              } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+              title={opt.label}
+            >
+              <IconComp className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
+              <span>{opt.shortLabel}</span>
             </button>
           );
         })}
