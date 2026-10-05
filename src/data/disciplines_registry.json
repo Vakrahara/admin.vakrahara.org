@@ -5,7 +5,8 @@
     "nameHi": "भौतिक विज्ञान",
     "icon": "⚛️",
     "colorHex": "#0EA5E9",
-    "order": 1
+    "order": 1,
+    "shortCode": "phys"
   },
   {
     "id": "disc_rasayan",
@@ -13,7 +14,8 @@
     "nameHi": "रसायन शास्त्र",
     "icon": "⚗️",
     "colorHex": "#EF4444",
-    "order": 2
+    "order": 2,
+    "shortCode": "chem"
   },
   {
     "id": "disc_jiva_vigyan",
@@ -21,7 +23,8 @@
     "nameHi": "जीव विज्ञान",
     "icon": "🧬",
     "colorHex": "#10B981",
-    "order": 3
+    "order": 3,
+    "shortCode": "bio"
   },
   {
     "id": "disc_ganita",
@@ -29,7 +32,8 @@
     "nameHi": "गणितम्",
     "icon": "∑",
     "colorHex": "#3B82F6",
-    "order": 4
+    "order": 4,
+    "shortCode": "math"
   },
   {
     "id": "disc_sanganak",
@@ -37,7 +41,8 @@
     "nameHi": "सङ्गणक विज्ञान",
     "icon": "💻",
     "colorHex": "#06B6D4",
-    "order": 5
+    "order": 5,
+    "shortCode": "cs"
   },
   {
     "id": "disc_data_science",
@@ -45,7 +50,8 @@
     "nameHi": "सांख्यिकी",
     "icon": "📊",
     "colorHex": "#14B8A6",
-    "order": 6
+    "order": 6,
+    "shortCode": "ds"
   },
   {
     "id": "disc_kritrim_buddhi",
@@ -53,7 +59,8 @@
     "nameHi": "कृत्रिम बुद्धि",
     "icon": "🧠",
     "colorHex": "#D946EF",
-    "order": 7
+    "order": 7,
+    "shortCode": "ai"
   },
   {
     "id": "disc_darshana",
@@ -61,7 +68,8 @@
     "nameHi": "दर्शन",
     "icon": "◎",
     "colorHex": "#A855F7",
-    "order": 8
+    "order": 8,
+    "shortCode": "darsh"
   },
   {
     "id": "disc_sanskrit",
@@ -69,7 +77,8 @@
     "nameHi": "वाक् सिद्धि",
     "icon": "ॐ",
     "colorHex": "#D4AF37",
-    "order": 9
+    "order": 9,
+    "shortCode": "skt"
   },
   {
     "id": "disc_khagol",
@@ -77,31 +86,8 @@
     "nameHi": "खगोल शास्त्र",
     "icon": "✦",
     "colorHex": "#6366F1",
-    "order": 10
-  },
-  {
-    "id": "disc_arthashastra",
-    "nameEn": "Arthaśāstra (Economics)",
-    "nameHi": "अर्थशास्त्र",
-    "icon": "💰",
-    "colorHex": "#FBBF24",
-    "order": 11
-  },
-  {
-    "id": "disc_raja_niti",
-    "nameEn": "Rāja Nīti (Civics & Law)",
-    "nameHi": "राजनीति",
-    "icon": "⚖️",
-    "colorHex": "#EC4899",
-    "order": 12
-  },
-  {
-    "id": "disc_bhugol",
-    "nameEn": "Bhūgol (Geography)",
-    "nameHi": "भूगोल",
-    "icon": "🌍",
-    "colorHex": "#22C55E",
-    "order": 13
+    "order": 10,
+    "shortCode": "astro"
   },
   {
     "id": "disc_itihasa",
@@ -109,6 +95,34 @@
     "nameHi": "इतिहास",
     "icon": "📜",
     "colorHex": "#F59E0B",
-    "order": 14
+    "order": 11,
+    "shortCode": "hist"
+  },
+  {
+    "id": "disc_samajik",
+    "nameEn": "Sāmājik Vigyān (Social Science)",
+    "nameHi": "सामाजिक विज्ञान",
+    "icon": "🏛️",
+    "colorHex": "#FBBF24",
+    "order": 12,
+    "shortCode": "soc"
+  },
+  {
+    "id": "disc_rajniti",
+    "nameEn": "Rāja Nīti (Civics & Law)",
+    "nameHi": "राजनीति",
+    "icon": "⚖️",
+    "colorHex": "#EC4899",
+    "order": 13,
+    "shortCode": "pol"
+  },
+  {
+    "id": "disc_yoga",
+    "nameEn": "Yoga Śāstra (Yoga & Well-being)",
+    "nameHi": "योग शास्त्र",
+    "icon": "🧘",
+    "colorHex": "#22C55E",
+    "order": 14,
+    "shortCode": "yoga"
   }
 ]

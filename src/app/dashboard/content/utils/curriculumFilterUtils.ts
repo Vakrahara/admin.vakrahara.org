@@ -88,13 +88,21 @@ export const BRANCH_TO_DISCIPLINE: Record<string, string> = {
   commerce: 'disc_arthashastra',
   finance: 'disc_arthashastra',
 
-  civics: 'disc_raja_niti',
-  law: 'disc_raja_niti',
-  political_science: 'disc_raja_niti',
-  polsci: 'disc_raja_niti',
-  pol_science: 'disc_raja_niti',
-  polity: 'disc_raja_niti',
-  raja_niti: 'disc_raja_niti',
+  civics: 'disc_rajniti',
+  law: 'disc_rajniti',
+  political_science: 'disc_rajniti',
+  polsci: 'disc_rajniti',
+  pol_science: 'disc_rajniti',
+  polity: 'disc_rajniti',
+  raja_niti: 'disc_rajniti',
+  rajniti: 'disc_rajniti',
+  pol: 'disc_rajniti',
+
+  samajik: 'disc_samajik',
+  social_science: 'disc_samajik',
+  soc: 'disc_samajik',
+
+  yoga: 'disc_yoga',
 
   geography: 'disc_bhugol',
   geo: 'disc_bhugol',

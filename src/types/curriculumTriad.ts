@@ -137,6 +137,7 @@ export interface DisciplineRegistryEntry {
   icon: string;                    // Discipline icon emoji or symbol
   colorHex: string;                // Hex chromatic identifier
   order: number;                   // Display sequence order
+  shortCode: string;               // Canonical short abbreviation, e.g. "chem" (§R1)
 }
 
 export interface ModuleDisciplineMetadata {
