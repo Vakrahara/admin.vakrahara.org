@@ -3,13 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { Layers } from 'lucide-react';
 import { Step } from '@/types/curriculum';
+import { SimulationUploadModal } from './SimulationUploadModal';
 
 interface SimulationSlotEditorProps {
   step: Step;
   onChange: (patch: Partial<Step>) => void;
+  initialDisciplineId?: string;
 }
 
-export function SimulationSlotEditor({ step, onChange }: SimulationSlotEditorProps) {
+export function SimulationSlotEditor({ step, onChange, initialDisciplineId }: SimulationSlotEditorProps) {
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [rawParams, setRawParams] = useState<string>(
     step.params ? JSON.stringify(step.params) : '{}'
   );
@@ -66,12 +69,22 @@ export function SimulationSlotEditor({ step, onChange }: SimulationSlotEditorPro
       <div className="space-y-3 p-3 rounded-lg border border-slate-800/60 bg-[#0B0F19]">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="text-[11px] text-slate-400 block mb-1">Simulation ID</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] text-slate-400 block">Simulation ID</label>
+              <button
+                type="button"
+                onClick={() => setIsUploadModalOpen(true)}
+                className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                title="Upload package to Amrtam CDN"
+              >
+                <span>📤 Upload Simulation</span>
+              </button>
+            </div>
             <input
               type="text"
               value={step.simulationId || ''}
               onChange={(e) => onChange({ simulationId: e.target.value })}
-              placeholder="e.g. ray_optics, what_is_a_wave"
+              placeholder="e.g. sim_phys_optics_ray_optics"
               className="w-full text-xs font-mono bg-[#03050B] border border-slate-800 rounded-lg px-3 py-2 text-white focus:border-emerald-400 outline-none"
             />
           </div>
@@ -103,6 +116,16 @@ export function SimulationSlotEditor({ step, onChange }: SimulationSlotEditorPro
           </div>
         </div>
       </div>
+
+      <SimulationUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        initialDisciplineId={initialDisciplineId}
+        onSimulationUploaded={(simId) => {
+          onChange({ simulationId: simId });
+          setIsUploadModalOpen(false);
+        }}
+      />
     </div>
   );
 }
