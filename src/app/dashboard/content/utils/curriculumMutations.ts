@@ -1,4 +1,6 @@
 import { Chapter, Module, Step } from '@/types/curriculum';
+import { formatModuleId } from '@/lib/semanticId';
+import { getShortCode } from '@/lib/disciplinesRegistry';
 
 export function reorderChapterList(chapters: Chapter[], index: number, direction: 'up' | 'down'): Chapter[] {
   const targetIndex = direction === 'up' ? index - 1 : index + 1;
@@ -81,11 +83,15 @@ export function createFilteredChapter(filters: { board: string; grade: string; d
 }
 
 export function createChildModule(targetChapter: Chapter, filters: { discipline: string; grade: string }): Module {
-  const newModId = `module_${Date.now()}`;
   const inheritedDisc = targetChapter.disciplineIds?.[0]
     || (filters.discipline !== 'all' ? filters.discipline : 'disc_bhautik');
   const inheritedGrades = targetChapter.applicableGrades
     || (targetChapter.grade ? [targetChapter.grade] : (filters.grade !== 'all' ? [Number(filters.grade)] : [10]));
+  const newModId = formatModuleId(
+    getShortCode(inheritedDisc),
+    'core',
+    `m${(targetChapter.modules?.length || 0) + 1}`
+  );
 
   return {
     id: newModId,

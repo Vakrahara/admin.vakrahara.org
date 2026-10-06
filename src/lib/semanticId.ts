@@ -85,3 +85,17 @@ export function validateSemanticId(
   }
   return { valid: true };
 }
+
+export function formatModuleId(shortCode: string, domain: string, concept: string): string {
+  const disc = shortCode.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  const cleanDomain = domain.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+  const cleanConcept = concept.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+  return formatSemanticId('mod', `${disc}_${cleanDomain}`, cleanConcept);
+}
+
+export function formatSimulationId(shortCode: string, domain: string, concept: string): string {
+  const disc = shortCode.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+  const cleanDomain = domain.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+  const cleanConcept = concept.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+  return formatSemanticId('sim', `${disc}_${cleanDomain}`, cleanConcept);
+}
