@@ -4,22 +4,30 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { getDisciplineRegistry, getShortCode } from '@/lib/disciplinesRegistry';
 import { formatSimulationId, isValidSemanticId } from '@/lib/semanticId';
+import { Chapter } from '@/types/curriculum';
 import { uploadSimulationPackage, SimulationFileItem } from '../utils/simulationUploader';
+import { validateSimulationHTML, SimulationValidationResult } from '../utils/simulationValidator';
+import { extractAllSimulationIds } from '../utils/simulationLibraryData';
 import { SimulationPreviewFrame } from './SimulationPreviewFrame';
 import { SimulationDropzone } from './SimulationDropzone';
+import { SimulationValidationCard } from './SimulationValidationCard';
 
 export interface SimulationUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSimulationUploaded: (simId: string) => void;
   initialDisciplineId?: string;
+  chapters?: Chapter[];
+  knownSimIds?: string[];
 }
 
 export function SimulationUploadModal({
   isOpen,
   onClose,
   onSimulationUploaded,
-  initialDisciplineId
+  initialDisciplineId,
+  chapters,
+  knownSimIds
 }: SimulationUploadModalProps) {
   const disciplines = getDisciplineRegistry();
   const defaultDisc = initialDisciplineId || disciplines[0]?.id || 'disc_bhautik';
@@ -30,6 +38,8 @@ export function SimulationUploadModal({
   const [files, setFiles] = useState<SimulationFileItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [validation, setValidation] = useState<SimulationValidationResult | null>(null);
+  const [allowBypass, setAllowBypass] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,6 +49,8 @@ export function SimulationUploadModal({
       setFiles([]);
       setUploadError(null);
       setIsUploading(false);
+      setValidation(null);
+      setAllowBypass(false);
     }
   }, [isOpen, initialDisciplineId, defaultDisc]);
 
@@ -54,6 +66,17 @@ export function SimulationUploadModal({
   const previewId = formatSimulationId(shortCode, domain, concept);
   const isIdValid = Boolean(domain.trim()) && Boolean(concept.trim()) && isValidSemanticId(previewId, 'sim');
 
+  const knownIds = useMemo(() => {
+    const set = extractAllSimulationIds(chapters);
+    if (knownSimIds) knownSimIds.forEach((id) => set.add(id.trim()));
+    return set;
+  }, [chapters, knownSimIds]);
+
+  const isIdInUse = useMemo(() => {
+    if (!previewId || !isIdValid) return false;
+    return knownIds.has(previewId.trim());
+  }, [previewId, isIdValid, knownIds]);
+
   const entryFile = useMemo(() => {
     if (files.length === 0) return undefined;
     return (
@@ -63,8 +86,29 @@ export function SimulationUploadModal({
     );
   }, [files]);
 
+  useEffect(() => {
+    if (!entryFile) {
+      setValidation(null);
+      setAllowBypass(false);
+      return;
+    }
+    let cancelled = false;
+    const totalSize = files.reduce((acc, f) => acc + f.size, 0);
+    entryFile.text().then((text) => {
+      if (cancelled) return;
+      const res = validateSimulationHTML(text, totalSize);
+      setValidation(res);
+      setAllowBypass(false);
+    }).catch(() => {
+      if (!cancelled) setValidation(null);
+    });
+    return () => { cancelled = true; };
+  }, [entryFile, files]);
+
+  const hasBlockingErrors = Boolean(validation && !validation.valid && !allowBypass);
+
   const handleUpload = async () => {
-    if (!isIdValid || files.length === 0 || isUploading) return;
+    if (!isIdValid || files.length === 0 || isUploading || hasBlockingErrors) return;
     setIsUploading(true);
     setUploadError(null);
     try {
@@ -109,7 +153,7 @@ export function SimulationUploadModal({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-6 text-xs">
+        <div className="p-6 overflow-y-auto space-y-5 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Discipline</label>
@@ -165,6 +209,13 @@ export function SimulationUploadModal({
             </div>
           </div>
 
+          <SimulationValidationCard
+            validation={validation}
+            isIdInUse={isIdInUse}
+            allowBypass={allowBypass}
+            onToggleBypass={setAllowBypass}
+          />
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <SimulationDropzone
               files={files}
@@ -192,7 +243,7 @@ export function SimulationUploadModal({
           <button
             type="button"
             onClick={handleUpload}
-            disabled={!isIdValid || files.length === 0 || isUploading}
+            disabled={!isIdValid || files.length === 0 || isUploading || hasBlockingErrors}
             className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed text-black font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 min-h-[38px]"
           >
             {isUploading ? (

@@ -6,7 +6,8 @@ import {
   Step, 
   StepSlotKey, 
   getEffectiveStepSlots, 
-  getEffectiveSlotOrder 
+  getEffectiveSlotOrder,
+  Chapter
 } from '@/types/curriculum';
 import { VideoSlotEditor } from './VideoSlotEditor';
 import { SimulationSlotEditor } from './SimulationSlotEditor';
@@ -19,12 +20,14 @@ interface SlotSubEditorsRendererProps {
   step: Step;
   onUpdateStep: (patch: Partial<Step>) => void;
   onOpenBulkImport?: () => void;
+  chapters?: Chapter[];
 }
 
 export function SlotSubEditorsRenderer({
   step,
   onUpdateStep,
-  onOpenBulkImport
+  onOpenBulkImport,
+  chapters
 }: SlotSubEditorsRendererProps) {
   const effectiveSlots = getEffectiveStepSlots(step);
   const effectiveOrder = getEffectiveSlotOrder(step);
@@ -63,6 +66,7 @@ export function SlotSubEditorsRenderer({
             key="slot_simulation"
             step={step}
             onChange={onUpdateStep}
+            chapters={chapters}
           />
         );
       case 'saraswati':

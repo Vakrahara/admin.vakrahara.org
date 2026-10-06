@@ -2,17 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { Layers } from 'lucide-react';
-import { Step } from '@/types/curriculum';
+import { Step, Chapter } from '@/types/curriculum';
 import { SimulationUploadModal } from './SimulationUploadModal';
+import { SimulationLibrary } from './SimulationLibrary';
 
 interface SimulationSlotEditorProps {
   step: Step;
   onChange: (patch: Partial<Step>) => void;
   initialDisciplineId?: string;
+  chapters?: Chapter[];
 }
 
-export function SimulationSlotEditor({ step, onChange, initialDisciplineId }: SimulationSlotEditorProps) {
+export function SimulationSlotEditor({
+  step,
+  onChange,
+  initialDisciplineId,
+  chapters
+}: SimulationSlotEditorProps) {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [rawParams, setRawParams] = useState<string>(
     step.params ? JSON.stringify(step.params) : '{}'
   );
@@ -71,14 +79,24 @@ export function SimulationSlotEditor({ step, onChange, initialDisciplineId }: Si
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-[11px] text-slate-400 block">Simulation ID</label>
-              <button
-                type="button"
-                onClick={() => setIsUploadModalOpen(true)}
-                className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium cursor-pointer transition-colors"
-                title="Upload package to Amrtam CDN"
-              >
-                <span>📤 Upload Simulation</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLibraryOpen(true)}
+                  className="text-[10px] text-[#d4af37] hover:text-[#f3d069] flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                  title="Browse registered simulation library"
+                >
+                  <span>📚 Library</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                  title="Upload package to Amrtam CDN"
+                >
+                  <span>📤 Upload Simulation</span>
+                </button>
+              </div>
             </div>
             <input
               type="text"
@@ -117,10 +135,25 @@ export function SimulationSlotEditor({ step, onChange, initialDisciplineId }: Si
         </div>
       </div>
 
+      <SimulationLibrary
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        chapters={chapters}
+        onSelectSimulation={(simId) => {
+          onChange({ simulationId: simId });
+          setIsLibraryOpen(false);
+        }}
+        onOpenUpload={() => {
+          setIsLibraryOpen(false);
+          setIsUploadModalOpen(true);
+        }}
+      />
+
       <SimulationUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         initialDisciplineId={initialDisciplineId}
+        chapters={chapters}
         onSimulationUploaded={(simId) => {
           onChange({ simulationId: simId });
           setIsUploadModalOpen(false);
