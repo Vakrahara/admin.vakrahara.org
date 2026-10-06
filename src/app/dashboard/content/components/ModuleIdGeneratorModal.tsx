@@ -68,8 +68,8 @@ export function ModuleIdGeneratorModal({
 
   const shortCode = getShortCode(disciplineId);
   const previewId = formatModuleId(shortCode, domain, concept);
-  const hasValidDomain = /[a-z0-9]/.test(domain);
-  const hasValidConcept = /[a-z0-9]/.test(concept);
+  const hasValidDomain = /[a-z0-9]/i.test(domain);
+  const hasValidConcept = /[a-z0-9]/i.test(concept);
   const isFormatValid = hasValidDomain && hasValidConcept && isValidSemanticId(previewId, 'mod') && SEMANTIC_ID_REGEX.test(previewId) && previewId.split('_').length >= 4;
   const isDuplicate = (activeChapter.modules || []).some(m => m.id === previewId && m.id !== activeModule.id);
   const canApply = isFormatValid && !isDuplicate;

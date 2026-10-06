@@ -26,9 +26,12 @@ export function getDisciplineById(id: string): DisciplineRegistryEntry | undefin
   return undefined;
 }
 
-export function getShortCode(disciplineId: string): string {
+export function getShortCode(disciplineId?: string): string {
+  if (!disciplineId || typeof disciplineId !== 'string') return 'gen';
   const discipline = getDisciplineById(disciplineId);
-  return discipline?.shortCode || disciplineId.replace(/^disc_/, '').slice(0, 4);
+  if (discipline?.shortCode) return discipline.shortCode;
+  const stripped = disciplineId.replace(/^disc_/, '').replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 4);
+  return stripped || 'gen';
 }
 
 export function registerDisciplines(entries: DisciplineRegistryEntry[]): void {

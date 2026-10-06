@@ -10,6 +10,13 @@ import { validateCurriculum } from '../utils/curriculumValidation';
 import { executePublishCurriculum } from '../utils/curriculumPublisher';
 import { normalizeCurriculumData } from '../utils/curriculumNormalize';
 import { 
+  readLocalDraft, 
+  writeLocalDraft, 
+  removeLocalDraft, 
+  exportChaptersJson, 
+  saveDraftRemote 
+} from '../utils/curriculumDraftStorage';
+import { 
   reorderChapterList, 
   reorderModuleList, 
   reorderStepList, 
@@ -38,21 +45,13 @@ export function useCurriculumManager(r2Config: R2Config) {
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('vakrahara_cbse_draft_v2');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const normalized = normalizeCurriculumData(parsed);
-          setChapters(normalized);
-          selectDefaults(normalized);
-          setHasUnsavedDraft(true);
-          setLastSyncTime(new Date().toLocaleTimeString());
-          return;
-        } catch (e) {
-          console.error('Failed to parse draft on mount', e);
-        }
-      }
+    const saved = readLocalDraft();
+    if (saved) {
+      setChapters(saved);
+      selectDefaults(saved);
+      setHasUnsavedDraft(true);
+      setLastSyncTime(new Date().toLocaleTimeString());
+      return;
     }
     const normalizedData = normalizeCurriculumData(canonicalCurriculumData as any);
     setChapters(normalizedData);
@@ -121,48 +120,29 @@ export function useCurriculumManager(r2Config: R2Config) {
     setCurriculumSource('canonical');
     setLastSyncTime(new Date().toLocaleTimeString());
     setPublishStatus('success');
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('vakrahara_cbse_draft_v2', JSON.stringify(normalized));
-      setHasUnsavedDraft(false);
-    }
+    writeLocalDraft(normalized);
+    setHasUnsavedDraft(false);
     setTimeout(() => setPublishStatus('idle'), 4000);
   };
 
   const handleRestoreDraft = () => {
-    if (typeof window !== 'undefined') {
-      const savedDraft = localStorage.getItem('vakrahara_cbse_draft_v2');
-      if (savedDraft) {
-        try {
-          const parsed = JSON.parse(savedDraft);
-          const normalized = normalizeCurriculumData(parsed);
-          setChapters(normalized);
-          selectDefaults(normalized);
-          setHasUnsavedDraft(false);
-          setPublishStatus('success');
-          setTimeout(() => setPublishStatus('idle'), 3000);
-        } catch (e) {
-          console.error('Failed to parse draft:', e);
-        }
-      }
+    const saved = readLocalDraft();
+    if (saved) {
+      setChapters(saved);
+      selectDefaults(saved);
+      setHasUnsavedDraft(false);
+      setPublishStatus('success');
+      setTimeout(() => setPublishStatus('idle'), 3000);
     }
   };
 
   const handleDiscardDraft = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('vakrahara_cbse_draft_v2');
-      setHasUnsavedDraft(false);
-    }
+    removeLocalDraft();
+    setHasUnsavedDraft(false);
   };
 
   const handleExportJson = () => {
-    if (!chapters) return;
-    const blob = new Blob([JSON.stringify(chapters, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `amrtam_cbse_chapters_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (chapters) exportChaptersJson(chapters);
   };
 
   const handleImportJson = (imported: Chapter[]) => {
@@ -170,10 +150,8 @@ export function useCurriculumManager(r2Config: R2Config) {
     setChapters(normalized);
     selectDefaults(normalized);
     setLastSyncTime(new Date().toLocaleTimeString());
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('vakrahara_cbse_draft_v2', JSON.stringify(normalized));
-      setHasUnsavedDraft(false);
-    }
+    writeLocalDraft(normalized);
+    setHasUnsavedDraft(false);
   };
 
   const handleSaveDraft = async () => {
@@ -183,23 +161,8 @@ export function useCurriculumManager(r2Config: R2Config) {
     setPublishErrorMessage('');
 
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('vakrahara_cbse_draft_v2', JSON.stringify(chapters));
-      }
-      const token = pb.authStore.token;
-      const authHeader = token ? (token.startsWith('Bearer ') ? token : `Bearer ${token}`) : '';
-      const res = await fetch('https://pb.vakrahara.org/api/amritam/admin/curriculum/save-draft', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authHeader ? { 'Authorization': authHeader } : {})
-        },
-        body: JSON.stringify({ payload: chapters })
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || errData.detail || `Server returned HTTP ${res.status}`);
-      }
+      writeLocalDraft(chapters);
+      await saveDraftRemote(chapters, pb.authStore.token);
       setHasUnsavedDraft(false);
       setPublishSuccessMessage('Draft changes successfully saved to PocketBase database!');
       setPublishStatus('success');

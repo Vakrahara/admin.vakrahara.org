@@ -82,6 +82,15 @@ describe('TICKET-03: Disciplines Registry Short Codes', () => {
     const code = getShortCode('disc_quantum_computing');
     assert.equal(code, 'quan');
   });
+
+  it('safely handles undefined, null, empty, or non-alphanumeric discipline IDs without crashing', () => {
+    assert.equal(getShortCode(undefined as any), 'gen');
+    assert.equal(getShortCode(null as any), 'gen');
+    assert.equal(getShortCode(''), 'gen');
+    assert.equal(getShortCode('disc_'), 'gen');
+    assert.equal(getShortCode('---'), 'gen');
+    assert.equal(getShortCode('   '), 'gen');
+  });
 });
 
 describe('TICKET-03: Curriculum Mutations createChildModule (§R2)', () => {
