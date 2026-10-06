@@ -13,6 +13,7 @@ interface FocusedStepEditorModalProps {
   step: Step | null;
   moduleTitle?: string;
   chapterTitle?: string;
+  moduleId?: string;
   allSteps: Step[];
   onClose: () => void;
   onUpdateStep: (updatedStep: Step) => void;
@@ -25,6 +26,7 @@ export function FocusedStepEditorModal({
   step,
   moduleTitle,
   chapterTitle,
+  moduleId,
   allSteps,
   onClose,
   onUpdateStep,
@@ -162,6 +164,7 @@ export function FocusedStepEditorModal({
               step={step}
               onUpdateStep={handlePatch}
               onOpenBulkImport={onOpenBulkImport}
+              moduleId={moduleId}
             />
           ) : (
             <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]">

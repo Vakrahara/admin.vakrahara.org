@@ -51,9 +51,10 @@ export function CbseCurriculumTab({
     activeEditStepId, setActiveEditStepId, isLoadingCbse, cbseLoadError,
     curriculumSource, isPublishing, isSavingDraft,
     publishStatus, publishSuccessMessage, publishErrorMessage, validationErrors, publishCooldown,
-    hasUnsavedDraft, lastSyncTime, activeChapter, activeModule,
+    hasUnsavedDraft, lastSyncTime, activeChapter, activeModule, isDirty,
     loadCbseData, handleSeedCanonical, handleRestoreDraft, handleDiscardDraft,
-    handleExportJson, handleImportJson, handleSaveDraft, handlePublishCbse,
+    handleDiscardChanges, handleExportJson, handleImportJson, handleSaveDraft,
+    handleExplicitSave, handlePublishCbse,
     moveChapter, moveModule, moveStep, updateActiveChapter,
     updateActiveModule, updateActiveModuleSteps
   } = manager;
@@ -194,6 +195,10 @@ export function CbseCurriculumTab({
                   activeChapter={activeChapter}
                   activeModule={activeModule}
                   activeEditStepId={activeEditStepId}
+                  isDirty={isDirty}
+                  isSaving={isSavingDraft}
+                  onSave={handleExplicitSave}
+                  onDiscard={handleDiscardChanges}
                   onUpdateModule={updateActiveModule}
                   onUpdateModuleSteps={updateActiveModuleSteps}
                   onSetActiveEditStepId={setActiveEditStepId}

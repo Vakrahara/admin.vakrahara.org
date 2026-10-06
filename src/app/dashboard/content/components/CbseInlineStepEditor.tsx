@@ -13,13 +13,15 @@ interface CbseInlineStepEditorProps {
   onUpdateStep: (patch: Partial<Step>) => void;
   onTypeChange: (newType: StepType) => void;
   onOpenBulkImport: () => void;
+  moduleId?: string;
 }
 
 export function CbseInlineStepEditor({
   step,
   onUpdateStep,
   onTypeChange,
-  onOpenBulkImport
+  onOpenBulkImport,
+  moduleId
 }: CbseInlineStepEditorProps) {
   const isLegacy = ['concept', 'simulation', 'predict_quiz', 'heritage_connection'].includes(step.type);
 
@@ -43,6 +45,7 @@ export function CbseInlineStepEditor({
           step={step}
           onUpdateStep={onUpdateStep}
           onOpenBulkImport={onOpenBulkImport}
+          moduleId={moduleId}
         />
       ) : (
         <>

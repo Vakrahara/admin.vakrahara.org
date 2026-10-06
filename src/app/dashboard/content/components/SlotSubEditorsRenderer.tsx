@@ -21,18 +21,25 @@ interface SlotSubEditorsRendererProps {
   onUpdateStep: (patch: Partial<Step>) => void;
   onOpenBulkImport?: () => void;
   chapters?: Chapter[];
+  moduleId?: string;
 }
 
 export function SlotSubEditorsRenderer({
   step,
   onUpdateStep,
   onOpenBulkImport,
-  chapters
+  chapters,
+  moduleId
 }: SlotSubEditorsRendererProps) {
   const effectiveSlots = getEffectiveStepSlots(step);
   const effectiveOrder = getEffectiveSlotOrder(step);
 
   const activeSlots = effectiveOrder.filter(key => effectiveSlots[key]);
+
+  const effectiveModuleId = moduleId || (
+    step.id?.includes('_stp_') ? step.id.split('_stp_')[0] :
+    step.id?.includes('_step_') ? step.id.split('_step_')[0] : undefined
+  );
 
   if (activeSlots.length === 0) {
     return (
@@ -67,6 +74,7 @@ export function SlotSubEditorsRenderer({
             step={step}
             onChange={onUpdateStep}
             chapters={chapters}
+            moduleId={effectiveModuleId}
           />
         );
       case 'saraswati':

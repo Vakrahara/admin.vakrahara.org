@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Layers } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Layers, Sparkles } from 'lucide-react';
 import { Step, Chapter } from '@/types/curriculum';
+import { deriveSimulationIdFromModuleId } from '@/lib/semanticId';
+import { getDisciplineRegistry } from '@/lib/disciplinesRegistry';
 import { SimulationUploadModal } from './SimulationUploadModal';
 import { SimulationLibrary } from './SimulationLibrary';
 
@@ -11,13 +13,15 @@ interface SimulationSlotEditorProps {
   onChange: (patch: Partial<Step>) => void;
   initialDisciplineId?: string;
   chapters?: Chapter[];
+  moduleId?: string;
 }
 
 export function SimulationSlotEditor({
   step,
   onChange,
   initialDisciplineId,
-  chapters
+  chapters,
+  moduleId
 }: SimulationSlotEditorProps) {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -25,6 +29,23 @@ export function SimulationSlotEditor({
     step.params ? JSON.stringify(step.params) : '{}'
   );
   const [paramsError, setParamsError] = useState<string | null>(null);
+
+  const parsedFromModule = useMemo(() => {
+    if (!moduleId || !moduleId.startsWith('mod_')) return null;
+    const parts = moduleId.slice(4).split('_');
+    if (parts.length >= 2) {
+      const short = parts[0];
+      const matched = getDisciplineRegistry().find(
+        d => d.shortCode.toLowerCase() === short.toLowerCase() || d.id === `disc_${short}` || d.id === short
+      );
+      return {
+        disciplineId: matched?.id,
+        domain: parts[1],
+        concept: parts.slice(2).join('_')
+      };
+    }
+    return null;
+  }, [moduleId]);
 
   useEffect(() => {
     setRawParams(step.params ? JSON.stringify(step.params) : '{}');
@@ -80,6 +101,17 @@ export function SimulationSlotEditor({
             <div className="flex items-center justify-between mb-1">
               <label className="text-[11px] text-slate-400 block">Simulation ID</label>
               <div className="flex items-center gap-2">
+                {moduleId && (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ simulationId: deriveSimulationIdFromModuleId(moduleId) })}
+                    className="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-medium cursor-pointer transition-colors"
+                    title="Derive canonical simulation ID from parent module"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>✨ Derive</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsLibraryOpen(true)}
@@ -152,7 +184,9 @@ export function SimulationSlotEditor({
       <SimulationUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        initialDisciplineId={initialDisciplineId}
+        initialDisciplineId={initialDisciplineId || parsedFromModule?.disciplineId}
+        initialDomain={parsedFromModule?.domain}
+        initialConcept={parsedFromModule?.concept}
         chapters={chapters}
         onSimulationUploaded={(simId) => {
           onChange({ simulationId: simId });

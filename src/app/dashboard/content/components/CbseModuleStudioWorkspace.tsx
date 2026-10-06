@@ -1,23 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Layers, 
-  ArrowLeft,
-  Plus,
-  Sparkles
-} from 'lucide-react';
+import { Layers, Plus, Sparkles } from 'lucide-react';
 import { Module, Step, StepType, MediaMode, Chapter } from '@/types/curriculum';
+import { 
+  formatStepId, 
+  deriveSimulationIdFromModuleId, 
+  realignModuleStepIds 
+} from '@/lib/semanticId';
 import { DigitalTwinPreview } from './DigitalTwinPreview';
 import { ModuleTriadDeck } from './ModuleTriadDeck';
 import { AddStepTemplateModal } from './AddStepTemplateModal';
 import { CbseStudioStepCard } from './CbseStudioStepCard';
 import { ModuleIdGeneratorModal } from './ModuleIdGeneratorModal';
+import { CbseStudioWorkspaceHeader } from './CbseStudioWorkspaceHeader';
 
 interface CbseModuleStudioWorkspaceProps {
   activeChapter: Chapter;
   activeModule: Module;
   activeEditStepId: string | null;
+  isDirty?: boolean;
+  isSaving?: boolean;
+  onSave?: () => Promise<void> | void;
+  onDiscard?: () => void;
   onUpdateModule: (fields: Partial<Module>) => void;
   onUpdateModuleSteps: (steps: Step[]) => void;
   onSetActiveEditStepId: (stepId: string | null) => void;
@@ -32,6 +37,10 @@ export function CbseModuleStudioWorkspace({
   activeChapter,
   activeModule,
   activeEditStepId,
+  isDirty = false,
+  isSaving = false,
+  onSave,
+  onDiscard,
   onUpdateModule,
   onUpdateModuleSteps,
   onSetActiveEditStepId,
@@ -46,14 +55,16 @@ export function CbseModuleStudioWorkspace({
   const steps = activeModule.steps || [];
 
   const handleAddStep = (type: StepType) => {
+    const derivedSimId = deriveSimulationIdFromModuleId(activeModule.id);
+    const stepId = formatStepId(activeModule.id, steps.length + 1);
     const newStep: Step = {
       type,
-      id: `${activeModule.id}_step_${steps.length + 1}`,
-      ...(type === 'video_simulation' ? { mediaMode: 'both' as MediaMode, subStepCount: 3, videoUrl: '', simulationId: 'what_is_a_wave', transcript: [] } : {}),
+      id: stepId,
+      ...(type === 'video_simulation' ? { mediaMode: 'both' as MediaMode, subStepCount: 3, videoUrl: '', simulationId: derivedSimId, transcript: [] } : {}),
       ...(type === 'saraswati' ? { miniSteps: [], definitionEn: '' } : {}),
       ...(type === 'anveshana' ? { pool: [], questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {}),
       ...(type === 'concept' ? { textDeva: '', textEng: '' } : {}),
-      ...(type === 'simulation' ? { simulationId: 'what_is_a_wave', questionText: '' } : {}),
+      ...(type === 'simulation' ? { simulationId: derivedSimId, questionText: '' } : {}),
       ...(type === 'predict_quiz' ? { question: '', options: ['', ''], correctOptionIndex: 0, explanation: '', hints: [''] } : {}),
       ...(type === 'heritage_connection' ? { title: '', sutra: '', translation: '', significance: '' } : {})
     };
@@ -61,62 +72,52 @@ export function CbseModuleStudioWorkspace({
     onSetActiveEditStepId(newStep.id);
   };
 
+  const handleRealignAllStepIds = () => {
+    const { updatedModule, changedCount } = realignModuleStepIds(activeModule);
+    if (changedCount > 0) {
+      onUpdateModule(updatedModule);
+    }
+  };
+
+  const handleApplyModuleId = (newId: string, cascadeSteps?: boolean) => {
+    if (cascadeSteps) {
+      const { updatedModule } = realignModuleStepIds({ ...activeModule, id: newId });
+      onUpdateModule(updatedModule);
+    } else {
+      onUpdateModule({ id: newId });
+    }
+  };
+
+
   const handlePatchStep = (stepId: string, patch: Partial<Step>) => {
-    const updated = steps.map(s => s.id === stepId ? { ...s, ...patch } : s);
-    onUpdateModuleSteps(updated);
+    onUpdateModuleSteps(steps.map(s => s.id === stepId ? { ...s, ...patch } : s));
   };
 
   const handleTypeChange = (stepId: string, newType: StepType) => {
-    const updated = steps.map(s => 
-      s.id === stepId ? {
-        ...s,
-        type: newType,
-        ...(newType === 'video_simulation' && !s.mediaMode ? { mediaMode: 'both' as MediaMode, subStepCount: 3 } : {}),
-        ...(newType === 'saraswati' && !s.miniSteps ? { miniSteps: [], definitionEn: '' } : {}),
-        ...(newType === 'anveshana' && !s.questionPool ? { pool: [], questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {}),
-        ...(newType === 'simulation' && !s.simulationId ? { simulationId: 'what_is_a_wave', questionText: '' } : {}),
-        ...(newType === 'predict_quiz' && !s.options ? { question: '', options: ['', ''], correctOptionIndex: 0, explanation: '', hints: [''] } : {})
-      } : s
-    );
-    onUpdateModuleSteps(updated);
+    onUpdateModuleSteps(steps.map(s => s.id === stepId ? {
+      ...s,
+      type: newType,
+      ...(newType === 'video_simulation' && !s.mediaMode ? { mediaMode: 'both' as MediaMode, subStepCount: 3 } : {}),
+      ...(newType === 'saraswati' && !s.miniSteps ? { miniSteps: [], definitionEn: '' } : {}),
+      ...(newType === 'anveshana' && !s.questionPool ? { pool: [], questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {})
+    } : s));
   };
 
-  const previewStep = steps.length > 0
-    ? (steps.find(s => s.id === activeEditStepId) || steps[0])
-    : null;
+  const previewStep = steps.length > 0 ? (steps.find(s => s.id === activeEditStepId) || steps[0]) : null;
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Contextual Breadcrumb Navigation Bar (§R3) */}
-      <div className="flex items-center justify-between p-3.5 bg-[#080C14]/90 border border-white/10 rounded-2xl text-xs">
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={onBackToChapter}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg transition-all cursor-pointer font-medium"
-            title="Return to Chapter Overview"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-[#d4af37]" />
-            <span>Back to Chapter</span>
-          </button>
-          <span className="text-gray-600">›</span>
-          <button
-            type="button"
-            onClick={onBackToChapter}
-            className="text-gray-400 hover:text-[#d4af37] transition-colors font-medium truncate max-w-[200px]"
-            title="Click to view Chapter Overview"
-          >
-            {activeChapter.title || activeChapter.id}
-          </button>
-          <span className="text-gray-600">›</span>
-          <span className="font-bold text-white truncate max-w-[260px]">
-            {activeModule.title || activeModule.id}
-          </span>
-          <span className="px-2 py-0.5 bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] text-[10px] font-mono rounded-md">
-            {steps.length} Steps
-          </span>
-        </div>
-      </div>
+      {/* Contextual Navigation Bar & Persistence Actions (§R1–§R3) */}
+      <CbseStudioWorkspaceHeader
+        activeChapter={activeChapter}
+        activeModule={activeModule}
+        stepsCount={steps.length}
+        isDirty={isDirty}
+        isSaving={isSaving}
+        onSave={onSave}
+        onDiscard={onDiscard}
+        onBackToChapter={onBackToChapter}
+      />
 
       {/* Main Studio Card */}
       <div className="glass-panel border border-white/5 bg-black/40 p-6 rounded-2xl space-y-6">
@@ -156,7 +157,7 @@ export function CbseModuleStudioWorkspace({
               <input
                 type="text"
                 value={activeModule.title}
-                onChange={(e) => onUpdateModule({ title: e.target.value })}
+                onChange={(e) => onUpdateModule({ title: e.target.value, titleEn: e.target.value })}
                 className="w-full px-3 py-2 bg-[#08080c] border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-[#d4af37]/60"
               />
             </div>
@@ -165,18 +166,29 @@ export function CbseModuleStudioWorkspace({
 
         {/* Steps List Manifest */}
         <div className="space-y-4 border-t border-white/5 pt-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h4 className="font-bold text-sm text-gray-300 uppercase tracking-wider font-mono">
               Pedagogical Steps ({steps.length})
             </h4>
-            <button
-              type="button"
-              onClick={() => setIsAddStepModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4af37] to-amber-500 hover:brightness-110 text-black rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Step</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRealignAllStepIds}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#d4af37]/40 text-[#d4af37] rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                title="Re-align all step IDs to canonical format (<module_id>_stp_NN)"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>✨ Re-align Step IDs</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAddStepModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4af37] to-amber-500 hover:brightness-110 text-black rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Step</span>
+              </button>
+            </div>
           </div>
 
           <div className="space-y-4 max-h-[550px] overflow-y-auto pr-1">
@@ -187,6 +199,7 @@ export function CbseModuleStudioWorkspace({
                 sIndex={sIndex}
                 totalSteps={steps.length}
                 isEditingStep={step.id === activeEditStepId}
+                activeModuleId={activeModule.id}
                 onMoveStep={(dir) => onMoveStep(sIndex, dir)}
                 onOpenFocusedEditor={() => {
                   onSetActiveEditStepId(step.id);
@@ -201,8 +214,7 @@ export function CbseModuleStudioWorkspace({
                   }
                 }}
                 onUpdateStepId={(newId) => {
-                  const updated = steps.map(s => s.id === step.id ? { ...s, id: newId } : s);
-                  onUpdateModuleSteps(updated);
+                  onUpdateModuleSteps(steps.map(s => s.id === step.id ? { ...s, id: newId } : s));
                   if (step.id === activeEditStepId) onSetActiveEditStepId(newId);
                 }}
                 onPatchStep={(patch) => handlePatchStep(step.id, patch)}
@@ -220,7 +232,7 @@ export function CbseModuleStudioWorkspace({
         </div>
       </div>
 
-      {/* Vidyāpīṭha Pedagogical Triad (Shabdakosha, Audio Revisit, Kālachakra Timeline) */}
+      {/* Vidyāpīṭha Pedagogical Triad */}
       <ModuleTriadDeck
         module={activeModule}
         onUpdateModule={onUpdateModule}
@@ -248,7 +260,7 @@ export function CbseModuleStudioWorkspace({
           onClose={() => setIsIdModalOpen(false)}
           activeChapter={activeChapter}
           activeModule={activeModule}
-          onApplyId={(newId) => onUpdateModule({ id: newId })}
+          onApplyId={handleApplyModuleId}
         />
       )}
     </div>

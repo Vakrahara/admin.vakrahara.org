@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Chapter, Module, Step } from '@/types/curriculum';
 import { pb } from '@/lib/pocketbase';
 import { R2Config } from '@/lib/r2-upload';
@@ -9,6 +9,7 @@ import { CurriculumDataSource } from '../components/CurriculumDataSourceBar';
 import { validateCurriculum } from '../utils/curriculumValidation';
 import { executePublishCurriculum } from '../utils/curriculumPublisher';
 import { normalizeCurriculumData } from '../utils/curriculumNormalize';
+import { fetchRemoteCurriculum } from '../utils/curriculumDataLoader';
 import { 
   readLocalDraft, 
   writeLocalDraft, 
@@ -16,6 +17,10 @@ import {
   exportChaptersJson, 
   saveDraftRemote 
 } from '../utils/curriculumDraftStorage';
+import { 
+  saveActiveSelection, 
+  resolveSelectionCursor 
+} from '../utils/curriculumNavigationStorage';
 import { 
   reorderChapterList, 
   reorderModuleList, 
@@ -43,21 +48,50 @@ export function useCurriculumManager(r2Config: R2Config) {
   const [publishCooldown, setPublishCooldown] = useState(0);
   const [hasUnsavedDraft, setHasUnsavedDraft] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const lastCommittedChapters = useRef<Chapter[] | null>(null);
+
+  const setChaptersAndCursor = (data: Chapter[], markCommitted = true) => {
+    setChapters(data);
+    if (markCommitted) lastCommittedChapters.current = data;
+    const { chapterId, moduleId } = resolveSelectionCursor(data);
+    setSelectedChapterId(chapterId);
+    setSelectedModuleId(moduleId);
+  };
 
   useEffect(() => {
     const saved = readLocalDraft();
     if (saved) {
-      setChapters(saved);
-      selectDefaults(saved);
+      setChaptersAndCursor(saved, true);
       setHasUnsavedDraft(true);
       setLastSyncTime(new Date().toLocaleTimeString());
       return;
     }
-    const normalizedData = normalizeCurriculumData(canonicalCurriculumData as any);
-    setChapters(normalizedData);
-    selectDefaults(normalizedData);
+    const normalized = normalizeCurriculumData(canonicalCurriculumData as any);
+    setChaptersAndCursor(normalized, true);
     setLastSyncTime(new Date().toLocaleTimeString());
   }, []);
+
+  useEffect(() => {
+    if (selectedChapterId) {
+      saveActiveSelection(selectedChapterId, selectedModuleId);
+    }
+  }, [selectedChapterId, selectedModuleId]);
+
+  useEffect(() => {
+    if (!isDirty || !chapters) return;
+    const timer = setTimeout(() => writeLocalDraft(chapters), 500);
+    return () => clearTimeout(timer);
+  }, [chapters, isDirty]);
+
+  useEffect(() => {
+    const onUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  }, [isDirty]);
 
   useEffect(() => {
     if (publishCooldown <= 0) return;
@@ -65,48 +99,25 @@ export function useCurriculumManager(r2Config: R2Config) {
     return () => clearInterval(timer);
   }, [publishCooldown]);
 
-  const selectDefaults = (data: Chapter[]) => {
-    if (data.length > 0) {
-      setSelectedChapterId(data[0].id);
-      if (data[0].modules && data[0].modules.length > 0) {
-        setSelectedModuleId(data[0].modules[0].id);
-      }
-    }
-  };
-
   const loadCbseData = async (source: CurriculumDataSource = 'canonical') => {
     setIsLoadingCbse(true);
     setCbseLoadError(null);
     setCurriculumSource(source);
-
     if (source === 'canonical' || source === 'local') {
-      const normalizedData = normalizeCurriculumData(canonicalCurriculumData as any);
-      setChapters(normalizedData);
-      selectDefaults(normalizedData);
+      const normalized = normalizeCurriculumData(canonicalCurriculumData as any);
+      setChaptersAndCursor(normalized, true);
+      setIsDirty(false);
       setLastSyncTime(new Date().toLocaleTimeString());
       setIsLoadingCbse(false);
       return;
     }
-
-    const pbUrl = 'https://pb.vakrahara.org/api/amritam/curriculum?schema_version=2';
-    const cdnUrl = source === 'cdn' && r2Config.customDomain
-      ? `${r2Config.customDomain.replace(/\/$/, '')}/cbse/chapters_data.json`
-      : 'https://cdn.vakrahara.org/v1/cbse/chapters_data.json';
-
     try {
-      const targetUrl = source === 'pb' ? pbUrl : cdnUrl;
-      const response = await fetch(targetUrl, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      const normalizedData = normalizeCurriculumData(Array.isArray(data) ? data : []);
-      setChapters(normalizedData);
-      selectDefaults(normalizedData);
+      const data = await fetchRemoteCurriculum(source === 'pb' ? 'pb' : 'cdn', r2Config.customDomain);
+      setChaptersAndCursor(data, true);
+      setIsDirty(false);
       setLastSyncTime(new Date().toLocaleTimeString());
     } catch (e: any) {
-      if (source === 'pb') {
-        loadCbseData('cdn');
-        return;
-      }
+      if (source === 'pb') return loadCbseData('cdn');
       setCbseLoadError(e.message || 'Failed to load curriculum data.');
     } finally {
       setIsLoadingCbse(false);
@@ -115,12 +126,12 @@ export function useCurriculumManager(r2Config: R2Config) {
 
   const handleSeedCanonical = () => {
     const normalized = normalizeCurriculumData(canonicalCurriculumData as any);
-    setChapters(normalized);
-    selectDefaults(normalized);
+    setChaptersAndCursor(normalized, true);
     setCurriculumSource('canonical');
     setLastSyncTime(new Date().toLocaleTimeString());
     setPublishStatus('success');
     writeLocalDraft(normalized);
+    setIsDirty(false);
     setHasUnsavedDraft(false);
     setTimeout(() => setPublishStatus('idle'), 4000);
   };
@@ -128,8 +139,8 @@ export function useCurriculumManager(r2Config: R2Config) {
   const handleRestoreDraft = () => {
     const saved = readLocalDraft();
     if (saved) {
-      setChapters(saved);
-      selectDefaults(saved);
+      setChaptersAndCursor(saved, true);
+      setIsDirty(false);
       setHasUnsavedDraft(false);
       setPublishStatus('success');
       setTimeout(() => setPublishStatus('idle'), 3000);
@@ -138,37 +149,46 @@ export function useCurriculumManager(r2Config: R2Config) {
 
   const handleDiscardDraft = () => {
     removeLocalDraft();
+    setIsDirty(false);
     setHasUnsavedDraft(false);
   };
 
-  const handleExportJson = () => {
-    if (chapters) exportChaptersJson(chapters);
+  const handleDiscardChanges = () => {
+    const target = lastCommittedChapters.current || normalizeCurriculumData(canonicalCurriculumData as any);
+    setChaptersAndCursor(target, true);
+    writeLocalDraft(target);
+    setIsDirty(false);
+    setPublishStatus('idle');
+    setPublishErrorMessage('');
   };
+
+  const handleExportJson = () => { if (chapters) exportChaptersJson(chapters); };
 
   const handleImportJson = (imported: Chapter[]) => {
     const normalized = normalizeCurriculumData(imported);
-    setChapters(normalized);
-    selectDefaults(normalized);
+    setChaptersAndCursor(normalized, true);
     setLastSyncTime(new Date().toLocaleTimeString());
     writeLocalDraft(normalized);
+    setIsDirty(false);
     setHasUnsavedDraft(false);
   };
 
-  const handleSaveDraft = async () => {
+  const handleExplicitSave = async () => {
     if (!chapters) return;
     setIsSavingDraft(true);
     setPublishStatus('idle');
     setPublishErrorMessage('');
-
     try {
       writeLocalDraft(chapters);
+      lastCommittedChapters.current = chapters;
       await saveDraftRemote(chapters, pb.authStore.token);
+      setIsDirty(false);
       setHasUnsavedDraft(false);
       setPublishSuccessMessage('Draft changes successfully saved to PocketBase database!');
       setPublishStatus('success');
       setTimeout(() => setPublishStatus('idle'), 4000);
     } catch (e: any) {
-      console.error('Failed to save draft to PocketBase:', e);
+      console.error('Failed to save draft:', e);
       setPublishStatus('error');
       setPublishErrorMessage(e.message || 'Failed to save draft to PocketBase.');
     } finally {
@@ -183,11 +203,9 @@ export function useCurriculumManager(r2Config: R2Config) {
       setPublishErrorMessage(`Publish cooldown active. Please wait ${publishCooldown}s.`);
       return;
     }
-
     setIsPublishing(true);
     setPublishStatus('idle');
     setPublishErrorMessage('');
-
     const errors = validateCurriculum(chapters);
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -197,13 +215,13 @@ export function useCurriculumManager(r2Config: R2Config) {
       return;
     }
     setValidationErrors([]);
-
     try {
       const payloadChapters = await executePublishCurriculum(chapters, r2Config);
       setPublishSuccessMessage('Curriculum successfully published to Cloudflare R2 and synced to PocketBase database!');
       setPublishStatus('success');
       setPublishCooldown(30);
-      setChapters(payloadChapters);
+      setChaptersAndCursor(payloadChapters, true);
+      setIsDirty(false);
       setTimeout(() => setPublishStatus('idle'), 5000);
     } catch (e: any) {
       setPublishStatus('error');
@@ -213,9 +231,20 @@ export function useCurriculumManager(r2Config: R2Config) {
     }
   };
 
-  const moveChapter = (index: number, dir: 'up' | 'down') => chapters && setChapters(reorderChapterList(chapters, index, dir));
-  const moveModule = (chapterId: string, index: number, dir: 'up' | 'down') => chapters && setChapters(reorderModuleList(chapters, chapterId, index, dir));
-  const moveStep = (chapterId: string, moduleId: string, index: number, dir: 'up' | 'down') => chapters && setChapters(reorderStepList(chapters, chapterId, moduleId, index, dir));
+  const mutate = (updater: (prev: Chapter[]) => Chapter[]) => {
+    if (!chapters) return;
+    setChapters(prev => prev ? updater(prev) : prev);
+    setIsDirty(true);
+  };
+
+  const setChaptersWithDirty: React.Dispatch<React.SetStateAction<Chapter[] | null>> = (action) => {
+    setChapters(action);
+    setIsDirty(true);
+  };
+
+  const moveChapter = (index: number, dir: 'up' | 'down') => mutate(ch => reorderChapterList(ch, index, dir));
+  const moveModule = (chId: string, index: number, dir: 'up' | 'down') => mutate(ch => reorderModuleList(ch, chId, index, dir));
+  const moveStep = (chId: string, modId: string, idx: number, dir: 'up' | 'down') => mutate(ch => reorderStepList(ch, chId, modId, idx, dir));
 
   const activeChapter = chapters?.find(c => c.id === selectedChapterId) || null;
   const activeModule = activeChapter?.modules.find(m => m.id === selectedModuleId) || null;
@@ -223,17 +252,17 @@ export function useCurriculumManager(r2Config: R2Config) {
   const updateActiveChapter = (fields: Partial<Chapter>) => {
     if (chapters && activeChapter) {
       if (fields.id && fields.id !== activeChapter.id) setSelectedChapterId(fields.id);
-      setChapters(patchChapter(chapters, activeChapter.id, fields));
+      mutate(ch => patchChapter(ch, activeChapter.id, fields));
     }
   };
   const updateActiveModule = (fields: Partial<Module>) => {
     if (chapters && activeChapter && activeModule) {
       if (fields.id && fields.id !== activeModule.id) setSelectedModuleId(fields.id);
-      setChapters(patchModule(chapters, activeChapter.id, activeModule.id, fields));
+      mutate(ch => patchModule(ch, activeChapter.id, activeModule.id, fields));
     }
   };
   const updateActiveModuleSteps = (steps: Step[]) => {
-    if (chapters && activeChapter && activeModule) setChapters(patchModuleSteps(chapters, activeChapter.id, activeModule.id, steps));
+    if (chapters && activeChapter && activeModule) mutate(ch => patchModuleSteps(ch, activeChapter.id, activeModule.id, steps));
   };
   const handleUpdateStep = (updatedStep: Step) => {
     if (!activeModule) return;
@@ -241,14 +270,15 @@ export function useCurriculumManager(r2Config: R2Config) {
   };
 
   return {
-    chapters, setChapters, selectedChapterId, setSelectedChapterId,
+    chapters, setChapters: setChaptersWithDirty, selectedChapterId, setSelectedChapterId,
     selectedModuleId, setSelectedModuleId, editingPyqId, setEditingPyqId,
     activeEditStepId, setActiveEditStepId, isLoadingCbse, cbseLoadError,
     curriculumSource, setCurriculumSource, isPublishing, isSavingDraft,
     publishStatus, publishSuccessMessage, publishErrorMessage, validationErrors, publishCooldown,
-    hasUnsavedDraft, lastSyncTime, activeChapter, activeModule,
+    hasUnsavedDraft, lastSyncTime, activeChapter, activeModule, isDirty,
     loadCbseData, handleSeedCanonical, handleRestoreDraft, handleDiscardDraft,
-    handleExportJson, handleImportJson, handleSaveDraft, handlePublishCbse,
+    handleDiscardChanges, handleExportJson, handleImportJson,
+    handleSaveDraft: handleExplicitSave, handleExplicitSave, handlePublishCbse,
     moveChapter, moveModule, moveStep, updateActiveChapter,
     updateActiveModule, updateActiveModuleSteps, handleUpdateStep
   };

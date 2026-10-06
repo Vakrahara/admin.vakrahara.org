@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Module, Chapter } from '@/types/curriculum';
 import { getDisciplineRegistry, getShortCode } from '@/lib/disciplinesRegistry';
-import { formatModuleId, isValidSemanticId, SEMANTIC_ID_REGEX } from '@/lib/semanticId';
+import { formatModuleId, formatStepId, isValidSemanticId, SEMANTIC_ID_REGEX } from '@/lib/semanticId';
 
 interface ModuleIdGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeChapter: Chapter;
   activeModule: Module;
-  onApplyId: (newId: string) => void;
+  onApplyId: (newId: string, cascadeSteps?: boolean) => void;
 }
 
 const DOMAIN_PRESETS: Record<string, string[]> = {
@@ -36,6 +36,7 @@ export function ModuleIdGeneratorModal({
   const [disciplineId, setDisciplineId] = useState(initialDisc);
   const [domain, setDomain] = useState('core');
   const [concept, setConcept] = useState('');
+  const [cascadeSteps, setCascadeSteps] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,7 +77,7 @@ export function ModuleIdGeneratorModal({
   const activePresets = DOMAIN_PRESETS[disciplineId] || DEFAULT_DOMAINS;
 
   const handleApply = () => {
-    if (canApply) { onApplyId(previewId); onClose(); }
+    if (canApply) { onApplyId(previewId, cascadeSteps); onClose(); }
   };
 
   return (
@@ -173,6 +174,41 @@ export function ModuleIdGeneratorModal({
               </div>
             ) : (
               <div className="text-gray-500 text-[11px]">Enter valid domain and concept slug (letters, numbers, underscores).</div>
+            )}
+
+            {activeModule.steps && activeModule.steps.length > 0 && (
+              <div className="pt-2 border-t border-white/5 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={cascadeSteps}
+                    onChange={(e) => setCascadeSteps(e.target.checked)}
+                    className="rounded border-white/20 text-[#d4af37] focus:ring-0 cursor-pointer"
+                  />
+                  <span className="text-[11px] font-semibold text-gray-200">
+                    Cascade &amp; align child Step IDs to canonical format
+                  </span>
+                </label>
+                {cascadeSteps && (
+                  <div className="p-2 bg-black/50 border border-white/5 rounded-lg space-y-1">
+                    <span className="text-[9px] text-gray-400 font-mono uppercase block">Live Step Cascading Preview</span>
+                    <div className="max-h-24 overflow-y-auto space-y-1 font-mono text-[10px]">
+                      {activeModule.steps.slice(0, 4).map((s, idx) => (
+                        <div key={s.id || idx} className="flex items-center gap-1.5 truncate">
+                          <span className="text-gray-500 truncate max-w-[140px]">{s.id}</span>
+                          <span className="text-[#d4af37]">➔</span>
+                          <span className="text-emerald-400 font-semibold truncate">{formatStepId(previewId, idx + 1)}</span>
+                        </div>
+                      ))}
+                      {activeModule.steps.length > 4 && (
+                        <div className="text-[9px] text-gray-500 italic">
+                          ...and {activeModule.steps.length - 4} more step(s)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

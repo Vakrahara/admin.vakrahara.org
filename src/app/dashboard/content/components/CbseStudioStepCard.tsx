@@ -6,9 +6,11 @@ import {
   ChevronDown, 
   Maximize2, 
   Edit3, 
-  Trash2 
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { Step, StepType } from '@/types/curriculum';
+import { formatStepId } from '@/lib/semanticId';
 import { CbseInlineStepEditor } from './CbseInlineStepEditor';
 
 interface CbseStudioStepCardProps {
@@ -24,6 +26,7 @@ interface CbseStudioStepCardProps {
   onPatchStep: (patch: Partial<Step>) => void;
   onTypeChange: (newType: StepType) => void;
   onOpenBulkImport: () => void;
+  activeModuleId?: string;
 }
 
 export function CbseStudioStepCard({
@@ -38,7 +41,8 @@ export function CbseStudioStepCard({
   onUpdateStepId,
   onPatchStep,
   onTypeChange,
-  onOpenBulkImport
+  onOpenBulkImport,
+  activeModuleId
 }: CbseStudioStepCardProps) {
   return (
     <div className="p-4 bg-[#08080c] border border-white/10 rounded-xl space-y-3 relative group">
@@ -101,9 +105,22 @@ export function CbseStudioStepCard({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
-          <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-0.5 font-mono">
-            Step ID
-          </label>
+          <div className="flex items-center justify-between mb-0.5">
+            <label className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block font-mono">
+              Step ID
+            </label>
+            {activeModuleId && (
+              <button
+                type="button"
+                onClick={() => onUpdateStepId(formatStepId(activeModuleId, sIndex + 1))}
+                className="text-[9px] text-[#d4af37] hover:text-[#facc15] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Align to canonical ID format (mod_..._stp_NN)"
+              >
+                <Sparkles className="w-2.5 h-2.5" />
+                <span>✨ Align</span>
+              </button>
+            )}
+          </div>
           <input
             type="text"
             value={step.id}
@@ -129,6 +146,7 @@ export function CbseStudioStepCard({
           onUpdateStep={onPatchStep}
           onTypeChange={onTypeChange}
           onOpenBulkImport={onOpenBulkImport}
+          moduleId={activeModuleId}
         />
       )}
     </div>

@@ -17,6 +17,8 @@ export interface SimulationUploadModalProps {
   onClose: () => void;
   onSimulationUploaded: (simId: string) => void;
   initialDisciplineId?: string;
+  initialDomain?: string;
+  initialConcept?: string;
   chapters?: Chapter[];
   knownSimIds?: string[];
 }
@@ -26,6 +28,8 @@ export function SimulationUploadModal({
   onClose,
   onSimulationUploaded,
   initialDisciplineId,
+  initialDomain,
+  initialConcept,
   chapters,
   knownSimIds
 }: SimulationUploadModalProps) {
@@ -33,8 +37,8 @@ export function SimulationUploadModal({
   const defaultDisc = initialDisciplineId || disciplines[0]?.id || 'disc_bhautik';
 
   const [disciplineId, setDisciplineId] = useState(defaultDisc);
-  const [domain, setDomain] = useState('optics');
-  const [concept, setConcept] = useState('');
+  const [domain, setDomain] = useState(initialDomain || 'optics');
+  const [concept, setConcept] = useState(initialConcept || '');
   const [files, setFiles] = useState<SimulationFileItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -44,15 +48,15 @@ export function SimulationUploadModal({
   useEffect(() => {
     if (isOpen) {
       setDisciplineId(initialDisciplineId || defaultDisc);
-      setDomain((prev) => prev || 'optics');
-      setConcept('');
+      setDomain(initialDomain || 'optics');
+      setConcept(initialConcept || '');
       setFiles([]);
       setUploadError(null);
       setIsUploading(false);
       setValidation(null);
       setAllowBypass(false);
     }
-  }, [isOpen, initialDisciplineId, defaultDisc]);
+  }, [isOpen, initialDisciplineId, defaultDisc, initialDomain, initialConcept]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

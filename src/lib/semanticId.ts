@@ -99,3 +99,117 @@ export function formatSimulationId(shortCode: string, domain: string, concept: s
   const cleanConcept = concept.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
   return formatSemanticId('sim', `${disc}_${cleanDomain}`, cleanConcept);
 }
+
+export function formatStepId(moduleId: string, stepIndex: number): string {
+  const cleanMod = (moduleId || '').trim().replace(/^_+|_+$/g, '');
+  const num = Math.max(1, Math.floor(stepIndex) || 1);
+  const pad = String(num).padStart(2, '0');
+  return cleanMod ? `${cleanMod}_stp_${pad}` : `stp_${pad}`;
+}
+
+export function deriveSimulationIdFromModuleId(moduleId: string, suffix?: string): string {
+  const cleanMod = (moduleId || '').trim();
+  let baseSim = cleanMod.startsWith('mod_')
+    ? cleanMod.replace(/^mod_/, 'sim_')
+    : (cleanMod && cleanMod !== 'mod' ? `sim_${cleanMod}` : 'sim_interactive');
+  if (baseSim === 'sim_' || baseSim === 'sim') {
+    baseSim = 'sim_interactive';
+  }
+  if (suffix && suffix.trim()) {
+    const cleanSuffix = suffix.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
+    baseSim = `${baseSim}_${cleanSuffix}`;
+  }
+  return baseSim;
+}
+
+
+export function formatCheckpointId(stepId: string, seq: number): string {
+  const cleanStep = (stepId || '').trim().replace(/^_+|_+$/g, '');
+  const num = Math.max(1, Math.floor(seq) || 1);
+  const pad = String(num).padStart(2, '0');
+  return cleanStep ? `chk_${cleanStep}_${pad}` : `chk_step_${pad}`;
+}
+
+export function formatHotspotId(stepId: string, termSlug: string): string {
+  const cleanStep = (stepId || '').trim().replace(/^_+|_+$/g, '');
+  const cleanSlug = (termSlug || 'term').trim().replace(/[^a-z0-9_]/gi, '_').replace(/^_+|_+$/g, '');
+  return formatSemanticId('hot', cleanStep || 'step', cleanSlug || 'term');
+}
+
+export function realignModuleStepIds<T extends { id: string; steps?: any[]; learningSteps?: any[] }>(
+  module: T
+): { updatedModule: T & { steps: any[] }; changedCount: number } {
+  let changedCount = 0;
+
+  const realignStepList = (stepList: any[] = []) => {
+    return stepList.map((step, idx) => {
+      const targetStepId = formatStepId(module.id, idx + 1);
+      let stepMutated = false;
+      if (step.id !== targetStepId) stepMutated = true;
+
+      const updatedCheckpoints = (step.checkpoints || []).map((chk: any, cIdx: number) => {
+        const targetChkId = formatCheckpointId(targetStepId, cIdx + 1);
+        if (chk.id !== targetChkId) stepMutated = true;
+        return {
+          ...chk,
+          id: targetChkId,
+        };
+      });
+
+      const updatedHotspots = (step.hotspots || []).map((hot: any) => {
+        let termSlug = 'term';
+        const rawId = hot.id || '';
+
+        if (rawId.startsWith(`hot_${targetStepId}_`)) {
+          termSlug = rawId.slice(`hot_${targetStepId}_`.length);
+        } else if (step.id && rawId.startsWith(`hot_${step.id}_`)) {
+          termSlug = rawId.slice(`hot_${step.id}_`.length);
+        } else if (rawId.includes('_stp_')) {
+          const match = rawId.match(/_stp_\d+_(.+)$/);
+          if (match && match[1]) termSlug = match[1];
+        } else if (rawId.startsWith('hot_')) {
+          termSlug = rawId.replace(/^hot_[^_]+_/, '') || 'term';
+        } else if (hot.targetWordOrPhrase) {
+          termSlug = hot.targetWordOrPhrase
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 16) || 'term';
+        }
+
+        const targetHotId = formatHotspotId(targetStepId, termSlug);
+        if (hot.id !== targetHotId) stepMutated = true;
+        return {
+          ...hot,
+          id: targetHotId,
+        };
+      });
+
+      if (stepMutated) changedCount++;
+
+      return {
+        ...step,
+        id: targetStepId,
+        checkpoints: updatedCheckpoints,
+        hotspots: updatedHotspots,
+      };
+    });
+  };
+
+  const updatedSteps = module.steps ? realignStepList(module.steps) : [];
+  const updatedLearningSteps = module.learningSteps ? realignStepList(module.learningSteps) : undefined;
+
+  return {
+    updatedModule: {
+      ...module,
+      steps: updatedSteps,
+      ...(updatedLearningSteps ? { learningSteps: updatedLearningSteps } : {}),
+    },
+    changedCount,
+  };
+}
+
+

@@ -3,6 +3,11 @@
 import React, { useState } from 'react';
 import { Layers, Sparkles } from 'lucide-react';
 import { Module, Step, StepType, MediaMode, Chapter } from '@/types/curriculum';
+import { 
+  formatStepId, 
+  deriveSimulationIdFromModuleId, 
+  realignModuleStepIds 
+} from '@/lib/semanticId';
 import { DigitalTwinPreview } from './DigitalTwinPreview';
 import { ModuleTriadDeck } from './ModuleTriadDeck';
 import { CbseStudioStepCard } from './CbseStudioStepCard';
@@ -34,20 +39,32 @@ export function CbseModuleEditorPanel({
   const [isIdModalOpen, setIsIdModalOpen] = useState(false);
 
   const handleAddStep = (type: StepType) => {
+    const derivedSimId = deriveSimulationIdFromModuleId(activeModule.id);
+    const stepId = formatStepId(activeModule.id, activeModule.steps.length + 1);
     const newStep: Step = {
       type,
-      id: `${activeModule.id}_step_${activeModule.steps.length + 1}`,
-      ...(type === 'video_simulation' ? { mediaMode: 'both' as MediaMode, subStepCount: 3, videoUrl: '', simulationId: 'what_is_a_wave', transcript: [] } : {}),
+      id: stepId,
+      ...(type === 'video_simulation' ? { mediaMode: 'both' as MediaMode, subStepCount: 3, videoUrl: '', simulationId: derivedSimId, transcript: [] } : {}),
       ...(type === 'saraswati' ? { miniSteps: [], definitionEn: '' } : {}),
       ...(type === 'anveshana' ? { pool: [], questionPool: [], questionsPerAttempt: 5, passingScore: 4 } : {}),
       ...(type === 'concept' ? { textDeva: '', textEng: '' } : {}),
-      ...(type === 'simulation' ? { simulationId: 'what_is_a_wave', questionText: '' } : {}),
+      ...(type === 'simulation' ? { simulationId: derivedSimId, questionText: '' } : {}),
       ...(type === 'predict_quiz' ? { question: '', options: ['', ''], correctOptionIndex: 0, explanation: '', hints: [''] } : {}),
       ...(type === 'heritage_connection' ? { title: '', sutra: '', translation: '', significance: '' } : {})
     };
     onUpdateModuleSteps([...activeModule.steps, newStep]);
     onSetActiveEditStepId(newStep.id);
   };
+
+  const handleApplyModuleId = (newId: string, cascadeSteps?: boolean) => {
+    if (cascadeSteps) {
+      const { updatedModule } = realignModuleStepIds({ ...activeModule, id: newId });
+      onUpdateModule(updatedModule);
+    } else {
+      onUpdateModule({ id: newId });
+    }
+  };
+
 
   const handlePatchStep = (stepId: string, patch: Partial<Step>) => {
     const updated = activeModule.steps.map(s => s.id === stepId ? { ...s, ...patch } : s);
@@ -109,7 +126,7 @@ export function CbseModuleEditorPanel({
               <input
                 type="text"
                 value={activeModule.title}
-                onChange={(e) => onUpdateModule({ title: e.target.value })}
+                onChange={(e) => onUpdateModule({ title: e.target.value, titleEn: e.target.value })}
                 className="w-full px-3 py-1.5 bg-[#08080c] border border-white/5 rounded-xl text-white text-xs focus:outline-none focus:border-[#d4af37]/60"
               />
             </div>
@@ -134,12 +151,6 @@ export function CbseModuleEditorPanel({
                 <option value="saraswati">Saraswati सयुक्तिक Builder</option>
                 <option value="anveshana">Anveshana Assessment (30-Q Pool)</option>
               </optgroup>
-              <optgroup label="Legacy Steps">
-                <option value="concept">Concept Description</option>
-                <option value="simulation">Interactive Lab</option>
-                <option value="predict_quiz">Predictive Quiz</option>
-                <option value="heritage_connection">Vedic Heritage</option>
-              </optgroup>
             </select>
           </div>
 
@@ -153,6 +164,7 @@ export function CbseModuleEditorPanel({
                   sIndex={sIndex}
                   totalSteps={activeModule.steps.length}
                   isEditingStep={isEditingStep}
+                  activeModuleId={activeModule.id}
                   onMoveStep={(dir) => onMoveStep(sIndex, dir)}
                   onOpenFocusedEditor={() => {
                     onSetActiveEditStepId(step.id);
@@ -206,7 +218,7 @@ export function CbseModuleEditorPanel({
           onClose={() => setIsIdModalOpen(false)}
           activeChapter={activeChapter}
           activeModule={activeModule}
-          onApplyId={(newId) => onUpdateModule({ id: newId })}
+          onApplyId={handleApplyModuleId}
         />
       )}
     </div>
