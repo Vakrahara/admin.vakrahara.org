@@ -8,7 +8,7 @@ import {
   SEMANTIC_ID_REGEX 
 } from '@/lib/semanticId';
 import { getShortCode, getDisciplineRegistry } from '@/lib/disciplinesRegistry';
-import { createChildModule } from '@/app/dashboard/content/utils/curriculumMutations';
+import { createChildModule, patchModule } from '@/app/dashboard/content/utils/curriculumMutations';
 import { Chapter } from '@/types/curriculum';
 
 describe('TICKET-03: Semantic ID Generator (§R1 & R4)', () => {
@@ -34,6 +34,12 @@ describe('TICKET-03: Semantic ID Generator (§R1 & R4)', () => {
   it('sanitizes special characters and spaces into underscores', () => {
     const result = formatModuleId('phys', 'wave-optics', "young's double slit");
     assert.equal(result, 'mod_phys_wave_optics_young_s_double_slit');
+    assert.equal(isValidSemanticId(result, 'mod'), true);
+  });
+
+  it('handles numbers and hyphens in domain and concept slugs', () => {
+    const result = formatModuleId('math', '3d-geometry', 'section-formula-1');
+    assert.equal(result, 'mod_math_3d_geometry_section_formula_1');
     assert.equal(isValidSemanticId(result, 'mod'), true);
   });
 
@@ -119,5 +125,28 @@ describe('TICKET-03: Curriculum Mutations createChildModule (§R2)', () => {
     };
     const module = createChildModule(chemChapter, { discipline: 'all', grade: 'all' });
     assert.equal(module.id, 'mod_chem_core_m1');
+  });
+
+  it('avoids ID collisions when module indices have gaps or deletions', () => {
+    const chapterWithGaps: Chapter = {
+      ...baseChapter,
+      modules: [
+        { id: 'mod_phys_core_m2', title: 'M2', steps: [] }
+      ]
+    };
+    const module = createChildModule(chapterWithGaps, { discipline: 'disc_bhautik', grade: '10' });
+    assert.equal(module.id, 'mod_phys_core_m3');
+  });
+
+  it('patchModule updates module ID correctly without mutating original array', () => {
+    const original: Chapter[] = [
+      {
+        ...baseChapter,
+        modules: [{ id: 'mod_phys_core_m1', title: 'Original', steps: [] }]
+      }
+    ];
+    const patched = patchModule(original, baseChapter.id, 'mod_phys_core_m1', { id: 'mod_phys_optics_reflection' });
+    assert.equal(patched[0].modules[0].id, 'mod_phys_optics_reflection');
+    assert.equal(original[0].modules[0].id, 'mod_phys_core_m1');
   });
 });

@@ -70,25 +70,14 @@ export default function ContentCMSPage() {
 
   const handleAddModule = () => {
     if (!activeChapter) return;
-    const newModId = `module_${Date.now()}`;
-    const inheritedDisc = activeChapter.disciplineIds?.[0] || 'disc_bhautik';
-    const inheritedGrades = activeChapter.applicableGrades
-      || (activeChapter.grade ? [activeChapter.grade] : undefined);
-
-    updateActiveChapter({
-      modules: [
-        ...(activeChapter.modules || []),
-        {
-          id: newModId,
-          title: 'New Module Title',
-          primaryDisciplineId: inheritedDisc,
-          disciplineIds: [inheritedDisc],
-          applicableGrades: inheritedGrades,
-          steps: []
-        }
-      ]
+    const newMod = createChildModule(activeChapter, {
+      discipline: activeChapter.disciplineIds?.[0] || 'disc_bhautik',
+      grade: String(activeChapter.grade || 10)
     });
-    setSelectedModuleId(newModId);
+    updateActiveChapter({
+      modules: [...(activeChapter.modules || []), newMod]
+    });
+    setSelectedModuleId(newMod.id);
   };
 
   const handleAddPyq = () => {

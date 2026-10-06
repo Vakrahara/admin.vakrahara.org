@@ -87,11 +87,14 @@ export function createChildModule(targetChapter: Chapter, filters: { discipline:
     || (filters.discipline !== 'all' ? filters.discipline : 'disc_bhautik');
   const inheritedGrades = targetChapter.applicableGrades
     || (targetChapter.grade ? [targetChapter.grade] : (filters.grade !== 'all' ? [Number(filters.grade)] : [10]));
-  const newModId = formatModuleId(
-    getShortCode(inheritedDisc),
-    'core',
-    `m${(targetChapter.modules?.length || 0) + 1}`
-  );
+  const existingIds = new Set((targetChapter.modules || []).map(m => m.id));
+  let modIndex = (targetChapter.modules?.length || 0) + 1;
+  const shortCode = getShortCode(inheritedDisc);
+  let newModId = formatModuleId(shortCode, 'core', `m${modIndex}`);
+  while (existingIds.has(newModId)) {
+    modIndex += 1;
+    newModId = formatModuleId(shortCode, 'core', `m${modIndex}`);
+  }
 
   return {
     id: newModId,

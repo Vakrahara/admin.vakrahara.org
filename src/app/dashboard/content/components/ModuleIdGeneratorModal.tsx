@@ -14,7 +14,14 @@ interface ModuleIdGeneratorModalProps {
   onApplyId: (newId: string) => void;
 }
 
-const COMMON_DOMAINS = ['core', 'optics', 'mechanics', 'algebra', 'reactions'];
+const DOMAIN_PRESETS: Record<string, string[]> = {
+  disc_bhautik: ['core', 'optics', 'mechanics', 'electricity'],
+  disc_rasayan: ['core', 'reactions', 'bonding', 'acids_bases'],
+  disc_jiva_vigyan: ['core', 'genetics', 'cellular', 'ecology'],
+  disc_ganita: ['core', 'algebra', 'geometry', 'calculus'],
+  disc_sanganak: ['core', 'algorithms', 'structures', 'networks'],
+};
+const DEFAULT_DOMAINS = ['core', 'theory', 'applied', 'lab'];
 
 export function ModuleIdGeneratorModal({
   isOpen,
@@ -34,10 +41,12 @@ export function ModuleIdGeneratorModal({
     if (isOpen) {
       if (activeModule.id?.startsWith('mod_')) {
         const parts = activeModule.id.slice(4).split('_');
-        if (parts.length >= 3) {
+        if (parts.length >= 2) {
           const short = parts[0];
-          const matched = disciplines.find(d => d.shortCode.toLowerCase() === short.toLowerCase() || d.id === `disc_${short}`);
-          setDisciplineId(matched ? matched.id : initialDisc);
+          const matched = disciplines.find(
+            d => d.shortCode.toLowerCase() === short.toLowerCase() || d.id === `disc_${short}` || d.id === short
+          );
+          if (matched) setDisciplineId(matched.id);
           setDomain(parts[1] || 'core');
           setConcept(parts.slice(2).join('_') || '');
           return;
@@ -50,9 +59,7 @@ export function ModuleIdGeneratorModal({
   }, [isOpen, activeModule.id, initialDisc, disciplines]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
-    };
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) onClose(); };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
@@ -61,10 +68,16 @@ export function ModuleIdGeneratorModal({
 
   const shortCode = getShortCode(disciplineId);
   const previewId = formatModuleId(shortCode, domain, concept);
-  const hasInputs = domain.trim().length > 0 && concept.trim().length > 0;
-  const isFormatValid = hasInputs && isValidSemanticId(previewId, 'mod') && SEMANTIC_ID_REGEX.test(previewId);
+  const hasValidDomain = /[a-z0-9]/.test(domain);
+  const hasValidConcept = /[a-z0-9]/.test(concept);
+  const isFormatValid = hasValidDomain && hasValidConcept && isValidSemanticId(previewId, 'mod') && SEMANTIC_ID_REGEX.test(previewId) && previewId.split('_').length >= 4;
   const isDuplicate = (activeChapter.modules || []).some(m => m.id === previewId && m.id !== activeModule.id);
   const canApply = isFormatValid && !isDuplicate;
+  const activePresets = DOMAIN_PRESETS[disciplineId] || DEFAULT_DOMAINS;
+
+  const handleApply = () => {
+    if (canApply) { onApplyId(previewId); onClose(); }
+  };
 
   return (
     <div
@@ -110,13 +123,13 @@ export function ModuleIdGeneratorModal({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Domain</label>
-              <div className="flex items-center gap-1">
-                {COMMON_DOMAINS.map((cd) => (
+              <div className="flex items-center gap-1 flex-wrap">
+                {activePresets.map((cd) => (
                   <button
                     key={cd}
                     type="button"
                     onClick={() => setDomain(cd)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded transition-colors ${domain === cd ? 'bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/40' : 'text-gray-500 hover:text-gray-300'}`}
+                    className={`text-[9px] px-1.5 py-0.5 rounded transition-colors cursor-pointer ${domain === cd ? 'bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/40' : 'text-gray-500 hover:text-gray-300'}`}
                   >
                     {cd}
                   </button>
@@ -127,6 +140,7 @@ export function ModuleIdGeneratorModal({
               type="text"
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleApply(); }}
               placeholder="e.g. optics, geometry, algebra"
               className="w-full px-3 py-2 bg-[#08080c] border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-[#d4af37]/60"
             />
@@ -138,6 +152,7 @@ export function ModuleIdGeneratorModal({
               type="text"
               value={concept}
               onChange={(e) => setConcept(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleApply(); }}
               placeholder="e.g. snells_law, propositions_converses, pythagoras"
               className="w-full px-3 py-2 bg-[#08080c] border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-[#d4af37]/60"
             />
@@ -157,22 +172,18 @@ export function ModuleIdGeneratorModal({
                 <span>✓ Valid semantic module identifier</span>
               </div>
             ) : (
-              <div className="text-gray-500 text-[11px]">Enter both domain and concept slug to validate ID.</div>
+              <div className="text-gray-500 text-[11px]">Enter valid domain and concept slug (letters, numbers, underscores).</div>
             )}
           </div>
         </div>
 
         <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3 bg-[#05070D]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-gray-400 hover:text-white rounded-xl transition-colors cursor-pointer"
-          >
+          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white rounded-xl transition-colors cursor-pointer">
             Cancel
           </button>
           <button
             type="button"
-            onClick={() => { if (canApply) { onApplyId(previewId); onClose(); } }}
+            onClick={handleApply}
             disabled={!canApply}
             className="px-4 py-2 bg-[#d4af37] hover:bg-[#e5c158] disabled:opacity-30 disabled:cursor-not-allowed text-black font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 min-h-[38px]"
           >

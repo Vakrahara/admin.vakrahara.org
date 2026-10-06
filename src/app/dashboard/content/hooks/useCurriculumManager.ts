@@ -258,10 +258,16 @@ export function useCurriculumManager(r2Config: R2Config) {
   const activeModule = activeChapter?.modules.find(m => m.id === selectedModuleId) || null;
 
   const updateActiveChapter = (fields: Partial<Chapter>) => {
-    if (chapters && activeChapter) setChapters(patchChapter(chapters, activeChapter.id, fields));
+    if (chapters && activeChapter) {
+      if (fields.id && fields.id !== activeChapter.id) setSelectedChapterId(fields.id);
+      setChapters(patchChapter(chapters, activeChapter.id, fields));
+    }
   };
   const updateActiveModule = (fields: Partial<Module>) => {
-    if (chapters && activeChapter && activeModule) setChapters(patchModule(chapters, activeChapter.id, activeModule.id, fields));
+    if (chapters && activeChapter && activeModule) {
+      if (fields.id && fields.id !== activeModule.id) setSelectedModuleId(fields.id);
+      setChapters(patchModule(chapters, activeChapter.id, activeModule.id, fields));
+    }
   };
   const updateActiveModuleSteps = (steps: Step[]) => {
     if (chapters && activeChapter && activeModule) setChapters(patchModuleSteps(chapters, activeChapter.id, activeModule.id, steps));

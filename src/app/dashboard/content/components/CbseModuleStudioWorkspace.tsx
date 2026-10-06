@@ -4,13 +4,15 @@ import React, { useState } from 'react';
 import { 
   Layers, 
   ArrowLeft,
-  Plus
+  Plus,
+  Sparkles
 } from 'lucide-react';
 import { Module, Step, StepType, MediaMode, Chapter } from '@/types/curriculum';
 import { DigitalTwinPreview } from './DigitalTwinPreview';
 import { ModuleTriadDeck } from './ModuleTriadDeck';
 import { AddStepTemplateModal } from './AddStepTemplateModal';
 import { CbseStudioStepCard } from './CbseStudioStepCard';
+import { ModuleIdGeneratorModal } from './ModuleIdGeneratorModal';
 
 interface CbseModuleStudioWorkspaceProps {
   activeChapter: Chapter;
@@ -40,6 +42,7 @@ export function CbseModuleStudioWorkspace({
   onRequestDeleteStep
 }: CbseModuleStudioWorkspaceProps) {
   const [isAddStepModalOpen, setIsAddStepModalOpen] = useState(false);
+  const [isIdModalOpen, setIsIdModalOpen] = useState(false);
   const steps = activeModule.steps || [];
 
   const handleAddStep = (type: StepType) => {
@@ -125,9 +128,20 @@ export function CbseModuleStudioWorkspace({
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1 font-mono">
-                Module ID
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block font-mono">
+                  Module ID
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsIdModalOpen(true)}
+                  className="text-[9px] text-[#d4af37] hover:text-[#facc15] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Auto-Generate Semantic ID"
+                >
+                  <Sparkles className="w-3 h-3 text-[#d4af37]" />
+                  <span>✨ Auto-Generate / Edit ID</span>
+                </button>
+              </div>
               <input
                 type="text"
                 value={activeModule.id}
@@ -226,6 +240,17 @@ export function CbseModuleStudioWorkspace({
         onClose={() => setIsAddStepModalOpen(false)}
         onSelectType={handleAddStep}
       />
+
+      {/* Semantic Module ID Auto-Generator Modal */}
+      {isIdModalOpen && (
+        <ModuleIdGeneratorModal
+          isOpen={isIdModalOpen}
+          onClose={() => setIsIdModalOpen(false)}
+          activeChapter={activeChapter}
+          activeModule={activeModule}
+          onApplyId={(newId) => onUpdateModule({ id: newId })}
+        />
+      )}
     </div>
   );
 }
