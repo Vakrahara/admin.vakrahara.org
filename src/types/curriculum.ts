@@ -178,9 +178,13 @@ export interface Step {
   slotOrder?: StepSlotKey[];
   // Interactive Explorable Text & Hotspots (§TICKET-05)
   hotspots?: TextHotspot[];
+  // Socratic Scaffold & Misconception Map for Sayuktik AI (§AMRTAM-SPEC-SAYUKTIK-01)
+  socraticScaffold?: SocraticScaffold;
 }
 
 export * from './stepSlots';
+export * from './socraticScaffold';
+import type { SocraticScaffold } from './socraticScaffold';
 
 // ─── TRIAD EXTENSION: SHABDAKOSHA, AUDIO & KALACHAKRA (curriculumTriad.ts) ──
 export type {
@@ -235,6 +239,8 @@ export interface Module extends ModuleDisciplineMetadata {
   audioOverview?: AudioOverview;
   timelineMetadata?: ModuleTimelineMetadata;
   timelineReel?: TimelineReel;
+  // Socratic Scaffold & Misconception Map for Sayuktik AI (§AMRTAM-SPEC-SAYUKTIK-01)
+  socraticScaffold?: SocraticScaffold;
 }
 
 export type InteractiveModule = Module;
