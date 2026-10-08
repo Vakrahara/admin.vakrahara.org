@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
@@ -10,9 +10,11 @@ import { SudoConfirmModal } from '@/components/ui/SudoConfirmModal';
 
 interface FeatureFlag {
   id: string;
-  flag_key: string;
+  key: string;
+  flag_key?: string;
   description: string;
   is_enabled: boolean;
+  is_enabled_prod?: boolean;
   rollout_percentage: number;
   target_cohort: string;
   created: string;
@@ -34,7 +36,15 @@ export default function ExperimentsPage() {
       const res = await pb.collection('feature_flags').getList(1, 50, {
         sort: '-created',
       });
-      setFlags(res.items as unknown as FeatureFlag[]);
+      const mapped = res.items.map((it: any) => ({
+        ...it,
+        key: it.key || it.flag_key || '',
+        flag_key: it.flag_key || it.key || '',
+        is_enabled: typeof it.is_enabled === 'boolean' ? it.is_enabled : (it.is_enabled_prod ?? false),
+        rollout_percentage: typeof it.rollout_percentage === 'number' ? it.rollout_percentage : 100,
+        target_cohort: it.target_cohort || 'all',
+      })) as FeatureFlag[];
+      setFlags(mapped);
     } catch (err) {
       console.error('Failed to fetch feature flags:', err);
     } finally {
@@ -48,8 +58,10 @@ export default function ExperimentsPage() {
 
   const handleToggle = async (flag: FeatureFlag) => {
     try {
+      const nextVal = !flag.is_enabled;
       await pb.collection('feature_flags').update(flag.id, {
-        is_enabled: !flag.is_enabled,
+        is_enabled: nextVal,
+        is_enabled_prod: nextVal,
       });
       fetchFlags();
     } catch (err) {
@@ -74,9 +86,11 @@ export default function ExperimentsPage() {
 
     try {
       await pb.collection('feature_flags').create({
+        key: newKey.trim(),
         flag_key: newKey.trim(),
         description: newDesc.trim(),
         is_enabled: true,
+        is_enabled_prod: true,
         rollout_percentage: newRollout,
         target_cohort: newCohort,
       });
@@ -138,7 +152,7 @@ export default function ExperimentsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-base text-white">{flag.flag_key}</span>
+                    <span className="font-mono font-bold text-base text-white">{flag.key || flag.flag_key}</span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/30">
                       {flag.target_cohort || 'all'}
                     </span>

@@ -35,22 +35,31 @@ function LoginForm() {
     setError(null);
 
     try {
-      // Authenticate directly via REST API since the backend is v0.22.9 and the SDK is v0.27.0
-      const res = await fetch(`${pb.baseUrl}/api/admins/auth-with-password`, {
+      // Authenticate directly via REST API: Try legacy /api/admins/auth-with-password (PB v0.22)
+      // with automatic fallback to modern /api/collections/_superusers/auth-with-password (PB v0.23+)
+      let res = await fetch(`${pb.baseUrl}/api/admins/auth-with-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identity: identifier, password: password })
       });
+      if (res.status === 404) {
+        res = await fetch(`${pb.baseUrl}/api/collections/_superusers/auth-with-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity: identifier, password: password })
+        });
+      }
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson.message || 'Authentication failed. Please verify your credentials.');
       }
       const authData = await res.json();
+      const adminRecord = authData.admin || authData.record;
       
       // Manually save the token and admin record into the auth store
-      pb.authStore.save(authData.token, authData.admin);
+      pb.authStore.save(authData.token, adminRecord);
       
-      const email = authData.admin?.email?.toLowerCase();
+      const email = adminRecord?.email?.toLowerCase();
 
       // Hack resistance rule: Reject if not explicitly allowed
       if (!isAuthorizedAdmin(email)) {

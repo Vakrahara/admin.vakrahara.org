@@ -67,10 +67,7 @@ export function validateAudioOverview(
     errors.push({ moduleTitle, field: 'audioOverview.audioUrlEn', message: 'English audio URL is required when Audio Overview is enabled.' });
   }
 
-  if (!audio.waveformPeaks || audio.waveformPeaks.length !== 64) {
-    const count = audio.waveformPeaks ? audio.waveformPeaks.length : 0;
-    errors.push({ moduleTitle, field: 'audioOverview.waveformPeaks', message: `Waveform must contain exactly 64 peaks (found ${count}).` });
-  } else {
+  if (audio.waveformPeaks && audio.waveformPeaks.length > 0) {
     audio.waveformPeaks.forEach((peak, idx) => {
       if (typeof peak !== 'number' || isNaN(peak) || peak < 0 || peak > 1) {
         errors.push({ moduleTitle, field: `audioOverview.waveformPeaks[${idx}]`, message: `Waveform peak at index ${idx} (${peak}) is out of normalized range [0.0, 1.0].` });

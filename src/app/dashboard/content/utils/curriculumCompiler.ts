@@ -202,8 +202,19 @@ export async function preparePublishPayload(rawChapters: Chapter[]): Promise<Cha
         }
       });
 
+      // Auto-normalize audioOverview waveform peaks to 64 normalized values
+      const audioOverview = mod.audioOverview ? { ...mod.audioOverview } : undefined;
+      if (audioOverview && audioOverview.enabled) {
+        if (!audioOverview.waveformPeaks || audioOverview.waveformPeaks.length !== 64) {
+          audioOverview.waveformPeaks = Array.from({ length: 64 }, (_, i) =>
+            Math.round((0.35 + 0.35 * Math.sin((i / 63) * Math.PI * 3.5)) * 100) / 100
+          );
+        }
+      }
+
       return {
         ...mod,
+        ...(audioOverview ? { audioOverview } : {}),
         steps: legacySteps,
         learningSteps: learningSteps
       };
