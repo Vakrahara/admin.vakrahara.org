@@ -71,8 +71,8 @@ export default function InfrastructurePage() {
       } catch (e) {}
 
       try {
-        const mod = await pb.collection('user_moderation_actions').getList(1, 1);
-        counts['user_moderation_actions'] = mod.totalItems;
+        const mod = await pb.collection('media_reports').getList(1, 1);
+        counts['media_reports'] = mod.totalItems;
       } catch (e) {}
 
       setCollectionCounts(counts);

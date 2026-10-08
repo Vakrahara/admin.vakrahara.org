@@ -47,7 +47,7 @@ export default function DashboardLayout({
       
       const record = (pb.authStore.record || pb.authStore.model) as any;
       const email = record?.email?.toLowerCase();
-      const isSuperuser = pb.authStore.isSuperuser || pb.authStore.isAdmin || isAuthorizedAdmin(email);
+      const isSuperuser = pb.authStore.isSuperuser || pb.authStore.isAdmin || record?.collectionName === '_superusers' || isAuthorizedAdmin(email);
 
       if (!isSuperuser) {
         pb.authStore.clear();

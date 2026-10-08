@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Loader2 } from 'lucide-react';
 import { R2Config } from '@/lib/r2-upload';
 import { Chapter, Step, Pyq } from '@/types/curriculum';
@@ -21,17 +21,16 @@ export default function ContentCMSPage() {
   const [showReadinessMatrix, setShowReadinessMatrix] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ type: 'chapter' | 'module' | 'step'; name: string; onConfirm: () => void } | null>(null);
 
-  const [r2Config, setR2Config] = useState<R2Config>(() => {
+  // Ensure no unencrypted AWS/R2 secrets linger in browser storage
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('vakrahara_r2_config');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { console.error(e); }
-      }
+      try { localStorage.removeItem('vakrahara_r2_config'); } catch (_) {}
     }
-    return {
-      accountId: '', bucketName: '', accessKeyId: '',
-      secretAccessKey: '', region: 'auto', customDomain: 'https://cdn.vakrahara.org/v1'
-    };
+  }, []);
+
+  const [r2Config, setR2Config] = useState<R2Config>({
+    accountId: '', bucketName: '', accessKeyId: '',
+    secretAccessKey: '', region: 'auto', customDomain: 'https://cdn.vakrahara.org/v1'
   });
 
   const manager = useCurriculumManager(r2Config);
@@ -46,7 +45,6 @@ export default function ContentCMSPage() {
 
   const handleSaveR2Config = (cfg: R2Config) => {
     setR2Config(cfg);
-    if (typeof window !== 'undefined') localStorage.setItem('vakrahara_r2_config', JSON.stringify(cfg));
     setIsSettingsOpen(false);
     loadCbseData('cdn');
   };

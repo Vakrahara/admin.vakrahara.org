@@ -92,28 +92,17 @@ export async function uploadSimulationPackage(
     lastError = err?.message || 'PocketBase proxy unreachable';
   }
 
-  // 3. Fallback: Direct R2 upload if proxy failed
-  if (!uploaded) {
-    const activeConfig = r2Config || (typeof window !== 'undefined' ? (() => {
-      try {
-        const stored = localStorage.getItem('vakrahara_r2_config');
-        return stored ? JSON.parse(stored) : null;
-      } catch { return null; }
-    })() : null);
-
-    if (activeConfig?.accountId && activeConfig?.bucketName && activeConfig?.accessKeyId && activeConfig?.secretAccessKey) {
-      try {
-        for (const item of processedFiles) {
-          const buffer = await item.file.arrayBuffer();
-          await uploadFileToR2(`v2/simulations/${simId}/${item.path}`, buffer, getMimeType(item.path), activeConfig);
-        }
-        await uploadToR2(`v2/simulations/${simId}/manifest.json`, JSON.stringify(manifest, null, 2), 'application/json; charset=utf-8', activeConfig);
-        uploaded = true;
-      } catch (r2Err: any) {
-        lastError = r2Err?.message || 'Direct Cloudflare R2 upload failed';
+  // 3. Optional direct upload if explicit credentials provided
+  if (!uploaded && r2Config?.accountId && r2Config?.bucketName && r2Config?.accessKeyId && r2Config?.secretAccessKey) {
+    try {
+      for (const item of processedFiles) {
+        const buffer = await item.file.arrayBuffer();
+        await uploadFileToR2(`v2/simulations/${simId}/${item.path}`, buffer, getMimeType(item.path), r2Config);
       }
-    } else {
-      lastError = lastError || 'Cloudflare R2 credentials not configured.';
+      await uploadToR2(`v2/simulations/${simId}/manifest.json`, JSON.stringify(manifest, null, 2), 'application/json; charset=utf-8', r2Config);
+      uploaded = true;
+    } catch (r2Err: any) {
+      lastError = r2Err?.message || 'Direct Cloudflare R2 upload failed';
     }
   }
 
