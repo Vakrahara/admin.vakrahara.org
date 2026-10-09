@@ -1,19 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, Sparkles, AlertCircle } from 'lucide-react';
+import { RefreshCw, Sparkles, AlertCircle, LogOut } from 'lucide-react';
 import { useDashboardStats } from './hooks/useDashboardStats';
 import { FinancialKpis } from './components/FinancialKpis';
 import { ActivityKpis } from './components/ActivityKpis';
 import { DemographicsCharts } from './components/DemographicsCharts';
+import { clearAuthState } from '@/lib/auth';
 
 export default function AnalyticsSummaryPage() {
-  const { stats, loading, refreshing, error, handleRefresh } = useDashboardStats();
+  const { stats, loading, refreshing, error, isAuthError, handleRefresh } = useDashboardStats();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleSignOutAndReLogin = () => {
+    clearAuthState();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login?signed_out=true';
+    }
+  };
 
   if (loading) {
     return (
@@ -66,17 +74,28 @@ export default function AnalyticsSummaryPage() {
 
       {/* Telemetry Warning Banner (if sync degraded or error) */}
       {error && (
-        <div className="p-4 bg-amber-950/30 border border-amber-500/30 text-amber-300 text-xs rounded-xl flex items-center justify-between gap-3 animate-fadeIn">
+        <div className="p-4 bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
           <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
             <span>Telemetry sync notice: {error}</span>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-[11px] font-semibold text-amber-200 transition-colors"
-          >
-            Retry Sync
-          </button>
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            {isAuthError && (
+              <button
+                onClick={handleSignOutAndReLogin}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 rounded-lg text-xs font-semibold text-rose-300 transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Sign Out & Re-Login
+              </button>
+            )}
+            <button
+              onClick={handleRefresh}
+              className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-xs font-semibold text-amber-200 transition-colors"
+            >
+              Retry Sync
+            </button>
+          </div>
         </div>
       )}
 

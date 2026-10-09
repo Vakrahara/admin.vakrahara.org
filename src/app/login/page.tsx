@@ -3,12 +3,13 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { pb } from '@/lib/pocketbase';
-import { isAuthorizedAdmin } from '@/lib/auth';
-import { ShieldCheck, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { isAuthorizedAdmin, clearAuthState } from '@/lib/auth';
+import { ShieldCheck, Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isSignedOut = searchParams.get('signed_out') === 'true';
   const redirectTarget = searchParams.get('redirect') || '/dashboard';
 
   const [identifier, setIdentifier] = useState(''); // Email or Username
@@ -17,15 +18,20 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If already logged in with appropriate credentials, redirect immediately
+  // If already logged in with appropriate credentials, redirect immediately (unless explicitly signed out)
   useEffect(() => {
+    if (isSignedOut) {
+      clearAuthState();
+      return;
+    }
+
     if (pb.authStore.isValid) {
       const email = (pb.authStore.record?.email || (pb.authStore.model as any)?.email)?.toLowerCase();
       if (isAuthorizedAdmin(email)) {
         router.push(redirectTarget);
       }
     }
-  }, [router, redirectTarget]);
+  }, [router, redirectTarget, isSignedOut]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,14 +69,16 @@ function LoginForm() {
 
       // Hack resistance rule: Reject if not explicitly allowed
       if (!isAuthorizedAdmin(email)) {
-        pb.authStore.clear();
-        document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        clearAuthState();
         throw new Error('Access Denied: You do not have administrator permissions.');
       }
 
-      // Success, cookie is written automatically by pb.authStore.onChange in pocketbase.ts
-      router.push(redirectTarget);
-      router.refresh();
+      // Hard redirect to ensure completely fresh session state
+      if (typeof window !== 'undefined') {
+        window.location.href = redirectTarget;
+      } else {
+        router.push(redirectTarget);
+      }
 
     } catch (err: any) {
       console.error('Login error:', err);
@@ -82,6 +90,13 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {isSignedOut && !error && (
+        <div className="p-3 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl flex items-center gap-2.5 animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+          <span>You have been signed out successfully. Enter credentials to log in.</span>
+        </div>
+      )}
+
       {error && (
         <div className="p-3 bg-red-950/40 border border-red-500/20 text-red-400 text-xs rounded-xl flex items-start gap-2.5 animate-fadeIn">
           <span className="font-bold shrink-0">⚠️</span>

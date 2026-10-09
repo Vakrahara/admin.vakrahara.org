@@ -19,13 +19,19 @@ export function useDashboardStats() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
 
   const fetchLiveStats = useCallback(async () => {
     setError(null);
+    setIsAuthError(false);
 
     // Ensure authStore is hydrated from cookies if necessary
     if (typeof window !== 'undefined' && !pb.authStore.isValid && document.cookie.includes('pb_auth=')) {
-      pb.authStore.loadFromCookie(document.cookie);
+      try {
+        pb.authStore.loadFromCookie(document.cookie);
+      } catch {
+        // Safe fallback
+      }
     }
 
     const token = pb.authStore.token;
@@ -64,6 +70,10 @@ export function useDashboardStats() {
             setRefreshing(false);
             return;
           }
+        } else if (res.status === 401 || res.status === 403) {
+          console.warn('[Dashboard] /user-stats returned 401/403: Admin token rejected by server.');
+          setIsAuthError(true);
+          setError('Admin token expired or unauthorized on server. Please sign out and log in again.');
         }
       } catch (err) {
         console.warn('[Dashboard] Direct fetch to /user-stats failed, trying SDK pb.send:', err);
@@ -94,7 +104,11 @@ export function useDashboardStats() {
         setRefreshing(false);
         return;
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.status === 401 || err?.status === 403) {
+        setIsAuthError(true);
+        setError('Admin session expired or access forbidden. Please sign out and log in again.');
+      }
       console.warn('[Dashboard] Custom API endpoint unavailable, computing live client telemetry fallback...', err);
     }
 
@@ -177,7 +191,12 @@ export function useDashboardStats() {
       });
     } catch (err: any) {
       console.error('[Dashboard] Failed to compute live analytics from database:', err);
-      setError(err?.message || 'Failed to synchronize live analytics telemetry from server.');
+      if (err?.status === 401 || err?.status === 403) {
+        setIsAuthError(true);
+        setError('Admin session expired or access unauthorized. Please sign out and log in again.');
+      } else {
+        setError(err?.message || 'Failed to synchronize live analytics telemetry from server.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -198,6 +217,7 @@ export function useDashboardStats() {
     loading,
     refreshing,
     error,
+    isAuthError,
     handleRefresh,
   };
 }

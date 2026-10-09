@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { pb } from '@/lib/pocketbase';
-import { isAuthorizedAdmin } from '@/lib/auth';
+import { isAuthorizedAdmin, clearAuthState } from '@/lib/auth';
 import { useInstitutions } from '@/hooks/useInstitutions';
 import { 
   LayoutDashboard, Users, BookOpen, Building2, LogOut, ShieldAlert, 
@@ -50,9 +50,12 @@ export default function DashboardLayout({
       const isSuperuser = pb.authStore.isSuperuser || pb.authStore.isAdmin || record?.collectionName === '_superusers' || isAuthorizedAdmin(email);
 
       if (!isSuperuser) {
-        pb.authStore.clear();
-        document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        router.push(`/login?redirect=${pathname}&error=unauthorized`);
+        clearAuthState();
+        if (typeof window !== 'undefined') {
+          window.location.href = `/login?redirect=${pathname}&error=unauthorized`;
+        } else {
+          router.push(`/login?redirect=${pathname}&error=unauthorized`);
+        }
         return;
       }
 
@@ -67,10 +70,12 @@ export default function DashboardLayout({
   }, [router, pathname]);
 
   const handleSignOut = () => {
-    pb.authStore.clear();
-    document.cookie = 'pb_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    router.push('/login');
-    router.refresh();
+    clearAuthState();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login?signed_out=true';
+    } else {
+      router.push('/login?signed_out=true');
+    }
   };
 
   const navGroups: NavGroup[] = [
@@ -150,12 +155,21 @@ export default function DashboardLayout({
           </div>
           <span className="font-bold tracking-wide text-white text-sm">Vakrahara Console</span>
         </div>
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white transition-colors"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleSignOut}
+            title="Sign Out"
+            className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/10 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white transition-colors"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </header>
 
       {/* Sidebar Navigation */}
@@ -176,14 +190,23 @@ export default function DashboardLayout({
           </div>
 
           {/* User Account Info */}
-          <div className="p-3.5 bg-[#0d0d15] border border-white/10 rounded-xl flex items-center gap-3 shadow-inner">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-600 to-[#d4af37] flex items-center justify-center font-bold text-xs text-[#050508] shadow-[0_0_12px_rgba(212,175,55,0.2)]">
-              {adminName.substring(0, 2).toUpperCase()}
+          <div className="p-3.5 bg-[#0d0d15] border border-white/10 rounded-xl flex items-center justify-between gap-3 shadow-inner">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-600 to-[#d4af37] flex items-center justify-center font-bold text-xs text-[#050508] shadow-[0_0_12px_rgba(212,175,55,0.2)] shrink-0">
+                {adminName.substring(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-white truncate">{adminName}</div>
+                <div className="text-[9px] font-bold text-[#d4af37] uppercase tracking-wider">{adminRole}</div>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold text-white truncate">{adminName}</div>
-              <div className="text-[9px] font-bold text-[#d4af37] uppercase tracking-wider">{adminRole}</div>
-            </div>
+            <button
+              onClick={handleSignOut}
+              title="Sign Out of Admin Console"
+              className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/10 transition-colors shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Categorized Navigation Links */}

@@ -2,6 +2,13 @@ DirectorySlash On
 RewriteEngine On
 RewriteBase /
 
+# Prevent caching of HTML and JSON entrypoints
+<FilesMatch "\.(html|json|txt|xml)$">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+  Header set Pragma "no-cache"
+  Header set Expires 0
+</FilesMatch>
+
 # 1. Redirect requests without trailing slashes to trailing slash version (except files)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} !/$
