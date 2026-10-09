@@ -99,6 +99,7 @@
                   "Water molecules khud",
                   "Sirf heat energy"
                 ],
+                "correctIndex": 0,
                 "clue": "A floating leaf bobs up and down but does not travel with the ripples.",
                 "feedback": "Correct! It is the energy and momentum that moves forward, not the water itself.",
                 "definitionFragmentEn": "...that transfers energy through a medium...",
@@ -328,12 +329,6 @@
             "id": "mod_phys_optics_types_of_waves_stp_01"
           },
           {
-            "type": "saraswati",
-            "title": "Concept Discovery",
-            "definitionEn": "",
-            "id": "mod_phys_optics_types_of_waves_stp_02"
-          },
-          {
             "type": "video_simulation",
             "mediaMode": "simulation_only",
             "simulationId": "sim_types_of_waves",
@@ -343,13 +338,7 @@
             },
             "subStepCount": 1,
             "textEng": "",
-            "id": "mod_phys_optics_types_of_waves_stp_03"
-          },
-          {
-            "type": "saraswati",
-            "title": "Concept Discovery",
-            "definitionEn": "",
-            "id": "mod_phys_optics_types_of_waves_stp_04"
+            "id": "mod_phys_optics_types_of_waves_stp_02"
           },
           {
             "type": "video_simulation",
@@ -361,13 +350,7 @@
             },
             "subStepCount": 1,
             "textEng": "",
-            "id": "mod_phys_optics_types_of_waves_stp_05"
-          },
-          {
-            "type": "saraswati",
-            "title": "Concept Discovery",
-            "definitionEn": "",
-            "id": "mod_phys_optics_types_of_waves_stp_06"
+            "id": "mod_phys_optics_types_of_waves_stp_03"
           },
           {
             "type": "video_simulation",
@@ -379,13 +362,7 @@
             },
             "subStepCount": 1,
             "textEng": "",
-            "id": "mod_phys_optics_types_of_waves_stp_07"
-          },
-          {
-            "type": "saraswati",
-            "title": "Concept Discovery",
-            "definitionEn": "",
-            "id": "mod_phys_optics_types_of_waves_stp_08"
+            "id": "mod_phys_optics_types_of_waves_stp_04"
           }
         ],
         "disciplineIds": [
@@ -1666,12 +1643,6 @@
             "subStepCount": 1,
             "textEng": "",
             "id": "mod_phys_sound_what_is_a_wave_stp_01"
-          },
-          {
-            "type": "saraswati",
-            "title": "Concept Discovery",
-            "definitionEn": "",
-            "id": "mod_phys_sound_what_is_a_wave_stp_02"
           }
         ],
         "disciplineIds": [

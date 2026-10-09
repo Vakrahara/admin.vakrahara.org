@@ -27,11 +27,16 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
   const moduleIds = new Set<string>();
   const stepIds = new Set<string>();
 
-  if (curriculum.length === 0) {
+  if (!Array.isArray(curriculum) || curriculum.length === 0) {
     errors.push('At least one chapter is required.');
+    return errors;
   }
 
   curriculum.forEach((chapter, cIndex) => {
+    if (!chapter) {
+      errors.push(`Chapter ${cIndex + 1} is invalid.`);
+      return;
+    }
     const chName = chapter.title || chapter.id || `Chapter ${cIndex + 1}`;
     if (!chapter.id || chapter.id.trim() === '') {
       errors.push(`Chapter ${cIndex + 1} has no ID.`);
@@ -49,7 +54,16 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
       errors.push(`Chapter "${chName}" has no Branch ID (e.g. physics).`);
     }
 
-    chapter.modules.forEach((mod, mIndex) => {
+    const modules = Array.isArray(chapter.modules) ? chapter.modules : [];
+    if (!Array.isArray(chapter.modules)) {
+      errors.push(`Chapter "${chName}" has no valid modules list.`);
+    }
+
+    modules.forEach((mod, mIndex) => {
+      if (!mod) {
+        errors.push(`Module ${mIndex + 1} in chapter "${chName}" is invalid.`);
+        return;
+      }
       const modName = mod.titleEn?.trim() || mod.title?.trim() || mod.id || `Module ${mIndex + 1}`;
       if (!mod.id || mod.id.trim() === '') {
         errors.push(`Module ${mIndex + 1} in chapter "${chName}" has no ID.`);
@@ -64,7 +78,16 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
         errors.push(`Module ID "${mod.id}" in chapter "${chName}" has no Title.`);
       }
 
-      mod.steps.forEach((step, sIndex) => {
+      const steps = Array.isArray(mod.steps) ? mod.steps : [];
+      if (!Array.isArray(mod.steps)) {
+        errors.push(`Module "${modName}" in chapter "${chName}" has no valid steps list.`);
+      }
+
+      steps.forEach((step, sIndex) => {
+        if (!step) {
+          errors.push(`Step ${sIndex + 1} in module "${modName}" (Chapter "${chName}") is invalid.`);
+          return;
+        }
         const stepName = step.id || `Step ${sIndex + 1}`;
         if (!step.id || step.id.trim() === '') {
           errors.push(`Step ${sIndex + 1} in module "${modName}" (Chapter "${chName}") has no ID.`);
@@ -80,6 +103,19 @@ export function validateCurriculum(curriculum: Chapter[]): string[] {
           }
           if (!step.miniSteps || step.miniSteps.length === 0) {
             errors.push(`Saraswati step "${stepName}" must have at least 1 mini-step.`);
+          } else {
+            step.miniSteps.forEach((ms, msIdx) => {
+              if (!ms.questionEn || ms.questionEn.trim() === '') {
+                errors.push(`Mini-step #${msIdx + 1} in Saraswati step "${stepName}" has no English question.`);
+              }
+              if (!ms.options || ms.options.length < 2) {
+                errors.push(`Mini-step #${msIdx + 1} in Saraswati step "${stepName}" must have at least 2 options.`);
+              }
+              const cIdx = ms.correctIndex ?? 0;
+              if (ms.options && (cIdx < 0 || cIdx >= ms.options.length)) {
+                errors.push(`Mini-step #${msIdx + 1} in Saraswati step "${stepName}" has an invalid correctIndex (${cIdx}).`);
+              }
+            });
           }
         } else if (step.type === 'anveshana') {
           const pool = step.pool || step.questionPool || [];
