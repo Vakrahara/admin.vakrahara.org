@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useInstitutions } from '@/hooks/useInstitutions';
 import { Building2, Plus, Globe, RefreshCw } from 'lucide-react';
 import { InstitutionKpiCards } from './components/InstitutionKpiCards';
@@ -56,13 +56,18 @@ export default function InstitutionRequestsPage() {
     addDirectInstitution,
     updateMasterInstitution,
     deleteMasterInstitution
-  } = useInstitutions({
-    searchQuery: debouncedQuery,
-    stateFilter,
-    cityFilter: debouncedCityQuery,
-    statusFilter,
-    typeFilter
-  });
+  } = useInstitutions(
+    useMemo(
+      () => ({
+        searchQuery: debouncedQuery,
+        stateFilter,
+        cityFilter: debouncedCityQuery,
+        statusFilter,
+        typeFilter,
+      }),
+      [debouncedQuery, stateFilter, debouncedCityQuery, statusFilter, typeFilter]
+    )
+  );
 
   const [activeTab, setActiveTab] = useState<'requests' | 'master'>('requests');
 

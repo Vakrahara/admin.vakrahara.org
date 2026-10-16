@@ -70,20 +70,22 @@ export function usePushNotifications() {
   };
 
   useEffect(() => {
-    let filter = "fcm_token != ''";
     if (audienceMode === 'quick') {
+      let filter = "fcm_token != ''";
       if (targetType === 'premium') filter = "fcm_token != '' && is_premium = true";
-      if (targetType === 'free') filter = "fcm_token != '' && is_premium = false";
-      if (targetType === 'specific') filter = '';
+      else if (targetType === 'free') filter = "fcm_token != '' && is_premium = false";
+      else if (targetType === 'specific') filter = '';
       setTargetFilter(filter);
     }
+  }, [targetType, audienceMode]);
 
+  useEffect(() => {
     if (audienceMode === 'quick' && targetType === 'specific') {
       setEstimatedReach(1);
-    } else {
+    } else if (targetFilter) {
       updateReachForFilter(targetFilter);
     }
-  }, [targetType, audienceMode, targetFilter]);
+  }, [targetFilter, audienceMode, targetType]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

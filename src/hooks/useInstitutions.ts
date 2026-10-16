@@ -39,9 +39,15 @@ export function useInstitutions(options?: InstitutionQueryOptions) {
   const [masterTotal, setMasterTotal] = useState(0);
   const [masterTotalPages, setMasterTotalPages] = useState(1);
 
+  const searchQuery = options?.searchQuery;
+  const stateFilter = options?.stateFilter;
+  const cityFilter = options?.cityFilter;
+  const statusFilter = options?.statusFilter;
+  const typeFilter = options?.typeFilter;
+
   const fetchRequests = useCallback(async (page: number, append = false) => {
     try {
-      const filterStr = buildRequestFilter(options);
+      const filterStr = buildRequestFilter({ searchQuery, stateFilter, cityFilter, statusFilter, typeFilter });
       const res = await pb.collection('institution_requests').getList(page, 20, {
         filter: filterStr,
         sort: '-created',
@@ -56,11 +62,11 @@ export function useInstitutions(options?: InstitutionQueryOptions) {
       console.error('Fetch requests failed:', err);
       setError(err?.message || 'Failed to load institution requests.');
     }
-  }, [options]);
+  }, [searchQuery, stateFilter, cityFilter, statusFilter, typeFilter]);
 
   const fetchMaster = useCallback(async (page: number, append = false) => {
     try {
-      const filterStr = buildMasterFilter(options);
+      const filterStr = buildMasterFilter({ searchQuery, stateFilter, cityFilter, typeFilter });
       const res = await pb.collection('institutions').getList(page, 20, {
         filter: filterStr,
         sort: 'name',
@@ -75,7 +81,7 @@ export function useInstitutions(options?: InstitutionQueryOptions) {
       console.error('Fetch master institutions failed:', err);
       setError(err?.message || 'Failed to load master directory.');
     }
-  }, [options]);
+  }, [searchQuery, stateFilter, cityFilter, typeFilter]);
 
   const fetchPendingCount = useCallback(async () => {
     try {
