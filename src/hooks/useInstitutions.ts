@@ -1,46 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { pb } from '@/lib/pocketbase';
+import {
+  InstitutionRequestRecord,
+  MasterInstitutionRecord,
+  InstitutionQueryOptions,
+} from '@/types/institutions';
+import {
+  buildRequestFilter,
+  buildMasterFilter,
+  fetchPendingRequestsCount,
+  approveInstitutionRequest,
+  rejectInstitutionRequest,
+  deleteInstitutionRequest,
+  addDirectMasterInstitution,
+  updateMasterInstitutionRecord,
+  deleteMasterInstitutionRecord,
+} from '@/lib/institutionsApi';
 
-export interface InstitutionRequestRecord {
-  id: string;
-  requested_name: string;
-  type: string;
-  city?: string;
-  state?: string;
-  requested_by?: string;
-  supporters?: string[];
-  status: 'pending' | 'approved' | 'rejected';
-  google_place_id?: string;
-  created: string;
-  updated: string;
-  expand?: {
-    requested_by?: {
-      name?: string;
-      email?: string;
-      username?: string;
-    };
-  };
-}
-
-export interface MasterInstitutionRecord {
-  id: string;
-  name: string;
-  type?: string;
-  city?: string;
-  state?: string;
-  source_type?: string;
-  code?: string;
-  created: string;
-  updated: string;
-}
-
-export interface InstitutionQueryOptions {
-  searchQuery?: string;
-  stateFilter?: string;
-  cityFilter?: string;
-  statusFilter?: string;
-  typeFilter?: string;
-}
+export type {
+  InstitutionRequestRecord,
+  MasterInstitutionRecord,
+  InstitutionQueryOptions,
+};
 
 export function useInstitutions(options?: InstitutionQueryOptions) {
   const [requests, setRequests] = useState<InstitutionRequestRecord[]>([]);
@@ -60,116 +41,50 @@ export function useInstitutions(options?: InstitutionQueryOptions) {
 
   const fetchRequests = useCallback(async (page: number, append = false) => {
     try {
-      let filterStr = '';
-      const filters: string[] = [];
-      
-      if (options?.stateFilter && options.stateFilter !== 'all') {
-        const sf = options.stateFilter.replace(/'/g, "\\'");
-        filters.push(`state ~ '${sf}'`);
-      }
-
-      if (options?.cityFilter && options.cityFilter.trim()) {
-        const cf = options.cityFilter.trim().replace(/'/g, "\\'");
-        filters.push(`city ~ '${cf}'`);
-      }
-
-      if (options?.searchQuery && options.searchQuery.trim()) {
-        const tokens = options.searchQuery.trim().split(/\s+/).filter(Boolean);
-        tokens.forEach(token => {
-          const sq = token.replace(/'/g, "\\'");
-          filters.push(`(requested_name ~ '${sq}' || city ~ '${sq}' || state ~ '${sq}' || code ~ '${sq}')`);
-        });
-      }
-
-      if (options?.statusFilter && options.statusFilter !== 'all') {
-        filters.push(`status = '${options.statusFilter}'`);
-      }
-      
-      if (options?.typeFilter && options.typeFilter !== 'all') {
-        filters.push(`type = '${options.typeFilter}'`);
-      }
-
-      if (filters.length > 0) {
-        filterStr = filters.join(' && ');
-      }
-
-      const result = await pb.collection('institution_requests').getList<InstitutionRequestRecord>(page, 50, {
+      const filterStr = buildRequestFilter(options);
+      const res = await pb.collection('institution_requests').getList(page, 20, {
+        filter: filterStr,
         sort: '-created',
-        expand: 'requested_by',
-        filter: filterStr
       });
 
-      if (append) {
-        setRequests(prev => [...prev, ...result.items]);
-      } else {
-        setRequests(result.items);
-      }
-      
-      setRequestsTotal(result.totalItems);
-      setRequestsTotalPages(result.totalPages);
-      setRequestsPage(page);
-
-      // Always update global pending count for the badge
-      const pendingRes = await pb.collection('institution_requests').getList(1, 1, {
-        filter: "status = 'pending'",
-        fields: "id"
-      });
-      setPendingCount(pendingRes.totalItems);
-
+      const items = res.items as unknown as InstitutionRequestRecord[];
+      setRequests((prev) => (append ? [...prev, ...items] : items));
+      setRequestsTotal(res.totalItems);
+      setRequestsTotalPages(res.totalPages);
+      setRequestsPage(res.page);
     } catch (err: any) {
-      console.error('Fetch requests error:', err);
+      console.error('Fetch requests failed:', err);
+      setError(err?.message || 'Failed to load institution requests.');
     }
-  }, [options?.searchQuery, options?.stateFilter, options?.cityFilter, options?.statusFilter, options?.typeFilter]);
+  }, [options]);
 
   const fetchMaster = useCallback(async (page: number, append = false) => {
     try {
-      let filterStr = "name != ''";
-      const filters: string[] = ["name != ''"];
-      
-      if (options?.stateFilter && options.stateFilter !== 'all') {
-        const sf = options.stateFilter.replace(/'/g, "\\'");
-        filters.push(`state = '${sf}'`);
-      }
-
-      if (options?.cityFilter && options.cityFilter.trim()) {
-        const cf = options.cityFilter.trim().replace(/'/g, "\\'");
-        filters.push(`city = '${cf}'`);
-      }
-
-      if (options?.searchQuery && options.searchQuery.trim()) {
-        const tokens = options.searchQuery.trim().split(/\s+/).filter(Boolean);
-        tokens.forEach(token => {
-          const sq = token.replace(/'/g, "\\'");
-          filters.push(`(name ~ '${sq}' || city ~ '${sq}' || state ~ '${sq}' || code ~ '${sq}')`);
-        });
-      }
-      
-      if (options?.typeFilter && options.typeFilter !== 'all') {
-        filters.push(`type = '${options.typeFilter}'`);
-      }
-
-      if (filters.length > 0) {
-        filterStr = filters.join(' && ');
-      }
-
-      const result = await pb.collection('institutions').getList<MasterInstitutionRecord>(page, 50, {
+      const filterStr = buildMasterFilter(options);
+      const res = await pb.collection('institutions').getList(page, 20, {
         filter: filterStr,
-        skipTotal: true
+        sort: 'name',
       });
 
-      if (append) {
-        setMasterInstitutions(prev => [...prev, ...result.items]);
-      } else {
-        setMasterInstitutions(result.items);
-      }
-      
-      setMasterTotal(-1);
-      setMasterTotalPages(page + (result.items.length === 50 ? 1 : 0));
-      setMasterPage(page);
+      const items = res.items as unknown as MasterInstitutionRecord[];
+      setMasterInstitutions((prev) => (append ? [...prev, ...items] : items));
+      setMasterTotal(res.totalItems);
+      setMasterTotalPages(res.totalPages);
+      setMasterPage(res.page);
     } catch (err: any) {
-      console.error('Fetch master error:', err);
+      console.error('Fetch master institutions failed:', err);
+      setError(err?.message || 'Failed to load master directory.');
     }
-  }, [options?.searchQuery, options?.stateFilter, options?.cityFilter, options?.typeFilter]);
+  }, [options]);
+
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const count = await fetchPendingRequestsCount();
+      setPendingCount(count);
+    } catch {
+      // Ignore count fetch errors
+    }
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -177,94 +92,83 @@ export function useInstitutions(options?: InstitutionQueryOptions) {
     try {
       await Promise.all([
         fetchRequests(1, false),
-        fetchMaster(1, false)
+        fetchMaster(1, false),
+        fetchPendingCount(),
       ]);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to connect');
     } finally {
       setLoading(false);
     }
-  }, [fetchRequests, fetchMaster]);
+  }, [fetchRequests, fetchMaster, fetchPendingCount]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
   const loadMoreRequests = () => {
-    if (requestsPage < requestsTotalPages) fetchRequests(requestsPage + 1, true);
+    if (requestsPage < requestsTotalPages && !loading) {
+      fetchRequests(requestsPage + 1, true);
+    }
   };
 
   const loadMoreMaster = () => {
-    if (masterPage < masterTotalPages) fetchMaster(masterPage + 1, true);
+    if (masterPage < masterTotalPages && !loading) {
+      fetchMaster(masterPage + 1, true);
+    }
   };
 
   const approveRequest = async (
     requestId: string,
-    finalName: string,
-    type: string,
-    city?: string,
-    state?: string
+    verifiedName: string,
+    verifiedType: string,
+    verifiedCity: string,
+    verifiedState: string,
+    customCode?: string
   ) => {
     try {
-      await pb.collection('institutions').create({
-        name: finalName.trim(),
-        type: type || 'school',
-        city: city?.trim() || '',
-        state: state?.trim() || '',
-        source_type: 'MANUAL',
-        code: `MANUAL-${Date.now().toString().slice(-6)}`,
-      });
-
-      await pb.collection('institution_requests').update(requestId, {
-        requested_name: finalName.trim(),
-        type: type || 'school',
-        city: city?.trim() || '',
-        state: state?.trim() || '',
-        status: 'approved',
-      });
-
+      await approveInstitutionRequest(
+        requestId,
+        verifiedName,
+        verifiedType,
+        verifiedCity,
+        verifiedState,
+        customCode
+      );
       await fetchAll();
       return { success: true };
     } catch (err: any) {
-      console.error('Approval failed:', err);
       throw new Error(err?.message || 'Failed to approve institution request.');
     }
   };
 
-  const rejectRequest = async (requestId: string) => {
+  const rejectRequest = async (requestId: string, reason: string = '') => {
     try {
-      await pb.collection('institution_requests').update(requestId, {
-        status: 'rejected',
-      });
+      await rejectInstitutionRequest(requestId, reason);
       await fetchAll();
       return { success: true };
     } catch (err: any) {
-      console.error('Rejection failed:', err);
-      throw new Error(err?.message || 'Failed to reject request.');
+      throw new Error(err?.message || 'Failed to reject institution request.');
     }
   };
 
   const deleteRequest = async (requestId: string) => {
     try {
-      await pb.collection('institution_requests').delete(requestId);
+      await deleteInstitutionRequest(requestId);
       await fetchAll();
       return { success: true };
     } catch (err: any) {
-      console.error('Delete failed:', err);
-      throw new Error(err?.message || 'Failed to delete request.');
+      throw new Error(err?.message || 'Failed to delete institution request.');
     }
   };
 
-  const addDirectInstitution = async (name: string, type: string, city: string, state: string) => {
+  const addDirectInstitution = async (
+    name: string,
+    type: string,
+    city: string,
+    state: string,
+    code?: string
+  ) => {
     try {
-      await pb.collection('institutions').create({
-        name: name.trim(),
-        type: type || 'school',
-        city: city.trim(),
-        state: state.trim(),
-        source_type: 'MANUAL',
-        code: `MANUAL-${Date.now().toString().slice(-6)}`,
-      });
+      await addDirectMasterInstitution(name, type, city, state, code);
       await fetchAll();
       return { success: true };
     } catch (err: any) {
@@ -280,12 +184,7 @@ export function useInstitutions(options?: InstitutionQueryOptions) {
     state: string
   ) => {
     try {
-      await pb.collection('institutions').update(id, {
-        name: name.trim(),
-        type: type || 'school',
-        city: city.trim(),
-        state: state.trim(),
-      });
+      await updateMasterInstitutionRecord(id, name, type, city, state);
       await fetchAll();
       return { success: true };
     } catch (err: any) {
@@ -296,7 +195,7 @@ export function useInstitutions(options?: InstitutionQueryOptions) {
 
   const deleteMasterInstitution = async (id: string) => {
     try {
-      await pb.collection('institutions').delete(id);
+      await deleteMasterInstitutionRecord(id);
       await fetchAll();
       return { success: true };
     } catch (err: any) {
